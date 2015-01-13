@@ -33,6 +33,7 @@ BS_VolLab	DB	'DiyOS_V0.01'	;卷标，必须11字节
 BS_FileSysType	DB	'FAT12   '		;文件系统类型，必须8个字节
 
 BOOT_START:
+	;清屏
 	call clear_screen
 	;实模式下
 	mov ax,cs
@@ -43,9 +44,10 @@ BOOT_START:
 	xor ah, ah
 	xor dl, dl
 	int 0x13	;软驱复位
-	
+	;int wSectorNo = SectorNoOfRootDirectory	
 	mov word[wSectorNo], SectorNoOfRootDirectory
 LABEL_SEARCH_IN_ROOT_DIR_BEGIN: ;开始在根目录中搜索loader.bin
+	;while(wRootDirSizeForLoop > 0)
 	cmp word[wRootDirSizeForLoop], 0 ;循环的时候wRootDirSizeForLoop从19不断减少，减少到0表示没有找到 
 	jz LABEL_NO_LOADERBIN ;循环完没有找到
 	;单次循环中
@@ -61,7 +63,8 @@ LABEL_SEARCH_IN_ROOT_DIR_BEGIN: ;开始在根目录中搜索loader.bin
 	mov si, LoaderFileName ;ds:si -> "LOADER    BIN"
 	mov di, OffsetOfLoader ;es:di -> BaseOfLoader:0x0100
 	cld ;使DF=0（DF Direction Flag 方向位）
-	mov dx, 0x0e ;循环的次数16次
+	;
+	mov dx, 0x10 ;循环的次数16次
 LABEL_SEARCH_FOR_LOADERBIN:	;在加载到es:bx中的一个扇区中的32个Root Entry中寻找loader.bin
 	cmp dx, 0	;循环次数控制
 	jz LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR ;在Root Directory的全部扇区中继续寻找loader.bin（这里是14个扇区）
