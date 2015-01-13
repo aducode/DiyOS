@@ -2,7 +2,14 @@
 ;nasm -o boot.bin boot.asm
 ;软盘引导扇区
 org 0x7c00
-BaseOfStack equ 0x7c00 ;栈基址（从0x7c00开始向底地址生长，也就是栈顶地址<0x7c00）
+
+;常量
+BaseOfStack		equ	0x7c00	;栈基址（从0x7c00开始向底地址生长，也就是栈顶地址<0x7c00）
+BaseOfLoader		equ	0x9000	;loader.bin被加载到的位置 --- 段地址
+OffsetOfLoader		equ	0x0100	; loader.bin被加载到的位置 --- 偏移地址 0x9000:0x0x100这里空闲
+RootDirSectors		equ	14	;根目录占用的扇区数
+SectorNoOfRootDirectory equ 	19	;Root Directory的第一个扇区号
+
 jmp short BOOT_START	;Start to boot
 nop			;fat12开始的jmp段长度要求为3
 BS_OEMName	DB	'DIYCOM  '	;长度必须8字节
@@ -26,27 +33,105 @@ BS_VolLab	DB	'DiyOS_V0.01'	;卷标，必须11字节
 BS_FileSysType	DB	'FAT12   '		;文件系统类型，必须8个字节
 
 BOOT_START:
+	call clear_screen
 	;实模式下
 	mov ax,cs
 	mov ds,ax
 	mov es,ax
 	mov ss,ax
 	mov sp,BaseOfStack
+	xor ah, ah
+	xor dl, dl
+	int 0x13	;软驱复位
+	
+	mov word[wSectorNo], SectorNoOfRootDirectory
+LABEL_SEARCH_IN_ROOT_DIR_BEGIN: ;开始在根目录中搜索loader.bin
+	cmp word[wRootDirSizeForLoop], 0 ;循环的时候wRootDirSizeForLoop从19不断减少，减少到0表示没有找到 
+	jz LABEL_NO_LOADERBIN ;循环完没有找到
+	;单次循环中
+	dec word[wRootDirSizeForLoop] ;先减少
+	mov ax, BaseOfLoader
+	;以下4个作为参数供read_sector使用
+	mov es, ax		;es <- BaseOfLoader
+	mov bx, OffsetOfLoader	;bx <- OffsetOfLoader
+	mov ax, [wSectorNo]	;ax <- Root Directory中某sector号
+	mov cl, 1		;
+	call read_sector
+	
+	mov si, LoaderFileName ;ds:si -> "LOADER    BIN"
+	mov di, OffsetOfLoader ;es:di -> BaseOfLoader:0x0100
+	cld ;使DF=0（DF Direction Flag 方向位）
+	mov dx, 0x0e ;循环的次数16次
+LABEL_SEARCH_FOR_LOADERBIN:	;在加载到es:bx中的一个扇区中的32个Root Entry中寻找loader.bin
+	cmp dx, 0	;循环次数控制
+	jz LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR ;在Root Directory的全部扇区中继续寻找loader.bin（这里是14个扇区）
+	dec dx
+	;
+	mov cx, 11	;循环比较的次数，11是因为FAT12文件系统中文件名长度为11（8文件名+3后缀名）
+LABEL_CMP_FILENAME:
+	cmp cx, 0
+	jz LABEL_FILENAME_FOUND	;如果比较了11个字符都相等，表示找到
+	dec cx
+	;汇编语言中，串操作指令LODSB/LODSW是块装入指令，其具体操作是把SI指向的存储单元读入累加器,LODSB就读入AL,LODSW就读入AX中,然后SI自动增加或减小1或2.其常常是对数组或字符串中的元素逐个进行处理。
+	loadsb	;ds:si -> al 
+	cmp al, byte[es:di]
+	jz LABEL_GO_ON
+	jmp LABEL_DIFFERENT ;只要发现不一样的字符串就表示不是我们要找的
+
+LABEL_GO_ON:
+	inc di
+	jmp LABEL_CMP_FILENAME	;继续循环
+
+LABEL_DIFFERENT:
+	and di, 0xffe0	; di &= e0 为了让它指向本条目开头
+	add di, 0x20	; di+=0x20 下一个目录条目 在Root Directory中每一个每一个目录条目位32Byte 也就是0x20
+	mov si, LoaderFileName
+	jmp LABEL_SEARCH_FOR_LOADERBIN	;跳到单个扇区内的32个Root Entry中继续寻找
+
+LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR:
+	add word[wSectorNo], 1
+	jmp LABEL_SEARCH_IN_ROOT_DIR_BEGIN
+ 
+LABEL_NO_LOADERBIN:
+	mov dh, 2	;显示idx为2的字符串
+	call disp_str	;显示字符串
 	;显示
 	;call clean_screen
 	;call disp_str
 	jmp $
+LABEL_FILENAME_FOUND:
+	mov dh,1
+	call disp_str
+	jmp $
+
 ;使用BIOS 0x10 中断清屏
-;clean_screen:
-;	mov ax,0x0600
-;	mov bx, 0x0000
-;	mov cx, 0x0000
-;	mov dh, 39
-;	mov dl, 79
-;	int 0x10
-;	ret
+clear_screen:
+	mov ax,0x0600
+	mov bx, 0x0000
+	mov cx, 0x0000
+	mov dh, 39
+	mov dl, 79
+	int 0x10
+	ret
 ;使用BIOS 0x10中断显示字符串
-;disp_str:	
+;----------------------------------------------------------------------------
+; 函数名: DispStr
+;----------------------------------------------------------------------------
+; 作用:
+;	显示一个字符串, 函数开始时 dh 中应该是字符串序号(0-based)
+disp_str:
+	mov ax, MessageLength
+	mul dh	;乘以9 字符窗长度，用于偏移
+	add ax, BootMessage
+	mov bp, ax
+	mov ax, ds
+	mov es, ax
+	mov cx, MessageLength
+	mov ax, 0x1301
+	mov bx, 0x0007
+	mov dx, 0x0000
+	int 0x10
+	ret	
 ;	mov ax, BootMessage
 ;	mov bp, ax
 ;	mov cx, len
@@ -61,5 +146,59 @@ BOOT_START:
 ;BootMessage:
 ;	db "hello world!"
 ;len equ $-BootMessage
+;变量
+
+; 函数名：read_sector
+;-------------------------------------------------------------------------
+;作用
+;	从ax个Sector开始，将cl个Sector读入es:bx中
+read_sector:
+	; -----------------------------------------------------------------------
+	; 怎样由扇区号求扇区在磁盘中的位置 (扇区号 -> 柱面号, 起始扇区, 磁头号)
+	; -----------------------------------------------------------------------
+	; 设扇区号为 x
+	;                           ┌ 柱面号 = y >> 1
+	;       x           ┌ 商 y ┤
+	; -------------- => ┤      └ 磁头号 = y & 1
+	;  每磁道扇区数     │
+	;                   └ 余 z => 起始扇区号 = z + 1
+	push bp
+	mov bp, sp
+	sub sp, 2
+	
+	mov byte[bp-2], cl
+	push bx ;保存bx
+	mov bl, [BPB_SecPerTrk] ;bl除数
+	div bl 	;y 在 al中, z在ah中
+	inc ah	;z++
+	mov cl, al	;cl <-起始扇区号
+	mov dh, al	;dh <- y
+	shr al, 1
+	mov ch, al	;ch <- 柱面号
+	and dh, 1	;dh & 1 磁头号
+	pop bx		;回复bx
+	;至此柱面号 起始扇区 磁头号 全部得到
+	mov dl, [BS_DrvNum]	;驱动器号（0表示A盘）
+.GoOnReading:
+	mov ah, 2;
+	mov al,byte[bp-2];byte[bp-2]中开始保存的是传过来的cl（cl个扇区) 寄存器不够，所以需要使用栈保存局部变量
+	int 0x13
+	jc .GoOnReading ;如果读取出错CF会被置为1
+			;这时就不停的读，直到成功位置
+	add sp,2
+	pop bp
+	ret	
+
+
+	
+wRootDirSizeForLoop	dw RootDirSectors	;Root Directory 占用扇区数
+wSectorNo		dw 0			; 要读取的扇区号
+;字符串
+LoaderFileName	db 'LOADER  BIN',0
+
+MessageLength	equ	9 ;为了减缓代码，所以字符串长度均为9
+BootMessage:	db	'Booting  '	;
+Message1:	db	'Ready.   '
+Message2:	db	'No LOADER'
 times 510 - ($-$$) db 0
 dw 0xaa55
