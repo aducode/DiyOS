@@ -2,6 +2,7 @@
 ;nasm -o boot.bin boot.asm
 ;软盘引导扇区
 org 0x7c00
+BaseOfStack equ 0x7c00 ;栈基址（从0x7c00开始向底地址生长，也就是栈顶地址<0x7c00）
 jmp short BOOT_START	;Start to boot
 nop			;fat12开始的jmp段长度要求为3
 BS_OEMName	DB	'DIYCOM  '	;长度必须8字节
@@ -29,31 +30,37 @@ BOOT_START:
 	mov ax,cs
 	mov ds,ax
 	mov es,ax
+	mov ss,ax
+	mov sp,BaseOfStack
 	;显示
-	call clean_screen
-	call disp_str
+	;call clean_screen
+	;call disp_str
+	;loader不会很大，从磁盘加载到内存不会耗费太多时间，所以不需要屏幕显示提示
 	jmp $
-clean_screen:
-	mov ax,0x0600
-	mov bx, 0x0000
-	mov cx, 0x0000
-	mov dh, 24
-	mov dl, 79
-	int 0x10
-	ret
+;使用BIOS 0x10 中断清屏
+;clean_screen:
+;	mov ax,0x0600
+;	mov bx, 0x0000
+;	mov cx, 0x0000
+;	mov dh, 39
+;	mov dl, 79
+;	int 0x10
+;	ret
+;使用BIOS 0x10中断显示字符串
+;disp_str:	
+;	mov ax, BootMessage
+;	mov bp, ax
+;	mov cx, len
+;	mov ax, 0x1301
+;	mov bh, 0x00
+;	mov bl, 0x07
+;	mov dx, 0x0000
+;	int 0x10
+;	ret
+;使用BIOS 0x13中断操作磁盘
 
-disp_str:	
-	mov ax, BootMessage
-	mov bp, ax
-	mov cx, len
-	mov ax, 0x1301
-	mov bh, 0x00
-	mov bl, 0x07
-	mov dx, 0x0000
-	int 0x10
-	ret
-BootMessage:
-	db "hello world!"
-len equ $-BootMessage
+;BootMessage:
+;	db "hello world!"
+;len equ $-BootMessage
 times 510 - ($-$$) db 0
 dw 0xaa55

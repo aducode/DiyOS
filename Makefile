@@ -27,7 +27,7 @@ $(LOADER).bin:$(LOADER).asm
 	nasm $(LOADER).asm -o $(LOADER).bin
 
 clean:
-	-@rm $(FLOPPY) $(BOOT).bin $(LOADER).bin $(LOGS)
+	-@rm $(FLOPPY) *.bin $(LOGS)
 
 die:
 	@echo "kill bochs"
