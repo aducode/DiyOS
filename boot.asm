@@ -35,7 +35,6 @@ BOOT_START:
 	;显示
 	;call clean_screen
 	;call disp_str
-	;loader不会很大，从磁盘加载到内存不会耗费太多时间，所以不需要屏幕显示提示
 	jmp $
 ;使用BIOS 0x10 中断清屏
 ;clean_screen:
