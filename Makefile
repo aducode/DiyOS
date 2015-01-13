@@ -1,7 +1,7 @@
 .PHONY:clean mkimg run die all
 BOOT=boot
 FLOPPY=a.img
-LOGS = copy.txt bochsout.txt
+LOGS = *.txt *.log
 
 all:clean $(FLOPPY) run
 
