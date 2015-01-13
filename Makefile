@@ -1,4 +1,4 @@
-.PHONY:clean mkimg run die all
+.PHONY:clean img run die all
 BOOT=boot
 FLOPPY=a.img
 LOGS = *.txt *.log
@@ -8,11 +8,11 @@ all:clean $(FLOPPY) run
 run:
 	bochs -qf bochsrc
 
-mkimg:
+img:
 	bximage -fd -size=1.44 -q a.img
 
 
-$(FLOPPY):mkimg $(BOOT).bin
+$(FLOPPY):img $(BOOT).bin
 	dd if=$(BOOT).bin of=$(FLOPPY) bs=512 count=1 conv=notrunc
 
 $(BOOT).bin:$(BOOT).asm
