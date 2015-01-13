@@ -1,0 +1,10 @@
+display_library:sdl
+megs:32
+romimage:file=/usr/share/bochs/BIOS-bochs-latest
+vgaromimage:file=/usr/share/vgabios/vgabios.bin
+floppya:1_44=a.img, status=inserted
+boot:floppy
+log:bochsout.txt
+mouse:enabled=0
+#keyboard_mapping:enabled=1,map=/usr/share/bochs/keymaps/x11-pc-us.map
+#ketboard_mapping:enabled=1, map=/usr/share/bochs/keymaps/sdl-pc-us.map
