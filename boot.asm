@@ -48,6 +48,12 @@ BOOT_START:
 	mov word[wSectorNo], SectorNoOfRootDirectory
 LABEL_SEARCH_IN_ROOT_DIR_BEGIN: ;开始在根目录中搜索loader.bin
 	;while(wRootDirSizeForLoop > 0)
+	;mov ax, word[wRootDirSizeForLoop]
+	;mov ax, 2
+	;call debug
+	;mov dx, word[wRootDirSizeForLoop]
+	;and dx, 0x00FF
+	;call disp_str
 	cmp word[wRootDirSizeForLoop], 0 ;循环的时候wRootDirSizeForLoop从19不断减少，减少到0表示没有找到 
 	jz LABEL_NO_LOADERBIN ;循环完没有找到
 	;单次循环中
@@ -64,7 +70,7 @@ LABEL_SEARCH_IN_ROOT_DIR_BEGIN: ;开始在根目录中搜索loader.bin
 	mov di, OffsetOfLoader ;es:di -> BaseOfLoader:0x0100
 	cld ;使DF=0（DF Direction Flag 方向位）
 	;
-	mov dx, 0x10 ;循环的次数16次
+	mov dx, 0x20 ;循环的次数16次
 LABEL_SEARCH_FOR_LOADERBIN:	;在加载到es:bx中的一个扇区中的32个Root Entry中寻找loader.bin
 	cmp dx, 0	;循环次数控制
 	jz LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR ;在Root Directory的全部扇区中继续寻找loader.bin（这里是14个扇区）
@@ -96,6 +102,7 @@ LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR:
 	jmp LABEL_SEARCH_IN_ROOT_DIR_BEGIN
  
 LABEL_NO_LOADERBIN:
+	mov dl, 0
 	mov dh, 2	;显示idx为2的字符串
 	call disp_str	;显示字符串
 	;显示
@@ -103,6 +110,7 @@ LABEL_NO_LOADERBIN:
 	;call disp_str
 	jmp $
 LABEL_FILENAME_FOUND:
+	mov dl,0
 	mov dh,1
 	call disp_str
 	jmp $
@@ -112,7 +120,7 @@ clear_screen:
 	mov ax,0x0600
 	mov bx, 0x0000
 	mov cx, 0x0000
-	mov dh, 39
+	mov dh, 24
 	mov dl, 79
 	int 0x10
 	ret
@@ -122,6 +130,7 @@ clear_screen:
 ;----------------------------------------------------------------------------
 ; 作用:
 ;	显示一个字符串, 函数开始时 dh 中应该是字符串序号(0-based)
+;	dl -> row			
 disp_str:
 	mov ax, MessageLength
 	mul dh	;乘以9 字符窗长度，用于偏移
@@ -132,7 +141,8 @@ disp_str:
 	mov cx, MessageLength
 	mov ax, 0x1301
 	mov bx, 0x0007
-	mov dx, 0x0000
+	mov dh, dl
+	mov dl, 0x00
 	int 0x10
 	ret	
 ;	mov ax, BootMessage
@@ -192,6 +202,33 @@ read_sector:
 	pop bp
 	ret	
 
+;debug:	
+;	;call clear_screen
+;	add ax,debugMessage
+;	mov bp,ax
+;	mov cx, 1
+;	mov ax, 0x1301
+;	mov bx, 0x0107
+;	mov dx, 0x0000
+;	int 0x10		
+;
+;debugMessage:	db '0'
+;debugMessage1:	db '1'
+;debugMessage2:	db '2'
+;debugMessage3:	db '3'
+;debugMessage4:	db '4'
+;debugMessage5:	db '5'
+;debugMessage6:	db '6'
+;debugMessage7:	db '7'
+;debugMessage8:	db '8'
+;debugMessage9:	db '9'
+;debugMessage10:	db 'a'
+;debugMessage11:	db 'b'
+;debugMessage12:	db 'c'
+;debugMessage13:	db 'd'
+;debugMessage14:	db 'e'
+;debugMessage15:	db 'f'
+;debugMessage16:	db 'g'
 
 	
 wRootDirSizeForLoop	dw RootDirSectors	;Root Directory 占用扇区数
