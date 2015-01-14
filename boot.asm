@@ -259,8 +259,9 @@ LABEL_GET_FAT_ENTRY_OK:
 		
 
 	
-wRootDirSizeForLoop	dw RootDirSectors	;Root Directory 占用扇区数
+wRootDirSizeForLoop	dw RootDirSectors	; Root Directory 占用扇区数
 wSectorNo		dw 0			; 要读取的扇区号
+bOdd			dw 0			; 奇术还是偶数 flag变量
 ;字符串
 LoaderFileName	db 'LOADER  BIN',0
 
