@@ -51,7 +51,7 @@ BOOT_START:
 	mov dl ,0
 	call disp_str
 	xor ah, ah
-	xr dl, dl
+	xor dl, dl
 	int 0x13	;软驱复位
 	;int wSectorNo = SectorNoOfRootDirectory	
 	mov word[wSectorNo], SectorNoOfRootDirectory
