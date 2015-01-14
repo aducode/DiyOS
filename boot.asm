@@ -184,7 +184,7 @@ read_sector:
 	mov bl, [BPB_SecPerTrk] ;bl除数
 	div bl 	;y 在 al中, z在ah中
 	inc ah	;z++
-	mov cl, al	;cl <-起始扇区号
+	mov cl, ah	;cl <-起始扇区号
 	mov dh, al	;dh <- y
 	shr al, 1
 	mov ch, al	;ch <- 柱面号
