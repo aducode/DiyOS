@@ -82,7 +82,7 @@ LABEL_CMP_FILENAME:
 	jz LABEL_FILENAME_FOUND	;如果比较了11个字符都相等，表示找到
 	dec cx
 	;汇编语言中，串操作指令LODSB/LODSW是块装入指令，其具体操作是把SI指向的存储单元读入累加器,LODSB就读入AL,LODSW就读入AX中,然后SI自动增加或减小1或2.其常常是对数组或字符串中的元素逐个进行处理。
-	loadsb	;ds:si -> al 
+	lodsb	;ds:si -> al ;开始写错成loadsb了，找了好久的错误。（错误的会被当作标签，编译器不会提示错误）
 	cmp al, byte[es:di]
 	jz LABEL_GO_ON
 	jmp LABEL_DIFFERENT ;只要发现不一样的字符串就表示不是我们要找的

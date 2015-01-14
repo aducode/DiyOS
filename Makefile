@@ -4,14 +4,15 @@ LOADER=loader
 FLOPPY=a.img
 LOGS = *.txt
 
+BXIMAGE=bximage -mode=create -fd=1.44M -q
+
 all:clean $(FLOPPY) run
 
 run:
 	bochs -qf bochsrc
 
 img:
-	bximage -fd -size=1.44 -q a.img
-
+	$(BXIMAGE) $(FLOPPY)
 
 $(FLOPPY):img $(BOOT).bin $(LOADER).bin
 	dd if=$(BOOT).bin of=$(FLOPPY) bs=512 count=1 conv=notrunc
