@@ -51,7 +51,7 @@ BOOT_START:
 	mov dl ,0
 	call disp_str
 	xor ah, ah
-	xor dl, dl
+	xr dl, dl
 	int 0x13	;软驱复位
 	;int wSectorNo = SectorNoOfRootDirectory	
 	mov word[wSectorNo], SectorNoOfRootDirectory
@@ -134,9 +134,9 @@ LABEL_FILENAME_FOUND:
 	mov bx, OffsetOfLoader	;bx <- OffsetOfLoader 此时加载到es:di的Root Directory Sector已经没有作用，这块内存可以回收作为加载loader.bin数据使用
 	mov ax, cx
 LABEL_GOON_LOADING_FILE:
-	mov dh, 0
-	mov dl ,0x00
-	call disp_str
+	;mov dh, 0
+	;mov dl ,0x00
+	;call disp_str 这里不能随便调用disp_str，因为里面改变亮ax的值，下面push ax 再pop出来时，是错误的值了
 	;以下用于显示加载进度
 	push ax
 	push bx
@@ -160,10 +160,6 @@ LABEL_GOON_LOADING_FILE:
 	add bx, [BPB_BytsPerSec]
 	jmp LABEL_GOON_LOADING_FILE
 LABEL_FILE_LOADED:
-	call clear_screen
-	mov dl,0
-	mov dh,1
-	call disp_str
 	call clear_screen
 	jmp BaseOfLoader:OffsetOfLoader ;跳转到loader.bin的开始
 
@@ -202,21 +198,6 @@ disp_str:
 	mov dl, 0x00
 	int 0x10
 	ret	
-;	mov ax, BootMessage
-;	mov bp, ax
-;	mov cx, len
-;	mov ax, 0x1301
-;	mov bh, 0x00
-;	mov bl, 0x07
-;	mov dx, 0x0000
-;	int 0x10
-;	ret
-;使用BIOS 0x13中断操作磁盘
-
-;BootMessage:
-;	db "hello world!"
-;len equ $-BootMessage
-;变量
 
 ; 函数名：read_sector
 ;-------------------------------------------------------------------------
