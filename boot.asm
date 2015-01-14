@@ -11,7 +11,7 @@ RootDirSectors		equ	14	;根目录占用的扇区数
 SectorNoOfRootDirectory equ 	19	;Root Directory的第一个扇区号
 
 SectorNoOfFAT1		equ 	1	;FAT1 的第一个扇区号 = BPB_RsvdSecCnt
-;DeltaSectorNo		equ	17	;
+DeltaSectorNo		equ	17	;DeltaSectorNo = Boot占用扇区数1 + (FAT数2 * FAT占用扇区数9) - 2 =17
 
 
 
@@ -39,7 +39,7 @@ BS_FileSysType	DB	'FAT12   '		;文件系统类型，必须8个字节
 
 BOOT_START:
 	;清屏
-	;call clear_screen
+	call clear_screen
 	;实模式下
 	mov ax,cs
 	mov ds,ax
@@ -107,7 +107,7 @@ LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR:
 	jmp LABEL_SEARCH_IN_ROOT_DIR_BEGIN
  
 LABEL_NO_LOADERBIN:
-	call clear_screen
+	;call clear_screen
 	mov dl, 0
 	mov dh, 2	;显示idx为2的字符串
 	call disp_str	;显示字符串
@@ -116,10 +116,51 @@ LABEL_NO_LOADERBIN:
 	;call disp_str
 	jmp $
 LABEL_FILENAME_FOUND:
+	;如果找到了，此时0x9000:0x0100里保存的是有loader.bin的Root Directory的一个扇区，此时es:di(0x9000:di)保存的是找到的Root Entry
+	mov ax, RootDirSectors
+	and di, 0xFFE0	;di->当前条目开始 (此时di=0x012b & 0xffe0后= 0x0120正是一个root entry的开头
+	add di, 0x001A	; di->首sector (此时di=0x0120 +0x001A 后=0x013A 0x001A是一个root entry中DIR_FstClus 此条木对应开始簇号，又因为在这个软盘中一簇对应一个扇区，所以即是文件第一个扇区数（这个扇区数是相对数据区来说的，真正的物理扇区号还需要进一步计算，同时这个也是FAT表的下表号）)
+	mov cx, word[es:di]	;cx 此时保存的是文件loader.bin数据开始的第一个扇区号
+	push cx	;保存此Sector在FAT中的序号
+	;以下开始计算真正的物理扇区号
+	add cx, ax
+	add cx, DeltaSectorNo	;cl<- loader.bin 的起始扇区号（从0开始)
+	mov ax, BaseOfLoader
+	mov es, ax 		;es <- BaseOfLoader
+	mov bx, OffsetOfLoader	;bx <- OffsetOfLoader 此时加载到es:di的Root Directory Sector已经没有作用，这块内存可以回收作为加载loader.bin数据使用
+	mov ax, cx
+LABEL_GOON_LOADING_FILE:
+	;以下用于显示加载进度
+	push ax
+	push bx
+	mov ah, 0x0013
+	mov al, '.'
+	mov bl, 0x000F
+	int 0x10
+	pop bx
+	pop ax
+	
+	mov cl, 1
+	call read_sector
+	pop ax	;取出此Sector在FAT中的序号
+	call get_FAT_entry
+	cmp ax, 0x0FFF
+	jz LABEL_FILE_LOADED ;表示加载完成
+	push ax
+	mov dx, RootDirSectors
+	add ax, dx
+	add ax, DeltaSectorNo
+	add bx, [BPB_BytsPerSec]
+	jmp LABEL_GOON_LOADING_FILE
+LABEL_FILE_LOADED:
+	call clear_screen
+	mov dl, 0	
+	mov dh, 1
+	call disp_str
 	;mov dl,0
 	;mov dh,1
 	;call disp_str
-	jmp $
+	jmp BaseOfLoader:OffsetOfLoader ;跳转到loader.bin的开始
 
 ;使用BIOS 0x10 中断清屏
 clear_screen:
