@@ -10,6 +10,11 @@ OffsetOfLoader		equ	0x0100	; loader.bin被加载到的位置 --- 偏移地址 0x
 RootDirSectors		equ	14	;根目录占用的扇区数
 SectorNoOfRootDirectory equ 	19	;Root Directory的第一个扇区号
 
+SectorNoOfFAT1		equ 	1	;FAT1 的第一个扇区号 = BPB_RsvdSecCnt
+;DeltaSectorNo		equ	17	;
+
+
+
 jmp short BOOT_START	;Start to boot
 nop			;fat12开始的jmp段长度要求为3
 BS_OEMName	DB	'DIYCOM  '	;长度必须8字节
@@ -34,7 +39,7 @@ BS_FileSysType	DB	'FAT12   '		;文件系统类型，必须8个字节
 
 BOOT_START:
 	;清屏
-	call clear_screen
+	;call clear_screen
 	;实模式下
 	mov ax,cs
 	mov ds,ax
@@ -102,6 +107,7 @@ LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR:
 	jmp LABEL_SEARCH_IN_ROOT_DIR_BEGIN
  
 LABEL_NO_LOADERBIN:
+	call clear_screen
 	mov dl, 0
 	mov dh, 2	;显示idx为2的字符串
 	call disp_str	;显示字符串
@@ -110,9 +116,9 @@ LABEL_NO_LOADERBIN:
 	;call disp_str
 	jmp $
 LABEL_FILENAME_FOUND:
-	mov dl,0
-	mov dh,1
-	call disp_str
+	;mov dl,0
+	;mov dh,1
+	;call disp_str
 	jmp $
 
 ;使用BIOS 0x10 中断清屏
@@ -202,33 +208,55 @@ read_sector:
 	pop bp
 	ret	
 
-;debug:	
-;	;call clear_screen
-;	add ax,debugMessage
-;	mov bp,ax
-;	mov cx, 1
-;	mov ax, 0x1301
-;	mov bx, 0x0107
-;	mov dx, 0x0000
-;	int 0x10		
-;
-;debugMessage:	db '0'
-;debugMessage1:	db '1'
-;debugMessage2:	db '2'
-;debugMessage3:	db '3'
-;debugMessage4:	db '4'
-;debugMessage5:	db '5'
-;debugMessage6:	db '6'
-;debugMessage7:	db '7'
-;debugMessage8:	db '8'
-;debugMessage9:	db '9'
-;debugMessage10:	db 'a'
-;debugMessage11:	db 'b'
-;debugMessage12:	db 'c'
-;debugMessage13:	db 'd'
-;debugMessage14:	db 'e'
-;debugMessage15:	db 'f'
-;debugMessage16:	db 'g'
+
+;----------------------------------------------------------------------------
+; 函数名: get_FAT_entry
+;----------------------------------------------------------------------------
+; 作用:
+;	找到序号为 ax 的 Sector 在 FAT 中的条目, 结果放在 ax 中
+;	需要注意的是, 中间需要读 FAT 的扇区到 es:bx 处, 所以函数一开始保存了 es 和 bx
+get_FAT_entry:
+	push es
+	push bx
+	push ax
+	mov ax, BaseOfLoader
+	sub ax, 0x0100
+	mov es, ax
+	pop ax
+	mov byte [bOdd], 0
+	mov bx, 3
+	mul bx
+	mov bx, 2
+	div bx
+	cmp dx, 0
+	jz LABEL_EVEN
+	mov byte[bOdd], 1
+LABEL_EVEN:
+	;现在ax中是FAT Entry在FAT中的偏移量，下面来计算FAT Entry在哪个扇区中（FAT占用不止一个扇区，9个）
+	xor dx, dx
+	mov bx, [BPB_BytsPerSec]
+	div bx; dx:ax / BPB_BytePerSec
+	      ;ax<-商
+	      ;dx<-余数
+	push dx
+	mov bx, 0;
+	add ax, SectorNoOfFAT1
+	mov cl, 2
+	call read_sector
+	pop dx
+	add bx, dx
+	mov ax, [es:bx]
+	cmp byte[bOdd], 1
+	jnz LABEL_EVEN_2
+	shr ax, 4
+LABEL_EVEN_2:
+	and ax, 0x0FFF
+LABEL_GET_FAT_ENTRY_OK:
+	pop bx
+	pop es
+	ret
+	
+		
 
 	
 wRootDirSizeForLoop	dw RootDirSectors	;Root Directory 占用扇区数
