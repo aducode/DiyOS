@@ -38,19 +38,18 @@ BS_VolLab	DB	'DiyOS_V0.01'	;卷标，必须11字节
 BS_FileSysType	DB	'FAT12   '		;文件系统类型，必须8个字节
 
 BOOT_START:
-	;清屏
-	call clear_screen
-	;显示boot
-	mov dh, 0
-	mov dl, 0
-	call disp_str
-
 	;实模式下
 	mov ax,cs
 	mov ds,ax
 	mov es,ax
 	mov ss,ax
 	mov sp,BaseOfStack
+	;清屏
+	call clear_screen
+	;显示boot
+	mov dh, 0
+	mov dl ,0
+	call disp_str
 	xor ah, ah
 	xor dl, dl
 	int 0x13	;软驱复位
