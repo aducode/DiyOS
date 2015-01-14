@@ -40,6 +40,11 @@ BS_FileSysType	DB	'FAT12   '		;文件系统类型，必须8个字节
 BOOT_START:
 	;清屏
 	call clear_screen
+	;显示boot
+	mov dh, 0
+	mov dl, 0
+	call disp_str
+
 	;实模式下
 	mov ax,cs
 	mov ds,ax
@@ -108,7 +113,7 @@ LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR:
  
 LABEL_NO_LOADERBIN:
 	;call clear_screen
-	mov dl, 0
+	mov dl, 1
 	mov dh, 2	;显示idx为2的字符串
 	call disp_str	;显示字符串
 	;显示
@@ -130,10 +135,13 @@ LABEL_FILENAME_FOUND:
 	mov bx, OffsetOfLoader	;bx <- OffsetOfLoader 此时加载到es:di的Root Directory Sector已经没有作用，这块内存可以回收作为加载loader.bin数据使用
 	mov ax, cx
 LABEL_GOON_LOADING_FILE:
+	mov dh, 0
+	mov dl ,0x00
+	call disp_str
 	;以下用于显示加载进度
 	push ax
 	push bx
-	mov ah, 0x0013
+	mov ah, 0x000E
 	mov al, '.'
 	mov bl, 0x000F
 	int 0x10
@@ -154,14 +162,17 @@ LABEL_GOON_LOADING_FILE:
 	jmp LABEL_GOON_LOADING_FILE
 LABEL_FILE_LOADED:
 	call clear_screen
-	mov dl, 0	
-	mov dh, 1
+	mov dl,0
+	mov dh,1
 	call disp_str
-	;mov dl,0
-	;mov dh,1
-	;call disp_str
+	call clear_screen
 	jmp BaseOfLoader:OffsetOfLoader ;跳转到loader.bin的开始
 
+
+
+
+;函数 clear_screen
+;作用：清空屏幕
 ;使用BIOS 0x10 中断清屏
 clear_screen:
 	mov ax,0x0600
