@@ -12,5 +12,3 @@ org 0x0100
 	mov al, 'L'
 	mov [gs:((80*0+39)*2)], ax	;屏幕第0行 第39列
 	jmp $
-	
-times 512*100 db 0

@@ -140,10 +140,12 @@ LABEL_GOON_LOADING_FILE:
 	;以下用于显示加载进度
 	push ax
 	push bx
+	
 	mov ah, 0x000E
 	mov al, '.'
 	mov bl, 0x000F
 	int 0x10
+
 	pop bx
 	pop ax
 	
