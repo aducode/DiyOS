@@ -29,4 +29,4 @@ org 0x0100
 	jmp $
 
 
-times 512*200 db 0
+;times 512*200 db 0

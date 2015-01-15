@@ -57,12 +57,6 @@ BOOT_START:
 	mov word[wSectorNo], SectorNoOfRootDirectory
 LABEL_SEARCH_IN_ROOT_DIR_BEGIN: ;开始在根目录中搜索loader.bin
 	;while(wRootDirSizeForLoop > 0)
-	;mov ax, word[wRootDirSizeForLoop]
-	;mov ax, 2
-	;call debug
-	;mov dx, word[wRootDirSizeForLoop]
-	;and dx, 0x00FF
-	;call disp_str
 	cmp word[wRootDirSizeForLoop], 0 ;循环的时候wRootDirSizeForLoop从19不断减少，减少到0表示没有找到 
 	jz LABEL_NO_LOADERBIN ;循环完没有找到
 	;单次循环中
@@ -158,6 +152,9 @@ LABEL_GOON_LOADING_FILE:
 	add bx, [BPB_BytsPerSec]
 	jmp LABEL_GOON_LOADING_FILE
 LABEL_FILE_LOADED:
+	mov dh,1
+	mov dl,1
+	call disp_str
 	call clear_screen
 	jmp BaseOfLoader:OffsetOfLoader ;跳转到loader.bin的开始
 
