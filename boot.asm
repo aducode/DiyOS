@@ -111,13 +111,9 @@ LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR:
 	jmp LABEL_SEARCH_IN_ROOT_DIR_BEGIN
  
 LABEL_NO_LOADERBIN:
-	;call clear_screen
 	mov dl, 1
 	mov dh, 2	;显示idx为2的字符串
 	call disp_str	;显示字符串
-	;显示
-	;call clean_screen
-	;call disp_str
 	jmp $
 LABEL_FILENAME_FOUND:
 	;如果找到了，此时0x9000:0x0100里保存的是有loader.bin的Root Directory的一个扇区，此时es:di(0x9000:di)保存的是找到的Root Entry
@@ -172,8 +168,14 @@ LABEL_FILE_LOADED:
 ;作用：清空屏幕
 ;使用BIOS 0x10 中断清屏
 clear_screen:
-	mov ax,0x0600
+	;设置光标位置
+	mov ax, 0x0200
 	mov bx, 0x0000
+	mov dx, 0x0000
+	int 0x10
+
+	mov ax,0x0600
+	mov bx, 0x0700	;清屏的同时设置文字颜色
 	mov cx, 0x0000
 	mov dh, 24
 	mov dl, 79

@@ -1,4 +1,5 @@
-.PHONY:clean img run die all
+.PHONY:clean img run die all \
+	run-without-loader
 BOOT=boot
 LOADER=loader
 FLOPPY=a.img
@@ -8,6 +9,10 @@ BXIMAGE=bximage -mode=create -fd=1.44M -q
 
 all:clean $(FLOPPY) run
 
+run-without-loader:clean img $(BOOT).bin
+	dd if=$(BOOT).bin of=$(FLOPPY) bs=512 count=1 conv=notrunc
+	bochs -qf bochsrc
+	
 run:
 	bochs -qf bochsrc
 
