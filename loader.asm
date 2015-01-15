@@ -1,3 +1,5 @@
+;这里可以突破512kb的限制了
+; 0x0100 在boot.asm中会将loader.bin放到0x9000:0x0100处，所以这里org 0x0100
 org 0x0100
 	xor ax, ax
 	mov es, ax
