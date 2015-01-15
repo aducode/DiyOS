@@ -1,4 +1,7 @@
 ;这里可以突破512kb的限制了
+;loader.asm中需要做至少两件事：
+;	1.加载内核入neicun
+;	2.跳入保护模式
 ; 0x0100 在boot.asm中会将loader.bin放到0x9000:0x0100处，所以这里org 0x0100
 org 0x0100
 	xor ax, ax
