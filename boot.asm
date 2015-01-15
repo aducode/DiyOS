@@ -2,6 +2,13 @@
 ;nasm -o boot.bin boot.asm
 ;软盘引导扇区
 org 0x7c00
+
+;加载boot.bin使用的常量
+BaseOfStack		equ	0x7c00	;栈基址（从0x7c00开始向底地址生长，也就是栈顶地址<0x7c00）
+BaseOfLoader		equ	0x9000	;loader.bin被加载到的位置 --- 段地址
+OffsetOfLoader		equ	0x0100	; loader.bin被加载到的位置 --- 偏移地址 0x9000:0x0x100这里空闲
+
+;开始
 jmp short BOOT_START	;Start to boot
 nop			;fat12开始的jmp段长度要求为3
 
@@ -125,7 +132,7 @@ LABEL_FILE_LOADED:
 	mov dh,1
 	mov dl,1
 	call disp_str
-	call clear_screen
+	;call clear_screen
 	jmp BaseOfLoader:OffsetOfLoader ;跳转到loader.bin的开始
 
 

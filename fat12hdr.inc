@@ -1,3 +1,7 @@
+;fat12 头
+;jmp START
+;nop
+;以下信息不止boot.bin中使用，loader.bin也需要直到一些BPB的信息
 BS_OEMName	DB	'DIYCOM  '	;长度必须8字节
 BPB_BytsPerSec	DW	512		;每扇区字节数
 BPB_SecPerClus	DB	1		;每簇多少扇区
@@ -18,10 +22,7 @@ BS_VolID	DB	0		;卷序列号
 BS_VolLab	DB	'DiyOS_V0.01'	;卷标，必须11字节
 BS_FileSysType	DB	'FAT12   '		;文件系统类型，必须8个字节
 
-;常量
-BaseOfStack		equ	0x7c00	;栈基址（从0x7c00开始向底地址生长，也就是栈顶地址<0x7c00）
-BaseOfLoader		equ	0x9000	;loader.bin被加载到的位置 --- 段地址
-OffsetOfLoader		equ	0x0100	; loader.bin被加载到的位置 --- 偏移地址 0x9000:0x0x100这里空闲
+;fat12磁盘文件系统相关常量
 RootDirSectors		equ	14	;根目录占用的扇区数
 SectorNoOfRootDirectory equ 	19	;Root Directory的第一个扇区号
 
