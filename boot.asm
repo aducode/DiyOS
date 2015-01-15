@@ -13,7 +13,7 @@ SectorNoOfRootDirectory equ 	19	;Root Directory的第一个扇区号
 SectorNoOfFAT1		equ 	1	;FAT1 的第一个扇区号 = BPB_RsvdSecCnt
 DeltaSectorNo		equ	17	;DeltaSectorNo = Boot占用扇区数1 + (FAT数2 * FAT占用扇区数9) - 2 =17
 
-
+;ReadRetryCount		equ	5	;磁盘读取重试次数
 
 jmp short BOOT_START	;Start to boot
 nop			;fat12开始的jmp段长度要求为3
@@ -109,7 +109,7 @@ LABEL_NO_LOADERBIN:
 	mov dh, 2	;显示idx为2的字符串
 	call disp_str	;显示字符串
 	jmp $
-LABEL_FILENAME_FOUND:
+LABEL_FILENAME_FOUND:	;物理地址  (0x7cb6 可以break到这里)
 	;如果找到了，此时0x9000:0x0100里保存的是有loader.bin的Root Directory的一个扇区，此时es:di(0x9000:di)保存的是找到的Root Entry
 	mov ax, RootDirSectors
 	and di, 0xFFE0	;di->当前条目开始 (此时di=0x012b & 0xffe0后= 0x0120正是一个root entry的开头
@@ -122,7 +122,7 @@ LABEL_FILENAME_FOUND:
 	mov ax, BaseOfLoader
 	mov es, ax 		;es <- BaseOfLoader
 	mov bx, OffsetOfLoader	;bx <- OffsetOfLoader 此时加载到es:di的Root Directory Sector已经没有作用，这块内存可以回收作为加载loader.bin数据使用
-	mov ax, cx
+	mov ax, cx		;ax <- sector 号
 LABEL_GOON_LOADING_FILE:
 	;mov dh, 0
 	;mov dl ,0x00
@@ -204,7 +204,11 @@ disp_str:
 ;-------------------------------------------------------------------------
 ;作用
 ;	从ax个Sector开始，将cl个Sector读入es:bx中
+;	注意 bx 为16位寄存器 最大值0xFFFF
+;	loader.asm中如果结尾有times 512*200 db 0 那么在fat表中不断的查，会连续使用130多个sector，dx不断累加，(测试中的结果是0xFF00 ，然后在int 0x13时，磁盘服务会出错，导致不断重试)
 read_sector:
+	;初始化变量
+	;mov byte[wRetryCount],	ReadRetryCount
 	; -----------------------------------------------------------------------
 	; 怎样由扇区号求扇区在磁盘中的位置 (扇区号 -> 柱面号, 起始扇区, 磁头号)
 	; -----------------------------------------------------------------------
@@ -235,12 +239,24 @@ read_sector:
 	mov ah, 2;
 	mov al,byte[bp-2];byte[bp-2]中开始保存的是传过来的cl（cl个扇区) 寄存器不够，所以需要使用栈保存局部变量
 	int 0x13
-	jc .GoOnReading ;如果读取出错CF会被置为1
+	jc .GoOnReading
+;	jnc .ReadSuccess	;如果成功
+;.ReadError:			;如果失败重试 
+;	cmp byte[wRetryCount], 0
+;	jz .ReadFail	;重试次数到达，失败
+;	dec byte[wRetryCount]
+;	jmp .GoOnReading ;如果读取出错CF会被置为1
 			;这时就不停的读，直到成功位置
+;.ReadSuccess:
 	add sp,2
 	pop bp
 	ret	
-
+.ReadFail:
+	call clear_screen
+	mov dh, 3
+	mov dl, 0
+	call disp_str
+	jmp $	
 
 ;----------------------------------------------------------------------------
 ; 函数名: get_FAT_entry
@@ -294,7 +310,9 @@ LABEL_GET_FAT_ENTRY_OK:
 	
 wRootDirSizeForLoop	dw RootDirSectors	; Root Directory 占用扇区数
 wSectorNo		dw 0			; 要读取的扇区号
-bOdd			dw 0			; 奇术还是偶数 flag变量
+bOdd			dw 0			; 奇数还是偶数 flag变量
+
+;wRetryCount		db 0			; 磁盘读取重试次数
 ;字符串
 LoaderFileName	db 'LOADER  BIN',0
 
@@ -302,5 +320,6 @@ MessageLength	equ	9 ;为了减缓代码，所以字符串长度均为9
 BootMessage:	db	'Booting  '	;
 Message1:	db	'Ready.   '
 Message2:	db	'No LOADER'
+;Message3:	db	'Read Fail'
 times 510 - ($-$$) db 0
 dw 0xaa55
