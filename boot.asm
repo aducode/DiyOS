@@ -1,12 +1,12 @@
-boot.asm
+;boot.asm
 ;nasm -o boot.bin boot.asm
 ;软盘引导扇区
 org 0x7c00
-
+%include	"memmap.inc"
 ;加载boot.bin使用的常量
-BaseOfStack		equ	0x7c00	;栈基址（从0x7c00开始向底地址生长，也就是栈顶地址<0x7c00）
-BaseOfLoaded		equ	0x9000	;loader.bin被加载到的位置 --- 段地址
-OffsetOfLoaded		equ	0x0100	; loader.bin被加载到的位置 --- 偏移地址 0x9000:0x0x100这里空闲
+BaseOfStack		equ	BaseOfBootStack;0x7c00	;栈基址（从0x7c00开始向底地址生长，也就是栈顶地址<0x7c00）
+BaseOfLoaded		equ	BaseOfLoader;0x9000		;loader.bin被加载到的位置 --- 段地址
+OffsetOfLoaded		equ	OffsetOfLoader;0x0100		; loader.bin被加载到的位置 --- 偏移地址 0x9000:0x0x100这里空闲
 
 ;开始
 jmp short BOOT_START	;Start to boot

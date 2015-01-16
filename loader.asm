@@ -4,9 +4,10 @@
 ;	2.跳入保护模式
 ; 0x0100 在boot.asm中会将loader.bin放到0x9000:0x0100处，所以这里org 0x0100
 org 0x0100
-BaseOfStack	equ	0x0100	;栈地址 0x800000 - 0x80100作为loader的栈使用
-BaseOfLoaded	equ	0x8000	;内核被加载到的段地址
-OffsetOfLoaded	equ	0x0000	;内核被加载到的偏移地址	
+%include	"memmap.inc"
+BaseOfStack	equ	BaseOfLoaderStack;0x0100	;栈地址 0x800000 - 0x80100作为loader的栈使用
+BaseOfLoaded	equ	BaseOfKernel;0x8000		;内核被加载到的段地址
+OffsetOfLoaded	equ	OffsetOfKernel;0x0000		;内核被加载到的偏移地址	
 jmp LOADER_START
 %include	"fat12hdr.inc"
 ;loader.bin开始
