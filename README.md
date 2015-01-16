@@ -11,9 +11,10 @@
 	1.2. loader.asm  loader.bin源码，boot.bin加载loader，loader用于真正加载操作系统内核到内存
 	1.3. boot/include/	被引用的目录
 		1.3.1.fat12hdr.in	供loader.asm boot.asm include使用的，里面定义了软盘的一些信息和常量
-		1.3.2.lib.inc	定义了一些共用汇编函数 供boot loader使用，用宏_BOOT_USE_控制
+		1.3.2.lib16.inc	定义了一些共用汇编函数 供boot loader使用，用宏_BOOT_USE_控制 实模式下使用
 		1.3.3.memmap.inc	定义了内存地址分布
 		1.3.4.pm.inc	定义了GDT IDT 相关的宏
+		1.3.5. lib32.inc	定义了一些函数，保护模式下使用
 	1.4.Makefile	make：编译boot.bin loader.bin
 2.config/
 	2.1.bochsrc	bochs的配置文件 bochs -qf config/bochsrc

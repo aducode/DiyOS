@@ -23,11 +23,11 @@ BOOT_START:
 	mov ss,ax
 	mov sp,BaseOfStack
 	;清屏
-	call clear_screen
+	call clear_screen16
 	;显示boot
 	mov dh, 0
 	mov dl ,0
-	call disp_str
+	call disp_str16
 	xor ah, ah
 	xor dl, dl
 	int 0x13	;软驱复位
@@ -45,7 +45,7 @@ LABEL_SEARCH_IN_ROOT_DIR_BEGIN: ;开始在根目录中搜索loader.bin
 	mov bx, OffsetOfLoaded	;bx <- OffsetOfLoaded
 	mov ax, [wSectorNo]	;ax <- Root Directory中某sector号
 	mov cl, 1		;
-	call read_sector
+	call read_sector16
 	
 	mov si, LoaderFileName ;ds:si -> "LOADER    BIN"
 	mov di, OffsetOfLoaded ;es:di -> BaseOfLoaded:0x0100
@@ -85,7 +85,7 @@ LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR:
 LABEL_NO_LOADERBIN:
 	mov dl, 2
 	mov dh, 1	;显示idx为2的字符串
-	call disp_str	;显示字符串
+	call disp_str16	;显示字符串
 	jmp $
 LABEL_FILENAME_FOUND:	;物理地址  (0x7cb6 可以break到这里)
 	;如果找到了，此时0x9000:0x0100里保存的是有loader.bin的Root Directory的一个扇区，此时es:di(0x9000:di)保存的是找到的Root Entry
@@ -118,9 +118,9 @@ LABEL_GOON_LOADING_FILE:
 	pop ax
 	
 	mov cl, 1
-	call read_sector
+	call read_sector16
 	pop ax	;取出此Sector在FAT中的序号
-	call get_FAT_entry
+	call get_FAT_entry16
 	cmp ax, 0x0FFF
 	jz LABEL_FILE_LOADED ;表示加载完成
 	push ax
@@ -132,11 +132,11 @@ LABEL_GOON_LOADING_FILE:
 LABEL_FILE_LOADED:
 	mov dh,1
 	mov dl,1
-	call disp_str
+	call disp_str16
 	;call clear_screen
 	jmp BaseOfLoaded:OffsetOfLoaded ;跳转到loader.bin的开始
 
-%include	"lib.inc"
+%include	"lib16.inc"
 
 ;字符串
 LoaderFileName	db 'LOADER  BIN',0

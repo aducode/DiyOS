@@ -1,9 +1,11 @@
+;显示文字的颜色
+disp_str_color16	equ 	0x0F
 ;定义boot.asm和loader.asm都会用到的一些函数
 ; -----------------------------------------------------------------------------------
 ;函数 clear_screen
 ;作用：清空屏幕
 ;使用BIOS 0x10 中断清屏
-clear_screen:
+clear_screen16:
 	;设置光标位置
 	mov ax, 0x0200
 	mov bx, 0x0000
@@ -11,7 +13,9 @@ clear_screen:
 	int 0x10
 
 	mov ax,0x0600
-	mov bx, 0x0700	;清屏的同时设置文字颜色
+	;mov bx, 0x0700	;清屏的同时设置文字颜色
+	mov bh, disp_str_color16
+	mov bl, 0x00
 	mov cx, 0x0000
 	mov dh, 24
 	mov dl, 79
@@ -24,7 +28,7 @@ clear_screen:
 ; 作用:
 ;	显示一个字符串, 函数开始时 dl 中应该是字符串序号(0-based)
 ;	dh -> row			
-disp_str:
+disp_str16:
 	mov ax, MessageLength
 	mul dl	;乘以9 字符窗长度，用于偏移
 	add ax, Message
@@ -33,7 +37,9 @@ disp_str:
 	mov es, ax
 	mov cx, MessageLength
 	mov ax, 0x1301
-	mov bx, 0x0007
+	;mov bx, 0x0007
+	mov bh, 0x00
+	mov bl, disp_str_color16
 	mov dl, 0x00
 	int 0x10
 	ret	
@@ -53,7 +59,7 @@ disp_str:
 ;	从ax个Sector开始，将cl个Sector读入es:bx中
 ;	注意 bx 为16位寄存器 最大值0xFFFF
 ;	loader.asm中如果结尾有times 512*200 db 0 那么在fat表中不断的查，会连续使用130多个sector，dx不断累加，(测试中的结果是0xFF00 ，然后在int 0x13时，磁盘服务会出错，导致不断重试)
-read_sector:
+read_sector16:
 	;初始化变量
 	;mov byte[wRetryCount],	ReadRetryCount
 	; -----------------------------------------------------------------------
@@ -99,10 +105,10 @@ read_sector:
 	pop bp
 	ret	
 .ReadFail:
-	call clear_screen
+	call clear_screen16
 	mov dh, 3
 	mov dl, 0
-	call disp_str
+	call disp_str16
 	jmp $	
 
 ;----------------------------------------------------------------------------
@@ -111,7 +117,7 @@ read_sector:
 ; 作用:
 ;	找到序号为 ax 的 Sector 在 FAT 中的条目, 结果放在 ax 中
 ;	需要注意的是, 中间需要读 FAT 的扇区到 es:bx 处, 所以函数一开始保存了 es 和 bx
-get_FAT_entry:
+get_FAT_entry16:
 	push es
 	push bx
 	push ax
@@ -138,7 +144,7 @@ LABEL_EVEN:
 	mov bx, 0;
 	add ax, SectorNoOfFAT1
 	mov cl, 2
-	call read_sector
+	call read_sector16
 	pop dx
 	add bx, dx
 	mov ax, [es:bx]
@@ -166,7 +172,7 @@ bOdd			dw 0			; 奇数还是偶数 flag变量
 ;函数名:kill_motor
 ;作用：
 ;	关闭软驱马达
-kill_motor:
+kill_motor16:
 	push dx
 	mov dx,	0x03F2
 	mov al, 0
