@@ -135,7 +135,7 @@ LABEL_FILE_LOADED:
 	;call clear_screen
 	jmp BaseOfLoaded:OffsetOfLoaded ;跳转到loader.bin的开始
 
-%include	"lib.inc"
+%include	"bootlib.inc"
 
 ;字符串
 LoaderFileName	db 'LOADER  BIN',0
