@@ -130,7 +130,7 @@ LABEL_FILE_LOADED:
 	mov dl,1
 	mov dh,1
 	call disp_str
-	jmp $
+	jmp BaseOfLoaded:OffsetOfLoaded
 
 %include	"lib.inc"
 
