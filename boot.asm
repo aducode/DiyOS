@@ -1,4 +1,4 @@
-;boot.asm
+boot.asm
 ;nasm -o boot.bin boot.asm
 ;软盘引导扇区
 org 0x7c00
@@ -50,7 +50,7 @@ LABEL_SEARCH_IN_ROOT_DIR_BEGIN: ;开始在根目录中搜索loader.bin
 	mov di, OffsetOfLoaded ;es:di -> BaseOfLoaded:0x0100
 	cld ;使DF=0（DF Direction Flag 方向位）
 	;
-	mov dx, 0x20 ;循环的次数16次
+	mov dx, 0x10 ;循环的次数16次(Root Entry每一项占用32字节，一个扇区占用512字节，所以需要循环512/32=16=0x10次)
 LABEL_SEARCH_FOR_LOADERBIN:	;在加载到es:bx中的一个扇区中的32个Root Entry中寻找loader.bin
 	cmp dx, 0	;循环次数控制
 	jz LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR ;在Root Directory的全部扇区中继续寻找loader.bin（这里是14个扇区）
