@@ -1,6 +1,7 @@
 ;boot.asm
 ;nasm -o boot.bin boot.asm
 ;软盘引导扇区
+%define _BOOT_USE_
 org 0x7c00
 %include	"memmap.inc"
 ;加载boot.bin使用的常量
@@ -135,7 +136,7 @@ LABEL_FILE_LOADED:
 	;call clear_screen
 	jmp BaseOfLoaded:OffsetOfLoaded ;跳转到loader.bin的开始
 
-%include	"bootlib.inc"
+%include	"lib.inc"
 
 ;字符串
 LoaderFileName	db 'LOADER  BIN',0
