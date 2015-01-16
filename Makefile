@@ -1,51 +1,45 @@
-.PHONY:clean img run die all \
+.PHONY:clean boot img run die \
 	run-without-loader   \
 	run-without-kernel
-BOOT=boot
-LOADER=loader
-KERNEL=kernel
+BOOT=boot/boot.bin
+LOADER=boot/loader.bin
+KERNEL=boot/kernel.bin
 FLOPPY=a.img
 LOGS = *.txt
 
 BXIMAGE=bximage -mode=create -fd=1.44M -q
 
-all:clean $(FLOPPY) run
 
-run-without-loader:clean img $(BOOT).bin
-	dd if=$(BOOT).bin of=$(FLOPPY) bs=512 count=1 conv=notrunc
-	bochs -qf bochsrc
-run-without-kernel:clean img $(BOOT).bin $(LOADER).bin
-	dd if=$(BOOT).bin of=$(FLOPPY) bs=512 count=1 conv=notrunc
+run:clean img boot
+	dd if=$(BOOT) of=$(FLOPPY) bs=512 count=1 conv=notrunc
 	-mkdir -p tmp/mnt/floppy
-	mount -o loop,rw $(FLOPPY) tmp/mnt/floppy
-	cp $(LOADER).bin tmp/mnt/floppy
+	mount -o loop,rw $(FLOPPY) tmp/mnt/floppy/
+	cp $(LOADER) tmp/mnt/floppy/
+	cp $(KERNEL) tmp/mnt/floppy/
 	umount tmp/mnt/floppy/
 	rm -rf tmp
-	bochs -qf bochsrc
-	
-run:
-	bochs -qf bochsrc
+	bochs -qf config/bochsrc
+
+run-without-loader:clean img boot
+	dd if=$(BOOT) of=$(FLOPPY) bs=512 count=1 conv=notrunc
+	bochs -qf config/bochsrc
+run-without-kernel:clean img boot
+	dd if=$(BOOT) of=$(FLOPPY) bs=512 count=1 conv=notrunc
+	-mkdir -p tmp/mnt/floppy
+	mount -o loop,rw $(FLOPPY) tmp/mnt/floppy
+	cp $(LOADER) tmp/mnt/floppy
+	umount tmp/mnt/floppy/
+	rm -rf tmp
+	bochs -qf config/bochsrc
+boot:
+	make -C boot	
 
 img:
 	$(BXIMAGE) $(FLOPPY)
 
-$(FLOPPY):img $(BOOT).bin $(LOADER).bin $(KERNEL).bin
-	dd if=$(BOOT).bin of=$(FLOPPY) bs=512 count=1 conv=notrunc
-	-mkdir -p tmp/mnt/floppy
-	mount -o loop,rw $(FLOPPY) tmp/mnt/floppy/
-	cp $(LOADER).bin tmp/mnt/floppy/
-	cp $(KERNEL).bin tmp/mnt/floppy/
-	umount tmp/mnt/floppy/
-	rm -rf tmp
-
-$(BOOT).bin:$(BOOT).asm
-	nasm $(BOOT).asm -o $(BOOT).bin
-$(LOADER).bin:$(LOADER).asm
-	nasm $(LOADER).asm -o $(LOADER).bin
-$(KERNEL).bin:$(KERNEL).asm
-	nasm $(KERNEL).asm -o $(KERNEL).bin
 clean:
-	-@rm $(FLOPPY) *.bin $(LOGS)
+	make clean -C boot
+	-rm -rf $(LOGS) $(FLOPPY)
 
 die:
 	@echo "kill bochs"
