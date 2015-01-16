@@ -5,7 +5,7 @@ BOOT=boot/boot.bin
 LOADER=boot/loader.bin
 KERNEL=boot/kernel.bin
 FLOPPY=a.img
-LOGS = *.txt
+LOGS = *.txt *.log
 
 BXIMAGE=bximage -mode=create -fd=1.44M -q
 
