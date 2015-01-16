@@ -89,7 +89,7 @@ LABEL_FILENAME_FOUND:
 	call disp_str
 	jmp $
 
-%include	"func.inc"
+%include	"lib.inc"
 
 ;
 

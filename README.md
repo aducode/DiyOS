@@ -8,3 +8,9 @@
 目录结构：
 1. boot.asm boot.bin的源码，boot.bin是软盘boot扇区的代码
 2. loader.asm  loader.bin源码，boot.bin加载loader，loader用于真正加载操作系统内核到内存
+3.fat12hdr.in	供loader.asm boot.asm include使用的，里面定义了软盘的一些信息和常量
+4.lib.inc	定义了一些共用的函数
+5.memmap.inc	定义了内存地址分布
+6.pm.inc	定义了GDT IDT 相关的宏
+7.Makefile	make：default run the bochs
+8.bochsrc	bochs的配置文件 bochs -qf bochsrc
