@@ -6,11 +6,17 @@
 *
 
 目录结构：
-1. boot.asm boot.bin的源码，boot.bin是软盘boot扇区的代码
-2. loader.asm  loader.bin源码，boot.bin加载loader，loader用于真正加载操作系统内核到内存
-3.fat12hdr.in	供loader.asm boot.asm include使用的，里面定义了软盘的一些信息和常量
-4.lib.inc	定义了一些共用汇编函数 供boot loader使用，用宏_BOOT_USE_控制
-5.memmap.inc	定义了内存地址分布
-6.pm.inc	定义了GDT IDT 相关的宏
-7.Makefile	make：default run the bochs
-8.bochsrc	bochs的配置文件 bochs -qf bochsrc
+1.boot/	
+	1.1. boot.asm boot.bin的源码，boot.bin是软盘boot扇区的代码
+	1.2. loader.asm  loader.bin源码，boot.bin加载loader，loader用于真正加载操作系统内核到内存
+	1.3. boot/include/	被引用的目录
+		1.3.1.fat12hdr.in	供loader.asm boot.asm include使用的，里面定义了软盘的一些信息和常量
+		1.3.2.lib.inc	定义了一些共用汇编函数 供boot loader使用，用宏_BOOT_USE_控制
+		1.3.3.memmap.inc	定义了内存地址分布
+		1.3.4.pm.inc	定义了GDT IDT 相关的宏
+	1.4.Makefile	make：编译boot.bin loader.bin
+2.config/
+	2.1.bochsrc	bochs的配置文件 bochs -qf config/bochsrc
+3.test/	一些之前用来测试的文件
+4.Makefile	make file文件，用于制作软盘镜像，启动bochs
+
