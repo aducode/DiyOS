@@ -84,6 +84,49 @@ LABEL_NO_KERNELBIN:
 
 LABEL_FILENAME_FOUND:
 	;找到了
+	mov ax, RootDirSectors
+	and di, 0xFFF0
+	push eax
+	mov eax, [es:di + 0x001C]	;FAT12 Root Entry中偏移1c的是文件大小
+	mov dword[dwKernelSize], eax	;保存文件大小
+	pop eax
+	
+	add di, 0x001A
+	mov cx, word[es:di]
+	push cx
+	add cx, ax
+	add cx, DeltaSectorNo
+	mov ax, BaseOfLoaded
+	mov es, ax
+	mov bx, OffsetOfLoaded
+	mov ax, cx
+
+LABEL_GOON_LOADING_FILE:
+	push ax
+	push bx
+	mov ah, 0x0E
+	mov al, '.'
+	mov bl, 0x0F
+	int 0x10
+	pop bx
+	pop ax
+
+	mov cl, 1
+	call read_sector
+	pop ax
+	call get_FAT_entry
+	cmp ax, 0x0FFF
+	jz LABEL_FILE_LOADED
+	push ax
+	mov dx, RootDirSectors
+	add ax, dx
+	add ax, DeltaSectorNo
+	add bx, [BPB_BytsPerSec]
+	jmp LABEL_GOON_LOADING_FILE
+
+LABEL_FILE_LOADED:
+	call kill_motor
+	
 	mov dl,1
 	mov dh,1
 	call disp_str
@@ -94,6 +137,8 @@ LABEL_FILENAME_FOUND:
 ;
 
 KernelFileName	db	'KERNEL  BIN',0		;kernel file name:must length 8
+;
+dwKernelSize	dd	0			;保存文件大小
 ;
 MessageLength	equ	9
 ;
