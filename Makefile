@@ -1,16 +1,16 @@
-.PHONY:clean boot img run die \
+.PHONY:clean boot kernel img run die \
 	run-without-loader   \
 	run-without-kernel
 BOOT=boot/boot.bin
 LOADER=boot/loader.bin
-KERNEL=boot/kernel.bin
+KERNEL=kernel/kernel.bin
 FLOPPY=a.img
 LOGS = *.txt *.log
 
 BXIMAGE=bximage -mode=create -fd=1.44M -q
 
 
-run:clean img boot
+run:clean img boot kernel
 	dd if=$(BOOT) of=$(FLOPPY) bs=512 count=1 conv=notrunc
 	-mkdir -p tmp/mnt/floppy
 	mount -o loop,rw $(FLOPPY) tmp/mnt/floppy/
@@ -32,13 +32,16 @@ run-without-kernel:clean img boot
 	rm -rf tmp
 	bochs -qf config/bochsrc
 boot:
-	make -C boot	
+	make -C boot/
+kernel:
+	make -C kernel/
 
 img:
 	$(BXIMAGE) $(FLOPPY)
 
 clean:
 	make clean -C boot
+	make clean -C kernel
 	-rm -rf $(LOGS) $(FLOPPY)
 
 die:

@@ -3,18 +3,18 @@
 
 BOOT=boot
 LOADER=loader
-KERNEL=kernel
+#KERNEL=kernel
 
 
 ASM = nasm -I include/
 
-all:$(BOOT).bin $(LOADER).bin $(KERNEL).bin
+all:$(BOOT).bin $(LOADER).bin
 
 $(BOOT).bin:$(BOOT).asm
 	$(ASM) $(BOOT).asm -o $(BOOT).bin
 $(LOADER).bin:$(LOADER).asm
 	$(ASM) $(LOADER).asm -o $(LOADER).bin
-$(KERNEL).bin:$(KERNEL).asm
-	$(ASM) $(KERNEL).asm -o $(KERNEL).bin
+#$(KERNEL).bin:$(KERNEL).asm
+#	$(ASM) $(KERNEL).asm -o $(KERNEL).bin
 clean:
 	-@rm  *.bin
