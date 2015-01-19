@@ -4,4 +4,4 @@
 *.bin
 *.swp
 *.o
-
+*.bin.asm
