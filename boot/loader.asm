@@ -9,8 +9,8 @@ jmp LOADER_START
 %include	"memmap.inc"
 %include	"pm.inc"
 BaseOfStack	equ	BaseOfLoaderStack;0x0100	;栈地址 0x800000 - 0x80100作为loader的栈使用
-BaseOfLoaded	equ	BaseOfKernel;0x8000		;内核被加载到的段地址
-OffsetOfLoaded	equ	OffsetOfKernel;0x0000		;内核被加载到的偏移地址	
+BaseOfLoaded	equ	BaseOfKernelFile;0x8000		;内核被加载到的段地址
+OffsetOfLoaded	equ	OffsetOfKernelFile;0x0000		;内核被加载到的偏移地址	
 ;GDT
 ;
 LABEL_GDT:		Descriptor	0,	0,		0				;空描述符
@@ -147,13 +147,17 @@ LABEL_FILE_LOADED:
 	mov dl,1
 	mov dh,1
 	call disp_str16
+	;TODO 1 获取及其物理内存大小和分布
+	;TODO 2 将ELF格式的kernel.bin对齐并放到BaseOfKernel:OffsetOfKernel处
+	cli   ;先关中断，然后废除BIOS中断
+	;TODO 3	进入32位保护模式 
 	;下面准备跳入保护模式
 	
 	;加载GDTR
 	lgdt [GdtPtr]
 	;关中断
-	cli
-	;打开地址线A20
+	;cli
+	;打开地址线A20 实现32位寻址
 	in al, 0x92
 	or al, 00000010b
 	out 0x92, al
@@ -165,9 +169,11 @@ LABEL_FILE_LOADED:
 	
 	;真正进入保护模式
 	jmp dword SelectorFlatC:(BaseOfLoaderPhyAddr+LABEL_PM_START)
-	jmp $
+	;TODO 4跳入内核
+	;jmp dword SelectorFlatC:KernelPhyAddr
+	;jmp $
 
-%include	"lib16.inc"
+%include	"lib16.inc"	;实模式下的函数
 
 ;
 
@@ -181,6 +187,9 @@ Message:	db	'Loading  '
 Message1:	db	':) Kernel'
 Message2:	db	'No Kernel'
 
+
+;---------------------------------------------------------------------
+;TODO 32位模式下的处理都放到kernel中去做，未来删除掉这些
 ;保护模式下的代码
 [SECTION .s32]
 ALIGN 32
@@ -195,7 +204,7 @@ LABEL_PM_START:
 	mov ds, ax
 	mov es, ax
 	;
-	mov fs, ax
+	mov fs, ax	;FS寄存器指向当前活动线程的TEB结构（线程结构）
 	mov ss, ax
 	mov esp, TopOfStack
 
@@ -245,8 +254,8 @@ _MessagePM:	db	'In Protected Mode :)', 0x0A,'Hello Protected Mode', 0x00		;相�
 MessagePM:	equ	BaseOfLoaderPhyAddr + _MessagePM;保护模式下，由于数据段基地址被描述符设定为0，所以偏移地址应该是就是在内存中的物理地址;物理地址如何计算才进入loader.bin时，cs（代码基地址寄存器）被boot.asm 最后的jmp修改为BaseOfLoader 0x9000， 随后将ds也设置为cs（数据基地址寄存器）的值，所以loader.bin中的数据也是相对于ds的偏移，所以计算物理地址为：ds:xx 也就是ds*0x10+xx
 _dwDispPos:	dd	(80*2+0)*2	;屏幕第6行第0列
 dwDispPos	equ	BaseOfLoaderPhyAddr + _dwDispPos	
+;保存内存信息
 ;SECTION .data结束
-
 
 [SECTION .gs]		;全局堆栈段
 ALIGN	32

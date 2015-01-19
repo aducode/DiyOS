@@ -14,7 +14,7 @@ int 0x10
 
 mov ax, Message
 mov bp ,ax
-mov ax ,BaseOfKernel
+mov ax ,BaseOfKernelFile
 mov es, ax
 mov cx, MessageLength
 mov ax, 0x1301
