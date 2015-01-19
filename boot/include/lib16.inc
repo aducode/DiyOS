@@ -180,7 +180,4 @@ kill_motor16:
 	pop dx
 	ret
 
-;函数名:get_mem_info
-;作用：
-;	调用BIOS服务获取内存信息
 %endif

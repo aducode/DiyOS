@@ -8,14 +8,15 @@ jmp LOADER_START
 %include	"fat12hdr.inc"
 %include	"memmap.inc"
 %include	"pm.inc"
+;这里只是临时设置的GDT，未来整理内存的时候还需要重新设置
 BaseOfStack	equ	BaseOfLoaderStack;0x0100	;栈地址 0x800000 - 0x80100作为loader的栈使用
 BaseOfLoaded	equ	BaseOfKernelFile;0x8000		;内核被加载到的段地址
 OffsetOfLoaded	equ	OffsetOfKernelFile;0x0000		;内核被加载到的偏移地址	
 ;GDT
 ;
 LABEL_GDT:		Descriptor	0,	0,		0				;空描述符
-LABEL_DESC_FLAT_C:	Descriptor	0,	0xFFFFF,	DA_CR|DA_32|DA_LIMIT_4K		;内存0-4G 数据段
-LABEL_DESC_FLAT_RW:	Descriptor	0,	0xFFFFF,	DA_DRW|DA_32|DA_LIMIT_4K	;内存0-4G 可读写数据段
+LABEL_DESC_FLAT_C:	Descriptor	0,	0xFFFF,	DA_CR|DA_32|DA_LIMIT_4K		;内存0-4MB 数据段
+LABEL_DESC_FLAT_RW:	Descriptor	0,	0xFFFF,	DA_DRW|DA_32|DA_LIMIT_4K	;内存0-4MB 可读写数据段
 LABEL_DESC_VIDEO:	Descriptor	0xB8000,0xFFFF ,	DA_DRW|DA_DPL3			;显存首地址
 
 GdtLen		equ	$-LABEL_GDT
@@ -148,7 +149,10 @@ LABEL_FILE_LOADED:
 	mov dh,1
 	call disp_str16
 	;TODO 1 获取及其物理内存大小和分布
+	;物理内存大小保存在
 	;TODO 2 将ELF格式的kernel.bin对齐并放到BaseOfKernel:OffsetOfKernel处
+	;call init_kernel	;此处不能在实模式下进行elf内核对齐的工作，因为实模式下寻址空间有限，需要不断的操作ds才能移动数据
+	;所以还是在32位保护模式下进行移动内核的操作（32位保护模式下，ds被设置成0-64MB的物理内存空间，所以移动起来比较方便）
 	cli   ;先关中断，然后废除BIOS中断
 	;TODO 3	进入32位保护模式 
 	;下面准备跳入保护模式
@@ -170,10 +174,79 @@ LABEL_FILE_LOADED:
 	;真正进入保护模式
 	jmp dword SelectorFlatC:(BaseOfLoaderPhyAddr+LABEL_PM_START)
 	;TODO 4跳入内核
-	;jmp dword SelectorFlatC:KernelPhyAddr
+	;jmp dword SelectorFlatC:KernelEntryPointPhyAddr
 	;jmp $
 
 %include	"lib16.inc"	;实模式下的函数
+;对齐elf到KernelPhyAddr
+;init_kernel:
+;	;push ds
+;	mov ax, BaseOfKernelFile
+;	mov ds, ax
+;	xor esi, esi
+;	mov cx, word[0x2c]	; cx <- pELEHdr->e_phnum
+;	movzx ecx, cx	;ecx高位填充0 低位等于cx
+;	mov esi,[0x1c]		; si <- pELFHdr->e_phoff
+	;add esi, BaseOfKernelFilePhyAddr			; 将ELF中的偏移地址映射到物理地址
+;.1:
+;	mov eax, [si+0]
+;	cmp eax, 0
+;	jz .2
+;	push dword[esi+0x10]	;program size
+;	mov eax, [esi+0x04]
+;	;add eax, BaseOfKernelFilePhyAddr
+;	push eax		;program addr
+;	push dword[esi+0x08]
+;	call memcpy
+;	add esp, 12
+;.2:
+;	add esi, 0x20	;esi +=pELFHdr->e_phentsize
+;	dec ecx
+;	jnz .1
+;	;pop ds
+;	mov ax, BaseOfLoader	;ds切换回loader.bin
+;	mov ds, ax
+;	ret
+
+;内存拷贝
+;参数
+;	void * memcpy(void * es:pDest, void * ds:pSrc, int iSize);
+;memcpy:
+;	mov ax, BaseOfLoader
+;	mov ds, ax
+;	push ebp
+;	mov ebp, esp
+;	push esi
+;	push edi
+;	push ecx
+;
+;	mov edi, [ebp+8]		;destination
+;	mov esi,[ebp+12]	;source
+;	mov ecx, [ebp+16]	;counter	
+.;1:
+;	cmp ecx, 0
+;	jz .2
+;	
+;	mov al, [ds:esi]
+;	inc esi
+;	
+;	mov byte[es:edi], al	
+;	inc edi
+;	
+;	dec ecx
+;	jmp .1
+;.2:
+;	mov eax, [ebp+8]	;返回值
+;	pop ecx
+;	pop edi
+;	pop esi
+;	mov esp, ebp
+;	pop ebp
+;
+;	mov ax, BaseOfKernelFile
+;	mov ds, ax	
+;	ret
+	
 
 ;
 
@@ -214,43 +287,40 @@ LABEL_PM_START:
 	push eax
 	call disp_str
 	pop eax
-	mov [dwDispPos], ax 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;	mov esi, MessagePM
-;	mov edi, [dwDispPos]
-;	mov ah, 0x07
-;.1:
-;	lodsb
-;	test al, al
-;	jz .2
-;	cmp al, 0x0A	;是回车吗
-;	jnz .3
-;	push eax
-;	mov eax, edi
-;	mov bl, 160
-;	div bl
-;	and eax, 0xFF
-;	inc eax
-;	mov bl, 160
-;	mul bl
-;	mov edi, eax
-;	pop eax
-;	jmp .1
-;.3:
-;	mov [gs:edi], ax
-	add edi, 2
-;	jmp .1
-;.2:
-;	mov [dwDispPos], edi
+	mov [dwDispPos], ax ;改变光标位置
+	;对齐之前先清屏
+	;call clear_screen16	;这里不起作用了，因为在跳到32位保护模式之前已经关中断了
+	;对齐elf到KernelEntryPointPhyAddr
+	xor esi, esi
+	mov cx, word[BaseOfKernelFilePhyAddr + 0x2C]
+	movzx ecx, cx
+	mov esi, [BaseOfKernelFilePhyAddr + 0x1C]
+	add esi, BaseOfKernelFilePhyAddr
+.BEGIN:
+	mov eax, [esi+0]
+	cmp eax, 0
+	jz .END
+	push dword[esi+0x10]	;size
+	mov eax, [esi+0x04]
+	add eax, BaseOfKernelFilePhyAddr
+	push eax		;src
+	push dword[esi+0x08]	;dst
+	call memcpy
+	add esp, 12
+.END:
+	add esi, 0x20
+	dec ecx
+	jnz .BEGIN
 	
-	jmp $	
+	;跳到内核	
+	jmp SelectorFlatC:KernelEntryPointPhyAddr
 
 
 ;保护模式下的数据
 [SECTION .data]		;数据段
 ALIGN	32
 [BITS	32]
-_MessagePM:	db	'In Protected Mode :)', 0x0A,'Hello Protected Mode', 0x00		;相对于此文件的偏移
+_MessagePM:	db	'In Protected Mode :)', 0x0A,'Now init KERNEL', 0x00		;相对于此文件的偏移
 MessagePM:	equ	BaseOfLoaderPhyAddr + _MessagePM;保护模式下，由于数据段基地址被描述符设定为0，所以偏移地址应该是就是在内存中的物理地址;物理地址如何计算才进入loader.bin时，cs（代码基地址寄存器）被boot.asm 最后的jmp修改为BaseOfLoader 0x9000， 随后将ds也设置为cs（数据基地址寄存器）的值，所以loader.bin中的数据也是相对于ds的偏移，所以计算物理地址为：ds:xx 也就是ds*0x10+xx
 _dwDispPos:	dd	(80*2+0)*2	;屏幕第6行第0列
 dwDispPos	equ	BaseOfLoaderPhyAddr + _dwDispPos	
@@ -261,7 +331,7 @@ dwDispPos	equ	BaseOfLoaderPhyAddr + _dwDispPos
 ALIGN	32
 [BITS	32]
 ;32保护模式下堆栈就在数据段的末尾
-StackSpace:	times 1024	db	0	;堆栈空间	1M
+StackSpace:	times 1024	db	0	;堆栈空间	1KB
 TopOfStack	equ	BaseOfLoaderPhyAddr + $	;栈顶
 ;SECTION .gs结束
 
