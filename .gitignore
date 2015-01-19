@@ -3,4 +3,5 @@
 *.log
 *.bin
 *.swp
+*.o
 

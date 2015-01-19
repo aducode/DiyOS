@@ -3,16 +3,26 @@
 KERNEL=kernel
 KERNEL_ENTRY_POINT=0x0400
 
-ASM=nasm -f elf
-LD=ld -s -Ttext $(KERNEL_ENTRY_POINT)
+
+CC=gcc
+CFLAGS=-I include/ -c -fno-builtin
+ASM=nasm
+ASMFLAGS=-f elf
+LD=ld
+LDFLAGS=-s -Ttext $(KERNEL_ENTRY_POINT)
+
+OBJECTS=$(KERNEL).o main.o
 
 all:$(KERNEL).bin
 
-$(KERNEL).bin:$(KERNEL).o
-	$(LD) $(KERNEL).o -o $(KERNEL).bin
+$(KERNEL).bin:$(OBJECTS)
+	$(LD) $(LDFLAGS) $(OBJECTS) -o $(KERNEL).bin
 
+main.o:main.c
+	$(CC) $(CFLAGS) main.c -o main.o
+	
 $(KERNEL).o:$(KERNEL).asm
-	$(ASM) $(KERNEL).asm -o $(KERNEL).o
+	$(ASM) $(ASMFLAGS) $(KERNEL).asm -o $(KERNEL).o
 
 clean:
 	-@rm -rf *.bin *.o
