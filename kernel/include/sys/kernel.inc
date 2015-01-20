@@ -1,0 +1,5 @@
+MAX_GDT_ITEMS	equ	32
+LIMIT_OF_GDT	equ	(MAX_GDT_ITEMS - 1) * 8
+
+;color
+STRING_COLOR	equ	0x0F
