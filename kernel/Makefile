@@ -6,9 +6,9 @@ KERNEL_ENTRY_OFFSET=0x0400
 
 
 CC=gcc
-CFLAGS=-I include/ -c -fno-builtin
+CFLAGS=-I include/ -I include/sys/ -c -fno-builtin
 ASM=nasm
-ASMFLAGS=-f elf
+ASMFLAGS=-I include/ -I include/sys/ -f elf
 LD=ld
 LDFLAGS=-s -Ttext $(KERNEL_ENTRY_POINT)
 
@@ -16,13 +16,14 @@ DASM=ndisasm
 DASMFLAGS=-u -o $(KERNEL_ENTRY_POINT) -e $(KERNEL_ENTRY_OFFSET)
 DASMOUTPUT=$(KERNEL).bin.asm
 
-OBJECTS=$(KERNEL).o main.o
+OBJECTS=$(KERNEL).o main.o global.o
 
 all:$(KERNEL).bin
 
 $(KERNEL).bin:$(OBJECTS)
 	$(LD) $(LDFLAGS) $(OBJECTS) -o $(KERNEL).bin
-
+global.o:global.c
+	$(CC) $(CFLAGS) global.c -o global.o
 main.o:main.c
 	$(CC) $(CFLAGS) main.c -o main.o
 	

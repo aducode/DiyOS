@@ -3,6 +3,7 @@
 disp_str_color		equ	 0x0F
 extern kmain
 global _start
+global _lgdt		;void _lgdt(struct descriptor_table gdt_ptr);
 global _hlt
 global disp_str
 global clean
@@ -10,9 +11,15 @@ _start:
 	push kmain
 	ret
 	;jmp $
+
+_lgdt:
+	mov eax, [esp+4]
+	;add eax, 0x10
+	lgdt [eax]
+	ret
 _hlt:
 	hlt
-	jmp $
+	ret
 
 ;函数：void disp_str(char * str, int row, int column)
 ;loader.bin中已经将显存基址设置在gs寄存器中
