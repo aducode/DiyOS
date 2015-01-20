@@ -322,7 +322,7 @@ ALIGN	32
 [BITS	32]
 _MessagePM:	db	'In Protected Mode :)', 0x0A,'Now init KERNEL', 0x00		;相对于此文件的偏移
 MessagePM:	equ	BaseOfLoaderPhyAddr + _MessagePM;保护模式下，由于数据段基地址被描述符设定为0，所以偏移地址应该是就是在内存中的物理地址;物理地址如何计算才进入loader.bin时，cs（代码基地址寄存器）被boot.asm 最后的jmp修改为BaseOfLoader 0x9000， 随后将ds也设置为cs（数据基地址寄存器）的值，所以loader.bin中的数据也是相对于ds的偏移，所以计算物理地址为：ds:xx 也就是ds*0x10+xx
-_dwDispPos:	dd	(80*2+0)*2	;屏幕第6行第0列
+_dwDispPos:	dd	(80*2+0)*2	;屏幕第2行第0列
 dwDispPos	equ	BaseOfLoaderPhyAddr + _dwDispPos	
 ;保存内存信息
 ;SECTION .data结束
