@@ -2,6 +2,7 @@
 ;宏
 disp_str_color		equ	 0x0F
 extern kmain
+[section .s32]
 global _start
 global _lgdt		;void _lgdt(struct descriptor_table gdt_ptr);
 global _hlt
@@ -13,9 +14,12 @@ _start:
 	;jmp $
 
 _lgdt:
-	mov eax, [esp+4]
-	;add eax, 0x10
-	lgdt [eax]
+	mov eax, [esp+4]	;limit_of_gdt
+	and eax, 0xFF
+	mov word[gdt_limit], ax
+	mov eax, [esp+8]; base_of_gdt
+	mov dword[gdt_base],eax
+	lgdt [gdt_ptr]
 	ret
 _hlt:
 	hlt
@@ -126,5 +130,10 @@ clean:
 	pop esi
 	;pop ebx
 	pop ebp
-	ret
-	 	
+	ret	
+
+[section .data]
+;
+gdt_ptr:
+gdt_limit:	dw	0
+gdt_base:	dd	0

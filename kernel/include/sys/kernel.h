@@ -6,5 +6,5 @@
 extern void _hlt();
 extern void clean(int top, int left, int bottom, int right);
 extern void disp_str(char * msg, int row, int column);
-extern void _lgdt(struct descriptor_table * gdt_ptr);
+extern void _lgdt(unsigned short int limit_of_gdt, struct descriptor * base_of_gdt);
 #endif

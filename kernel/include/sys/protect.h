@@ -76,10 +76,12 @@ struct descriptor	/*共8个字节*/
 /**
  * 描述符表
  */
-struct descriptor_table
-{
+//struct descriptor_table
+//{
 //	u16			nop;	/*4Byte对齐*/
-	u16			length;	/*全局表述符表长度 2Byte*/
-	struct descriptor	*ptr;	/*开始指针 4Byte*/	
-};
+//	u16			length;	/*全局表述符表长度 2Byte*/
+//	struct descriptor	*ptr;	/*开始指针 4Byte*/	
+//};
+//gdtPtr need 6Byte but in clang it need align 8Byte
+//so we can use char [6] to instread this struct
 #endif

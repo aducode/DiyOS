@@ -14,8 +14,11 @@ struct descriptor gdt[MAX_GDT_ITEMS]={
 /*
  *  kernel的全局变量
  */
+/*
 struct descriptor_table gdt_ptr={
 //	0, // 对齐
 	(MAX_GDT_ITEMS-1)*8 ,	//gdt长度
 	gdt,		//gdt指针
-} ;	//全局描述符表
+} a
+;
+*/	//全局描述符表

@@ -13,5 +13,8 @@ void kmain(){
 	}
 }
 void init_gdt(){
-	_lgdt(&gdt_ptr);	
+	unsigned short int length = (unsigned short int)(MAX_GDT_ITEMS -1 ) * 8;
+	_lgdt(length, gdt);
 }
+
+
