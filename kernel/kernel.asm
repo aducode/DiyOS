@@ -1,6 +1,6 @@
 ;导入
 ;宏
-disp_str_color		equ	 0x07
+disp_str_color		equ	 0x0F
 extern kmain
 global _start
 global _hlt
