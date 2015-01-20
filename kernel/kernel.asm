@@ -83,8 +83,8 @@ clean:
 	;left
 	;bottom
 	;right
-	mov ax, [ebp+8]	;上
-	mov cx, [ebp+12]	;左
+	mov eax, [ebp+8]	;上
+	mov ecx, [ebp+12]	;左
 	;计算清空显存开始位置
 	mov bx, 80
 	mul bx
@@ -104,7 +104,7 @@ clean:
 	and eax, 0xFFFF
 	shl edx, 0x10
 	add eax,edx	
-	add eax, edx
+	add eax, ecx
 	mov bx, 2
 	mul bx
 .start:
