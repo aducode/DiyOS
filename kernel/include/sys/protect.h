@@ -2,8 +2,10 @@
 #ifndef _PROTECT_H
 #define _PROTECT_H
 
-//全局的宏
-#define MAX_GDT_ITEMS	32	//最多有32个描述符
+//GDT个数
+#define MAX_GDT_ITEMS	128	//最多有128个全局描述符 可用的有127个 0作为base
+#define MAX_IDT_ITEMS	128	//做多有128个局部描述符
+
 
 //定义gdt ldt idt等
 /**
