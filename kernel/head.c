@@ -13,9 +13,9 @@ static void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handle
 void head()
 {
 	//调用之前gdt_ptr中已经加载进gdt寄存器的值了
-        _disp_str("Reset GDT now ...\n", 4, 0);
+        _disp_str("Reset GDT now ...\n", 4, 0,COLOR_WHITE);
 	reset_gdt();	
-	_disp_str("setup interrupt table now ...\n",6,0);
+	_disp_str("setup interrupt table now ...\n",6,0, COLOR_WHITE);
 	setup_idt();
 }
 

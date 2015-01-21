@@ -24,7 +24,7 @@ _start:
 csinit:	;这个跳转指令强制使用刚刚初始化的结构
 	push 0
 	popfd	;清空eflag寄存器的值	
-	ud2
+	;ud2	;让cpu产生undefined error 测试异常向量是否设置正确
 	;跳转到kernel主函数
 	push kmain
 	ret

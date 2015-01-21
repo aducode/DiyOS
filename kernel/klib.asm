@@ -66,12 +66,13 @@ _hlt:
 	ret
 
 
-;函数：void disp_str(char * str, int row, int column)
+;函数：void disp_str(char * str, int row, int column, u8 color)
 ;loader.bin中已经将显存基址设置在gs寄存器中
 _disp_str:
 	push ebp
 	mov ebp, esp
-;	push ebx
+	push ebx
+	push ecx
 	push esi
 	push edi
 	;获取参数
@@ -83,6 +84,7 @@ _disp_str:
 	mov esi, [ebp+8]	;字符串地址
 	mov eax, [ebp+12]	;行
 	mov edx, [ebp+16]	;列
+	mov ecx, [ebp+20]	;color
 	;计算显存地址
 	mov bx,80
 	mul bx
@@ -90,7 +92,7 @@ _disp_str:
 	mov bx, 2
 	mul bx
 	mov edi, eax
-	mov ah, STRING_COLOR
+	mov ah, cl
 .1:
         lodsb
         test al, al
@@ -117,7 +119,8 @@ _disp_str:
 
         pop edi
         pop esi
-;        pop ebx
+	pop ecx
+        pop ebx
         pop ebp
         ret
 
