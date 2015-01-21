@@ -5,7 +5,7 @@
 #include "interrupt.h"
 static void reset_gdt();
 
-static void setup_idt();
+static void setup_interrupt();
 
 static void init_8259A();
 
@@ -16,7 +16,7 @@ void head()
         _disp_str("Reset GDT now ...\n", 4, 0,COLOR_WHITE);
 	reset_gdt();	
 	_disp_str("setup interrupt table now ...\n",6,0, COLOR_WHITE);
-	setup_idt();
+	setup_interrupt();
 }
 
 void reset_gdt()
@@ -34,10 +34,8 @@ void reset_gdt()
         //*p_gdt_base =(u32)gdt;
 }
 
-void setup_idt()
+void setup_interrupt()
 {
-	//先初始化8259A
-	init_8259A();
 	//设置idt_ptr
 	u16 * p_idt_limit=(u16*)(&idt_ptr[0]);
         u32 * p_idt_base = (u32*)(&idt_ptr[2]);
@@ -61,6 +59,29 @@ void setup_idt()
 	init_idt_desc(INT_VECTOR_PROTECTION, DA_386IGate, _general_protection, PRIVILEGE_KERNEL);
 	init_idt_desc(INT_VECTOR_PAGE_FAULT, DA_386IGate, _page_fault, PRIVILEGE_KERNEL);
 	init_idt_desc(INT_VECTOR_COPROC_ERR, DA_386IGate, _copr_error, PRIVILEGE_KERNEL);	
+	//设置可编程硬件中断
+        init_8259A();
+	//
+	init_idt_desc(INT_VECTOR_IRQ0 + 0 , DA_386IGate, _hwint00, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ0 + 1 , DA_386IGate, _hwint01, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ0 + 2 , DA_386IGate, _hwint02, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ0 + 3 , DA_386IGate, _hwint03, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ0 + 4 , DA_386IGate, _hwint04, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ0 + 5 , DA_386IGate, _hwint05, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ0 + 6 , DA_386IGate, _hwint06, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ0 + 7 , DA_386IGate, _hwint07, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ8 + 0 , DA_386IGate, _hwint08, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ8 + 1 , DA_386IGate, _hwint09, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ8 + 2 , DA_386IGate, _hwint10, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ8 + 3 , DA_386IGate, _hwint11, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ8 + 4 , DA_386IGate, _hwint12, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ8 + 5 , DA_386IGate, _hwint13, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ8 + 6 , DA_386IGate, _hwint14, PRIVILEGE_KERNEL);
+	init_idt_desc(INT_VECTOR_IRQ8 + 7 , DA_386IGate, _hwint15, PRIVILEGE_KERNEL);
+	
+	
+	
+
 }
 void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege)
 {

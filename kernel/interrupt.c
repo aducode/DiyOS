@@ -2,8 +2,6 @@
 //异常处理函数
 void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 {
-	int i;
-//int text_color = 0x74;
 	char * err_msg[] = {"#DE Divide Error",
 			    "#DB RESERVED",
 			    "--  NMI Interrupt",
@@ -28,4 +26,29 @@ void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 	_clean(0,0,25,80);
 	_disp_str("System Error    :(    Message is:\n",2,0,COLOR_SYS_ERROR);
 	_disp_str(err_msg[vec_no],3,0, COLOR_SYS_ERROR);		
+}
+
+//硬件中断处理函数
+void irq_handler(int irq_no)
+{
+	char *irq_msg[] = {
+		"irq0	the clock",
+		"irq1	keyboard",
+		"irq2	cascade!",
+		"irq3	secode serial",
+		"irq4	first serial",
+		"irq5	XT winchester",
+		"irq6	floppy",
+		"irq7	printer",
+		"irq8	realtime clock",
+		"irq9	redirected",
+		"irq10",
+		"irq11",
+		"irq12",
+		"irq13	FPU exception",
+		"irq14	AT winchester",
+		"irq15"
+	};
+	_clean(0,0,25,80);
+	_disp_str(irq_msg[irq_no],5,0,COLOR_WHITE);
 }

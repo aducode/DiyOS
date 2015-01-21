@@ -21,4 +21,23 @@ extern void	_stack_exception();
 extern void	_general_protection();
 extern void	_page_fault();
 extern void	_copr_error();
+
+//硬件中断
+void    _hwint00();
+void    _hwint01();
+void    _hwint02();
+void    _hwint03();
+void    _hwint04();
+void    _hwint05();
+void    _hwint06();
+void    _hwint07();
+void    _hwint08();
+void    _hwint09();
+void    _hwint10();
+void    _hwint11();
+void    _hwint12();
+void    _hwint13();
+void    _hwint14();
+void    _hwint15();
+
 #endif
