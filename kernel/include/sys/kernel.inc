@@ -35,4 +35,10 @@ SA_TIL          EQU     4       ; ┛
 CodeSelector	equ	1<<3
 DataSelector	equ	2<<3
 VideoSelector	equ	3<<3 + SA_RPL3
+;8259A
+INT_M_CTL		equ	0x20
+INT_M_CTLMASK		equ	0x21
+INT_S_CTL		equ	0xA0
+INT_S_CTLMASK		equ	0xA1
 
+EOI			equ	0x20

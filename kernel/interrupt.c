@@ -1,4 +1,5 @@
 #include "kernel.h"
+#include "protect.h"
 //异常处理函数
 void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 {
@@ -30,25 +31,27 @@ void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 
 //硬件中断处理函数
 void irq_handler(int irq_no)
-{
+{	
+	static int cur_row = 0;
 	char *irq_msg[] = {
-		"irq0	the clock",
-		"irq1	keyboard",
-		"irq2	cascade!",
-		"irq3	secode serial",
-		"irq4	first serial",
-		"irq5	XT winchester",
-		"irq6	floppy",
-		"irq7	printer",
-		"irq8	realtime clock",
-		"irq9	redirected",
+		"irq0 the clock",
+		"irq1 keyboard",
+		"irq2 cascade!",
+		"irq3 secode serial",
+		"irq4 first serial",
+		"irq5 XT winchester",
+		"irq6 floppy",
+		"irq7 printer",
+		"irq8 realtime clock",
+		"irq9 redirected",
 		"irq10",
 		"irq11",
 		"irq12",
-		"irq13	FPU exception",
-		"irq14	AT winchester",
+		"irq13 FPU exception",
+		"irq14 AT winchester",
 		"irq15"
 	};
 	_clean(0,0,25,80);
-	_disp_str(irq_msg[irq_no],5,0,COLOR_WHITE);
+	_disp_str(irq_msg[irq_no],cur_row,0,COLOR_WHITE);
+	cur_row+=1;
 }

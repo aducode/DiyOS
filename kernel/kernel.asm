@@ -142,7 +142,7 @@ global  _hwint15
         push    %1
         call    irq_handler
         add     esp, 4
-        hlt
+        jmp irq_master_return_from_int
 %endmacro
 ; ---------------------------------
 
@@ -183,7 +183,6 @@ _hwint07:                ; Interrupt routine for irq 7 (printer)
         push    %1
         call    irq_handler
         add     esp, 4
-        hlt
 %endmacro
 ; ---------------------------------
 
@@ -218,3 +217,9 @@ _hwint14:                ; Interrupt routine for irq 14 (AT winchester)
 ALIGN   16
 _hwint15:                ; Interrupt routine for irq 15
         hwint_slave     15
+
+
+irq_master_return_from_int:
+	mov al, EOI
+	out INT_M_CTL, al
+	iretd

@@ -14,6 +14,8 @@
 #define INT_S_CTL	0xA0	//I/O port for second interrupt controller <Slave>
 #define INT_S_CTLMASK	0xA1	//setting bits in this port disables ints <Slave>
 
+#define EOI		0x20
+
 /* 中断向量 */
 #define	INT_VECTOR_DIVIDE		0x0
 #define	INT_VECTOR_DEBUG		0x1
