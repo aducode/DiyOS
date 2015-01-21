@@ -15,8 +15,8 @@ OffsetOfLoaded	equ	OffsetOfKernelFile;0x0000		;内核被加载到的偏移地址
 ;GDT
 ;
 LABEL_GDT:		Descriptor	0,	0,		0				;空描述符
-LABEL_DESC_FLAT_C:	Descriptor	0,	0xFFFF,	DA_CR|DA_32|DA_LIMIT_4K		;内存0-4MB 数据段
-LABEL_DESC_FLAT_RW:	Descriptor	0,	0xFFFF,	DA_DRW|DA_32|DA_LIMIT_4K	;内存0-4MB 可读写数据段
+LABEL_DESC_FLAT_C:	Descriptor	0,	0xFFFFF,	DA_CR|DA_32|DA_LIMIT_4K		;内存0-4MB 数据段
+LABEL_DESC_FLAT_RW:	Descriptor	0,	0xFFFFF,	DA_DRW|DA_32|DA_LIMIT_4K	;内存0-4MB 可读写数据段
 LABEL_DESC_VIDEO:	Descriptor	0xB8000,0xFFFF ,	DA_DRW|DA_DPL3			;显存首地址
 
 GdtLen		equ	$-LABEL_GDT

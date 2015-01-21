@@ -1,38 +1,81 @@
-;导入
-;宏
+;导入宏
 ;disp_str_color		equ	 0x0F
 %include	"kernel.inc"
-extern kmain
+[section .bss]	;栈空间
+StackeSpace:	resb	2*1024
+StackTop:	;栈顶
+
+
 ;[section .s32] 当设置这个section时，ld使用-Ttext选项指定的entry point不准确
 ;[section .text] 改成这个或者彻底注释掉就可以使用-Ttext
 ;[section .s32] ;也可以用 ld 的 -e 选项替代-Ttext<---这种做法也是错的，程序入口地址会被指定为0x0400，但这时虚拟地址的偏移，真正的segment还是高位地址
 ;最终还是指定一个标准的section .text
 [section .text]
 global _start
-global _lgdt		;void _lgdt(struct descriptor_table gdt_ptr);
+global _memcpy		;void _memcpy(void * dest, void * src, int length);
 global _hlt
-global disp_str
-global clean
+global _disp_str
+global _clean
 _start:
+	;将栈移到内核内存空间中
+	mov esp, StackTop;
+	sgdt [gdt_ptr]	;给全局变量赋值
+	call head
+	lgdt [gdt_ptr]	;使用新的gdt
+	
+	jmp CodeSelector:csinit
+csinit:	;这个跳转指令强制使用刚刚初始化的结构
+	push 0
+	popfd	;清空eflag寄存器的值	
+	;跳转到kernel主函数
 	push kmain
 	ret
-	;jmp $
 
-_lgdt:
-	mov eax, [esp+4]	;limit_of_gdt
-	and eax, 0xFF
-	mov word[gdt_limit], ax
-	mov eax, [esp+8]; base_of_gdt
-	mov dword[gdt_base],eax
-	lgdt [gdt_ptr]
-	ret
+
+
+;-----------------------------------------------------------------
+;定义一些函数供c语言使用
+_memcpy:
+	push ebp
+	mov ebp, esp
+	
+	push esi
+	push edi	
+	push ecx
+	
+	mov edi, [ebp+8]
+	mov esi, [ebp+12]
+	mov ecx, [ebp+16]
+
+.1:
+	cmp ecx, 0
+	jz .2
+	
+	mov al ,[ds:esi]
+	inc esi
+	
+	mov byte[es:edi], al
+	inc edi
+	
+	dec ecx
+	jmp .1
+.2:
+	mov eax, [ebp+8]	;返回值
+	
+	pop ecx
+	pop edi
+	pop esi
+	mov esp, ebp
+	pop ebp
+	
+	ret	
 _hlt:
 	hlt
 	ret
 
 ;函数：void disp_str(char * str, int row, int column)
 ;loader.bin中已经将显存基址设置在gs寄存器中
-disp_str:
+_disp_str:
 	push ebp
 	mov ebp, esp
 ;	push ebx
@@ -86,7 +129,7 @@ disp_str:
         ret
 
 ;void clean(int top, int left, int bottom, int right)
-clean:
+_clean:
 	push ebp
 	mov ebp, esp
 	;push ebx
@@ -137,8 +180,8 @@ clean:
 	pop ebp
 	ret	
 
-[section .data]
+;[section .data]
 ;
-gdt_ptr:
-gdt_limit:	dw	0
-gdt_base:	dd	0
+;gdt_ptr:
+;gdt_limit:	dw	0
+;gdt_base:	dd	0

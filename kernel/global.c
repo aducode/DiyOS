@@ -5,12 +5,19 @@
 /**
  * 定义全局描述符
  */
-struct descriptor gdt[MAX_GDT_ITEMS]={
-	SET_DESC(0,0,0,0,0,0),					//Base
-	SET_DESC(0x0000LU,0xFFFFFLU,DA_CR,DA_32,DA_LIMIT_4K,DA_DPL0), //0-4G  code segment
-	SET_DESC(0x0000LU,0xFFFFFLU,DA_DRW,DA_32,DA_LIMIT_4K,DA_DPL0), //0-4G data segment
-	SET_DESC(0xB8000LU,0xFFFFLU,DA_DRW,DA_16,DA_LIMIT_1B,DA_DPL3), //0xB8000-0xC7FFF  for gs
+struct descriptor gdt[MAX_GDT_ITEMS];
+u8	gdt_ptr[6];	//全局gdt_ptr
+//这里不在c语言中重新给gdt赋值了，因为按位操作太复杂了，在汇编中使用sgdt，然后memcpy
+/*
+={
+	//base
+	{0,0,0,0,0,0,0,0,0,0,0,0,0},
+//	SET_DESC(0,0,0,0,0,0),					//Base
+	SET_DESC(0x0000,0xFFFF,DA_CR,DA_32,DA_LIMIT_4K,DA_DPL0), //0-4G  code segment
+	SET_DESC(0x0000,0xFFFF,DA_DRW,DA_32,DA_LIMIT_4K,DA_DPL0), //0-4G data segment
+	SET_DESC(0xB8000,0xFFFF,DA_DRW,DA_16,DA_LIMIT_1B,DA_DPL3), //0xB8000-0xC7FFF  for gs
 };	//全局描述符表
+*/
 /*
  *  kernel的全局变量
  */
