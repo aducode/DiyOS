@@ -30,20 +30,23 @@ DASM=ndisasm
 DASMFLAGS=-u -o $(KERNEL_ENTRY_POINT) -e $(KERNEL_ENTRY_OFFSET)
 DASMOUTPUT=$(KERNEL).bin.asm
 
-OBJECTS=$(KERNEL).o main.o global.o head.o
+OBJECTS=$(KERNEL).o main.o global.o head.o klib.o  interrupt.o
 
 all:$(KERNEL).bin
 
 $(KERNEL).bin:$(OBJECTS)
 	$(LD) $(LDFLAGS) $(OBJECTS) -o $(KERNEL).bin
 
+interrupt.o:interrupt.c
+	$(CC) $(CFLAGS) interrupt.c -o interrupt.o
 head.o:head.c
 	$(CC) $(CFLAGS) head.c -o head.o
 global.o:global.c
 	$(CC) $(CFLAGS) global.c -o global.o
 main.o:main.c
 	$(CC) $(CFLAGS) main.c -o main.o
-	
+klib.o:klib.asm
+	$(ASM) $(ASMFLAGS) klib.asm -o klib.o	
 $(KERNEL).o:$(KERNEL).asm
 	$(ASM) $(ASMFLAGS) $(KERNEL).asm -o $(KERNEL).o
 disasm:$(KERNEL).bin

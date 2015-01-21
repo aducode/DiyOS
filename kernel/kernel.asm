@@ -12,10 +12,6 @@ StackTop:	;栈顶
 ;最终还是指定一个标准的section .text
 [section .text]
 global _start
-global _memcpy		;void _memcpy(void * dest, void * src, int length);
-global _hlt
-global _disp_str
-global _clean
 _start:
 	;将栈移到内核内存空间中
 	mov esp, StackTop;
@@ -23,165 +19,97 @@ _start:
 	call head
 	lgdt [gdt_ptr]	;使用新的gdt
 	
+	lidt [idt_ptr]	;	
 	jmp CodeSelector:csinit
 csinit:	;这个跳转指令强制使用刚刚初始化的结构
 	push 0
 	popfd	;清空eflag寄存器的值	
+	ud2
 	;跳转到kernel主函数
 	push kmain
 	ret
 
 
 
-;-----------------------------------------------------------------
-;定义一些函数供c语言使用
-_memcpy:
-	push ebp
-	mov ebp, esp
-	
-	push esi
-	push edi	
-	push ecx
-	
-	mov edi, [ebp+8]
-	mov esi, [ebp+12]
-	mov ecx, [ebp+16]
+; 中断和异常 -- 异常
+global	_divide_error
+global	_single_step_exception
+global	_nmi
+global	_breakpoint_exception
+global	_overflow
+global	_bounds_check
+global	_inval_opcode
+global	_copr_not_available
+global	_double_fault
+global	_copr_seg_overrun
+global	_inval_tss
+global	_segment_not_present
+global	_stack_exception
+global	_general_protection
+global	_page_fault
+global	_copr_error
 
-.1:
-	cmp ecx, 0
-	jz .2
-	
-	mov al ,[ds:esi]
-	inc esi
-	
-	mov byte[es:edi], al
-	inc edi
-	
-	dec ecx
-	jmp .1
-.2:
-	mov eax, [ebp+8]	;返回值
-	
-	pop ecx
-	pop edi
-	pop esi
-	mov esp, ebp
-	pop ebp
-	
-	ret	
-_hlt:
+
+_divide_error:
+	push	0xFFFFFFFF	; no err code
+	push	0		; vector_no	= 0
+	jmp	exception
+_single_step_exception:
+	push	0xFFFFFFFF	; no err code
+	push	1		; vector_no	= 1
+	jmp	exception
+_nmi:
+	push	0xFFFFFFFF	; no err code
+	push	2		; vector_no	= 2
+	jmp	exception
+_breakpoint_exception:
+	push	0xFFFFFFFF	; no err code
+	push	3		; vector_no	= 3
+	jmp	exception
+_overflow:
+	push	0xFFFFFFFF	; no err code
+	push	4		; vector_no	= 4
+	jmp	exception
+_bounds_check:
+	push	0xFFFFFFFF	; no err code
+	push	5		; vector_no	= 5
+	jmp	exception
+_inval_opcode:
+	push	0xFFFFFFFF	; no err code
+	push	6		; vector_no	= 6
+	jmp	exception
+_copr_not_available:
+	push	0xFFFFFFFF	; no err code
+	push	7		; vector_no	= 7
+	jmp	exception
+_double_fault:
+	push	8		; vector_no	= 8
+	jmp	exception
+_copr_seg_overrun:
+	push	0xFFFFFFFF	; no err code
+	push	9		; vector_no	= 9
+	jmp	exception
+_inval_tss:
+	push	10		; vector_no	= A
+	jmp	exception
+_segment_not_present:
+	push	11		; vector_no	= B
+	jmp	exception
+_stack_exception:
+	push	12		; vector_no	= C
+	jmp	exception
+_general_protection:
+	push	13		; vector_no	= D
+	jmp	exception
+_page_fault:
+	push	14		; vector_no	= E
+	jmp	exception
+_copr_error:
+	push	0xFFFFFFFF	; no err code
+	push	16		; vector_no	= 10h
+	jmp	exception
+
+exception:
+	call	exception_handler
+	add	esp, 4*2	; 让栈顶指向 EIP，堆栈中从顶向下依次是：EIP、CS、EFLAGS
 	hlt
-	ret
-
-;函数：void disp_str(char * str, int row, int column)
-;loader.bin中已经将显存基址设置在gs寄存器中
-_disp_str:
-	push ebp
-	mov ebp, esp
-;	push ebx
-	push esi
-	push edi
-	;获取参数
-	;c语言调用压栈顺序
-	;栈内顺序
-	;str
-	;row
-	;column
-	mov esi, [ebp+8]	;字符串地址
-	mov eax, [ebp+12]	;行
-	mov edx, [ebp+16]	;列
-	;计算显存地址
-	mov bx,80
-	mul bx
-	add eax,edx
-	mov bx, 2
-	mul bx
-	mov edi, eax
-	mov ah, STRING_COLOR
-.1:
-        lodsb
-        test al, al
-        jz .2
-        cmp al, 0x0A    ;是回车吗
-        jnz .3
-        push eax
-        mov eax, edi
-        mov bl, 160
-        div bl
-        and eax, 0xFF
-        inc eax
-        mov bl, 160
-        mul bl
-        mov edi, eax
-        pop eax
-        jmp .1
-.3:
-        mov [gs:edi], ax
-        add edi, 2
-        jmp .1
-.2:
-        mov [ebp+8],edi
-
-        pop edi
-        pop esi
-;        pop ebx
-        pop ebp
-        ret
-
-;void clean(int top, int left, int bottom, int right)
-_clean:
-	push ebp
-	mov ebp, esp
-	;push ebx
-	;push ecx
-	push esi
-	push edi
-
-	;栈内顺序
-	;top
-	;left
-	;bottom
-	;right
-	mov eax, [ebp+8]	;上
-	mov ecx, [ebp+12]	;左
-	;计算清空显存开始位置
-	mov bx, 80
-	mul bx
-	and eax,0xFFFF
-	shl edx,0x10
-	add eax, edx
-		
-	add eax,ecx
-	mov bx,2
-	mul bx
-	mov edi, eax
-	;计算结束地址
-	mov eax, [ebp+16]	;下
-	mov ecx, [ebp+20]	;右
-	mov bx, 80
-	mul bx
-	and eax, 0xFFFF
-	shl edx, 0x10
-	add eax,edx	
-	add eax, ecx
-	mov bx, 2
-	mul bx
-.start:
-	cmp edi, eax
-	jnl .end
-	mov edx,0x00
-	mov [gs:edi], edx
-	add edi, 2
-	jmp .start
-.end:
-	pop edi
-	pop esi
-	;pop ebx
-	pop ebp
-	ret	
-
-;[section .data]
-;
-;gdt_ptr:
-;gdt_limit:	dw	0
-;gdt_base:	dd	0

@@ -1,6 +1,6 @@
 #include "type.h"	//平台无关的基本数据类型
 #include "protect.h"	//保护模式下gdt ldt等数据结构
-#define _GLOABL_C_HERE
+#define _DIYOS_GLOABL_C_HERE
 #include "global.h"
 /**
  * 定义全局描述符
@@ -29,3 +29,6 @@ struct descriptor_table gdt_ptr={
 } a
 ;
 */	//全局描述符表
+//定义中断描述符表
+struct gate idt[MAX_IDT_ITEMS];
+u8 idt_ptr[6];

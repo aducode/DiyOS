@@ -2,9 +2,10 @@
 ;全局的函数
 extern head		;用来初始化gdt idt等的c函数
 extern kmain		;c语言内核主函数
+extern exception_handler	;异常处理函数
 ;全局变量
 extern gdt_ptr		;全局的gdt_ptr
-
+extern idt_ptr		;全局中断向量表指针
 
 
 
