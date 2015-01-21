@@ -10,8 +10,8 @@ CFLAGS=-I include/ -I include/sys/ -c -fno-builtin
 ASM=nasm
 ASMFLAGS=-I include/ -I include/sys/ -f elf
 LD=ld
-#LDFLAGS=-s -Ttext $(KERNEL_ENTRY_POINT)
-LDFLAGS=-s -e $(KERNEL_ENTRY_POINT)
+LDFLAGS=-s -Ttext $(KERNEL_ENTRY_POINT)
+#LDFLAGS=-s -e $(KERNEL_ENTRY_POINT)
 # 用-e替代 -Ttext链接脚本
 # 由于在kernel.asm中显示的写上[section .s32],导致-Ttext设置后真正的Entry不相符，
 # fix 方案：

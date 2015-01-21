@@ -5,7 +5,9 @@
 extern kmain
 ;[section .s32] 当设置这个section时，ld使用-Ttext选项指定的entry point不准确
 ;[section .text] 改成这个或者彻底注释掉就可以使用-Ttext
-[section .s32] ;也可以用 ld 的 -e 选项替代-Ttext
+;[section .s32] ;也可以用 ld 的 -e 选项替代-Ttext<---这种做法也是错的，程序入口地址会被指定为0x0400，但这时虚拟地址的偏移，真正的segment还是高位地址
+;最终还是指定一个标准的section .text
+[section .text]
 global _start
 global _lgdt		;void _lgdt(struct descriptor_table gdt_ptr);
 global _hlt
