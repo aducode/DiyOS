@@ -1,8 +1,11 @@
 ;导入
 ;宏
-disp_str_color		equ	 0x0F
+;disp_str_color		equ	 0x0F
+%include	"kernel.inc"
 extern kmain
-[section .s32]
+;[section .s32] 当设置这个section时，ld使用-Ttext选项指定的entry point不准确
+;[section .text] 改成这个或者彻底注释掉就可以使用-Ttext
+[section .s32] ;也可以用 ld 的 -e 选项替代-Ttext
 global _start
 global _lgdt		;void _lgdt(struct descriptor_table gdt_ptr);
 global _hlt
@@ -49,7 +52,7 @@ disp_str:
 	mov bx, 2
 	mul bx
 	mov edi, eax
-	mov ah, disp_str_color
+	mov ah, STRING_COLOR
 .1:
         lodsb
         test al, al
