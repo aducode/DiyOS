@@ -117,7 +117,7 @@ void init_8259A()
 	_out_byte(INT_S_CTLMASK,	0x1);
 	/* Master 8259, OCW1.  */
 //	_out_byte(INT_M_CTLMASK,	0xFF);	//0xFF表示主8259的中断全部被屏蔽
-	_out_byte(INT_M_CTLMASK,	0xFD);	//0xFD 二进制11111101	表示1号硬件中断被打开（keyboard)
+	_out_byte(INT_M_CTLMASK,	0xFC);	//0xFD 二进制11111101	表示1号硬件中断被打开（keyboard)
 	/* Slave  8259, OCW1.  */
 	_out_byte(INT_S_CTLMASK,	0xFF);
 }

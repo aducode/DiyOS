@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "protect.h"
 //异常处理函数
+int cur_row=0;
 void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 {
 	char * err_msg[] = {"#DE Divide Error",
@@ -51,5 +52,7 @@ void irq_handler(int irq_no)
 		"irq15"
 	};
 	_clean(0,0,25,80);
-	_disp_str(irq_msg[irq_no],0,0,COLOR_WHITE);
+	_disp_str(irq_msg[irq_no],cur_row,0,COLOR_WHITE);
+	cur_row+=1;
+	if(cur_row>24) cur_row=0;
 }

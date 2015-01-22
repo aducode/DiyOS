@@ -139,9 +139,11 @@ global  _hwint15
 
 ; ---------------------------------
 %macro  hwint_master    1
+	;cli
         push    %1
         call    irq_handler
         add     esp, 4
+	;sti
         jmp irq_master_return_from_int
 %endmacro
 ; ---------------------------------
