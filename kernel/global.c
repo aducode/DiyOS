@@ -1,5 +1,6 @@
 #include "type.h"	//平台无关的基本数据类型
 #include "protect.h"	//保护模式下gdt ldt等数据结构
+#include "proc.h"
 #define _DIYOS_GLOABL_C_HERE
 #include "global.h"
 /**
@@ -32,3 +33,7 @@ struct descriptor_table gdt_ptr={
 //定义中断描述符表
 struct gate idt[MAX_IDT_ITEMS];
 u8 idt_ptr[6];
+//全局线程表
+struct process*  p_proc_ready;	//获得cpu时间的进程
+
+struct process proc_table[MAX_PROCESS_NUM];	//全局线程表

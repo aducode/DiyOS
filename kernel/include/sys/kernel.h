@@ -1,5 +1,6 @@
 #include "type.h"
 #include "protect.h"
+#include "proc.h"
 #include "global.h"	//定义了全局变量
 #ifndef _DIYOS_KERNEL_H
 #define _DIYOS_KERNEL_H
