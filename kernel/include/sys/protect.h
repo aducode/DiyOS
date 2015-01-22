@@ -100,10 +100,10 @@ struct gate{
 #define	INDEX_FLAT_RW		2	// ┃
 #define	INDEX_VIDEO		3	// ┛
 /* 选择子 */
-#define	SELECTOR_DUMMY		   0		// ┓
-#define	SELECTOR_FLAT_C		0x08		// ┣ LOADER 里面已经确定了的.
-#define	SELECTOR_FLAT_RW	0x10		// ┃
-#define	SELECTOR_VIDEO		(0x18+3)	// ┛<-- RPL=3
+#define	SELECTOR_DUMMY		(INDEX_DUMMY << 3)		// ┓
+#define	SELECTOR_FLAT_C		(INDEX_FLAT_C << 3)     	// ┣ LOADER 里面已经确定了的.
+#define	SELECTOR_FLAT_RW	(INDEX_FLAT_RW << 3)		// ┃
+#define	SELECTOR_VIDEO		(INDEX_VIDEO << 3 + 3)	        // ┛<-- RPL=3
 
 #define	SELECTOR_KERNEL_CS	SELECTOR_FLAT_C
 #define	SELECTOR_KERNEL_DS	SELECTOR_FLAT_RW

@@ -1,7 +1,7 @@
 #include "kernel.h"
 #include "protect.h"
 //异常处理函数
-int cur_row=0;
+static int cur_row=0;
 void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 {
 	char * err_msg[] = {"#DE Divide Error",

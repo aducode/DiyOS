@@ -20,7 +20,7 @@ _start:
 	lgdt [gdt_ptr]	;使用新的gdt
 	
 	lidt [idt_ptr]	;	
-	jmp CodeSelector:csinit
+	jmp SELECTOR_KERNEL_CS:csinit
 csinit:	;这个跳转指令强制使用刚刚初始化的结构
 	push 0
 	popfd	;清空eflag寄存器的值	
@@ -33,6 +33,32 @@ csinit:	;这个跳转指令强制使用刚刚初始化的结构
 	push kmain
 	ret
 
+;save 在中断发生时，保存当前进程寄存器的值
+;save:
+;	pushad
+;	push ds
+;	push es
+;	push fs
+;	push gs
+	
+;	mov ds,ss
+;	mov ds, dx
+;	mov es, dx
+
+;restart:
+;	mov esp, [p_proc_ready]
+;	lldt [esp+P_LDT_SEL]
+;	lea eax, [esp+P_STACKTOP]
+;	mov dword[tss+TSS3_S_SP0], eax
+;restart_reenter:
+;	dec dword [k_reenter]
+;	pop gs
+;	pop fs
+;	pop es
+;	pop ds
+;	popad
+;	add esp, 4
+;	iretd
 
 
 ; 中断和异常 -- 异常
@@ -141,7 +167,7 @@ global  _hwint15
 %macro  hwint_master    1
 	;cli
         push    %1
-        call    irq_handler
+        call    irq_handler		;默认的硬件中断处理函数
         add     esp, 4
 	;sti
         jmp irq_master_return_from_int

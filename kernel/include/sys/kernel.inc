@@ -32,13 +32,47 @@ SA_TIG          EQU     0       ; ┓TI
 SA_TIL          EQU     4       ; ┛
 ;-------------------------------------------------------------------------
 ;Selector
-CodeSelector	equ	1<<3
-DataSelector	equ	2<<3
-VideoSelector	equ	3<<3 + SA_RPL3
+SELECTOR_FLAT_C	equ	1<<3
+SELECTOR_TSS	equ	4<<3
+;CodeSelector	equ	1<<3
+;DataSelector	equ	2<<3
+;VideoSelector	equ	3<<3 + SA_RPL3
+;TSSSeclector	equ	4<<3	;TSS的选择子
+SELECTOR_KERNEL_CS equ	SELECTOR_FLAT_C
 ;8259A
-INT_M_CTL		equ	0x20
-INT_M_CTLMASK		equ	0x21
-INT_S_CTL		equ	0xA0
-INT_S_CTLMASK		equ	0xA1
+INT_M_CTL	equ	0x20
+INT_M_CTLMASK	equ	0x21
+INT_S_CTL	equ	0xA0
+INT_S_CTLMASK	equ	0xA1
 
-EOI			equ	0x20
+EOI		equ	0x20
+
+
+;进程表中的栈相关宏
+P_STACKBASE	equ	0x00
+GSREG		equ	P_STACKBASE	+	4
+FSREG		equ	GSREG		+	4
+ESREG		equ	FSREG		+	4
+DSREG		equ	ESREG		+	4
+EDIREG		equ	DSREG		+	4
+ESIREG		equ	EDIREG		+	4
+EBPREG		equ	ESIREG		+	4
+KERNELESPREG	equ	EBPREG		+	4
+EBXREG		equ	KERNELESPREG	+	4
+EDXREG		equ	EBXREG		+	4
+ECXREG		equ	EDXREG		+	4
+EAXREG		equ	ECXREG		+	4
+RETADR		equ	EAXREG		+	4
+EIPREG		equ	RETADR		+	4
+CSREG		equ	EIPREG		+	4
+EFLAGSREG	equ	CSREG		+	4
+ESPREG		equ	EFLAGSREG	+	4
+SSREG		equ	ESPREG		+	4
+P_STACKTOP	equ	SSREG		+	4
+
+P_LDT_SEL	equ	P_STACKTOP
+P_LDT		equ	P_LDT_SEL	+	4
+
+
+;TSS
+TSS3_S_SP0	equ	4
