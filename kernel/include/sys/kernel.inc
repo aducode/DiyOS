@@ -8,10 +8,11 @@ extern irq_handler		;硬件中断处理函数
 extern gdt_ptr		;全局的gdt_ptr
 extern idt_ptr		;全局中断向量表指针
 
+extern p_proc_ready	;获取cpu时间片的进程表指针
 
 
 
-MAX_GDT_ITEMS	equ	32
+MAX_GDT_ITEMS	equ	128
 LIMIT_OF_GDT	equ	(MAX_GDT_ITEMS - 1) * 8
 
 ;color
