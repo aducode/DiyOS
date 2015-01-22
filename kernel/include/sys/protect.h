@@ -95,6 +95,37 @@ struct gate{
 	u8	attr;		/* P(1) DPL(2) DT(1) TYPE(4) */
 	u16	offset_high;	/* Offset High */
 };
+//TSS
+struct tss{
+	u32	backlink;
+	u32	esp0;
+	u32	ss0;
+	u32	esp1;
+	u32	ss1;
+	u32	esp2;
+	u32	ss2;
+	u32	cr3;
+	u32	eip;
+	u32	flags;
+	u32	eax;
+	u32	ecx;
+	u32	edx;
+	u32	ebx;
+	u32	esp;
+	u32	ebp;
+	u32	esi;
+	u32	edi;
+	u32	es;
+	u32	cs;
+	u32	ss;
+	u32	ds;
+	u32	fs;
+	u32	gs;
+	u32	ldt;
+	u16	trap;
+	u16	iobase;	//I/O位图基址大于或等于TSS段界限，就表示没有I/O许可位
+	//u8	iomap[2];
+};
 /* GDT */
 /* 描述符索引 */
 #define	INDEX_DUMMY		0	// ┓
