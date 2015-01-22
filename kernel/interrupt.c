@@ -32,7 +32,6 @@ void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 //硬件中断处理函数
 void irq_handler(int irq_no)
 {	
-	static int cur_row = 0;
 	char *irq_msg[] = {
 		"irq0 the clock",
 		"irq1 keyboard",
@@ -52,6 +51,5 @@ void irq_handler(int irq_no)
 		"irq15"
 	};
 	_clean(0,0,25,80);
-	_disp_str(irq_msg[irq_no],cur_row,0,COLOR_WHITE);
-	cur_row+=1;
+	_disp_str(irq_msg[irq_no],0,0,COLOR_WHITE);
 }
