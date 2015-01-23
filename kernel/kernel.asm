@@ -34,31 +34,55 @@ csinit:	;这个跳转指令强制使用刚刚初始化的结构
 	ret
 
 ;save 在中断发生时，保存当前进程寄存器的值
-;save:
-;	pushad
-;	push ds
-;	push es
-;	push fs
-;	push gs
-	
-;	mov ds,ss
-;	mov ds, dx
-;	mov es, dx
+save:
+	;中断发生时，是从ring1以上跳到ring0，首先cpu会自动从TSS中的esp0中取出esp的值（已经在进程第一次启动调用restart时，被设置成该进程的进程表栈顶），然后中断时cpu会将cs eip等值入栈。
+	;call save时，会将save的返回地址也压栈，（保存在进程表中的retaddr里面）
+	;保存原寄存器的值
+	pushad
+	push ds
+	push es
+	push fs
+	push gs
+	;这里开始不能再使用push pop了，因为当前esp指向进程表里的某个位置，在进行栈操作会破坏进程表
+	mov esi, edx	;保存edx （系统调用参数)
+	;将ds es也指向ss
+	mov dx, ss
+	mov ds, dx
+	mov es, dx
+	mov fs, dx
+	mov edx, esi	;恢复edx
 
-;restart:
-;	mov esp, [p_proc_ready]
-;	lldt [esp+P_LDT_SEL]
-;	lea eax, [esp+P_STACKTOP]
-;	mov dword[tss+TSS3_S_SP0], eax
-;restart_reenter:
-;	dec dword [k_reenter]
-;	pop gs
-;	pop fs
-;	pop es
-;	pop ds
-;	popad
-;	add esp, 4
-;	iretd
+	mov esi, esp            ;esp已经压栈压到进成表项的最低地址了，所以此时esi就指向了进程表项开始位置
+	
+	inc dword[k_reenter]	;中断+1
+	cmp dword[k_reenter], 0	;==0表示已经在中断中了
+	jne .1			
+	mov esp, StackTop	;将esp从进程表切换到内核栈
+	;下面可以放心使用push pop了，因为esp已经在内核栈中了
+	push restart			;将retaddr执行完后的返回地址压栈
+	jmp [esi+RETADR - P_STACKBASE]	;返回到进程表项中的retaddr指向地址,起始retaddr就是call save的下一条指令
+.1:
+	;说明已经在内核中了，不需要从新设置进程的ldt和tss esp0等值
+	push restart_reenter
+	jmp [esi+RETADR - P_STACKBASE]
+
+
+
+;从内核中恢复用户线程上下
+restart:
+	mov esp, [p_proc_ready]		;设置esp指向占有cpu时间片的进程表项
+	lldt [esp+P_LDT_SEL]		;加载进程ldt
+	lea eax, [esp+P_STACKTOP]
+	mov dword[g_tss+TSS3_S_SP0], eax	;设置下次中断发生，从低特权跳到高特权级别时esp的位置到进程表项的栈底位置
+restart_reenter:
+	dec dword [k_reenter]		;中断返回前k_reenter 减1
+	pop gs				
+	pop fs
+	pop es
+	pop ds
+	popad				;恢复各个寄存器的值
+	add esp, 4			;esp跳过进程表中retaddr
+	iretd				;中断返回，cs eip esp等寄存器会从进程表栈中恢复，继续之前的进程执行
 
 
 ; 中断和异常 -- 异常
@@ -165,12 +189,24 @@ global  _hwint15
 
 ; ---------------------------------
 %macro  hwint_master    1
-	;cli
-        push    %1
-        call    irq_handler		;默认的硬件中断处理函数
-        add     esp, 4
-	;sti
-        jmp irq_master_return_from_int
+	;中断发生时，从ring1跳入ring0，首先esp的值会被变成tss中esp0的值，也就是上次中断返回之前设置成的进程表栈底
+	;然后原进程的cs eip esp等入栈
+	;然后call save，会把save返回地址入栈
+	call save		;save保存进程上下文，并把esp从进程表转到内核栈中，并将restart或restart_reenter入栈
+	in al, INT_M_CTLMASK
+	or al, (1<<%1)
+	out INT_M_CTLMASK, al	;屏蔽同种类的中断
+	mov al, EOI	
+	out INT_M_CTL, al	;置EOI
+	sti			;cpu在响应中断过程中会关中断，这句之后就允许响应新中断（其他种类的中断）
+	push %1	
+	call [irq_handler_table+4*%1] 
+	pop ecx
+	cli			;关中断, 后面iret后会自动开中断的
+	in al, INT_M_CTLMASK
+	and al, ~(1<<%1)
+	out INT_M_CTLMASK, al	;恢复当前中断
+	ret			;ret会返回到栈顶的地址，而栈顶已经在save中被push成restart 或 restart_reenter了，所以ret之后会jmp到restart，来恢复进程上线文，并从中断返回
 %endmacro
 ; ---------------------------------
 
@@ -209,7 +245,7 @@ _hwint07:                ; Interrupt routine for irq 7 (printer)
 ; ---------------------------------
 %macro  hwint_slave     1
         push    %1
-        call    irq_handler
+        call    [irq_handler_table+4*%1]
         add     esp, 4
 %endmacro
 ; ---------------------------------
@@ -246,8 +282,3 @@ ALIGN   16
 _hwint15:                ; Interrupt routine for irq 15
         hwint_slave     15
 
-
-irq_master_return_from_int:
-	mov al, EOI
-	out INT_M_CTL, al
-	iretd

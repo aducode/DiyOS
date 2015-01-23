@@ -1,8 +1,9 @@
 #ifndef _DIYOS_INTERRUPT_H
 #define _DIYOS_INTERRUPT_H
 //中断处理函数类型
-typedef void (*int_handler)();
-
+typedef void (*int_handler)();			//中断向量的表项
+typedef void (*irq_handler)(int irq_no);	//定义硬件中断处理函数
+#define MAX_IRQ_HANDLER_COUNT	16
 //中断处理函数
 /* 中断处理函数 */
 extern void	_divide_error();

@@ -31,7 +31,7 @@ void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 }
 
 //硬件中断处理函数
-void irq_handler(int irq_no)
+void default_irq_handler(int irq_no)
 {	
 	char *irq_msg[] = {
 		"irq0 the clock",

@@ -3,14 +3,18 @@
 extern head		;用来初始化gdt idt等的c函数
 extern kmain		;c语言内核主函数
 extern exception_handler	;异常处理函数
-extern irq_handler		;硬件中断处理函数
+;extern irq_handler		;硬件中断处理函数
 ;全局变量
 extern gdt_ptr		;全局的gdt_ptr
 extern idt_ptr		;全局中断向量表指针
 
 extern p_proc_ready	;获取cpu时间片的进程表指针
 
+extern k_reenter	;
 
+extern g_tss
+
+extern irq_handler_table	;全局硬件中断处理函数
 
 MAX_GDT_ITEMS	equ	128
 LIMIT_OF_GDT	equ	(MAX_GDT_ITEMS - 1) * 8
