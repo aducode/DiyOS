@@ -132,15 +132,21 @@ struct tss{
 #define	INDEX_FLAT_C		1	// ┣ LOADER 里面已经确定了的.
 #define	INDEX_FLAT_RW		2	// ┃
 #define	INDEX_VIDEO		3	// ┛
+
+#define INDEX_TSS		4	//TSS的选择子
+#define INDEX_LDT_FIRST		5	//第一个LDT的选择子
 /* 选择子 */
 #define	SELECTOR_DUMMY		(INDEX_DUMMY << 3)		// ┓
 #define	SELECTOR_FLAT_C		(INDEX_FLAT_C << 3)     	// ┣ LOADER 里面已经确定了的.
 #define	SELECTOR_FLAT_RW	(INDEX_FLAT_RW << 3)		// ┃
 #define	SELECTOR_VIDEO		(INDEX_VIDEO << 3 + 3)	        // ┛<-- RPL=3
 
+#define SELECTOR_TSS		(INDEX_TSS << 3)	
+#define SELECTOR_LDT_FIRST	(INDEX_LDT_FIRST << 3)
+
 #define	SELECTOR_KERNEL_CS	SELECTOR_FLAT_C
 #define	SELECTOR_KERNEL_DS	SELECTOR_FLAT_RW
-
+#define SELECTOR_KERNEL_GS	SELECTOR_VIDEO
 
 /* 描述符类型值说明 */
 #define	DA_32			0x4000	/* 32 位段				*/

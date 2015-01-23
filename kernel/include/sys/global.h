@@ -14,6 +14,8 @@ extern irq_handler irq_handler_table[];
 extern struct process* p_proc_ready;
 extern struct process  proc_table[];
 
+extern struct tss g_tss;
+
 extern int k_reenter;
 #endif
 #endif

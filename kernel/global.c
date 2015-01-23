@@ -40,7 +40,7 @@ irq_handler irq_handler_table[MAX_IRQ_HANDLER_COUNT];
 //全局线程表
 struct process*  p_proc_ready;	//获得cpu时间的进程
 
-struct process proc_table[MAX_PROCESS_NUM];	//全局线程表
+struct process proc_table[MAX_PROCESS_COUNT];	//全局线程表
 //TSS
 struct tss g_tss;
 //全局变量，判断是否在中断中(由于中断是可重入的，所以需要判断中断之前是否执行的是中断函数）

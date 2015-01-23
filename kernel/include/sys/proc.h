@@ -3,7 +3,11 @@
 #include "protect.h"
 #ifndef _DIYOS_PROC_H
 #define _DIYOS_PROC_H
-#define MAX_PROCESS_NUM	 32	//最多32个进程
+//#define MAX_PROCESS_COUNT	32	//最多32个进程
+#define TASKS_COUNT		2	//系统进程个数
+#define PROCS_COUNT		30	//用户进程数量
+
+#define MAX_PROCESS_COUNT	(TASKS_COUNT + PROCS_COUNT)	
 //进程表的栈，用来保存进程寄存器的值
 struct stackframe{
 	//中断开始时，由我们的中断处理函数进行压栈

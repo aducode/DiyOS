@@ -12,11 +12,12 @@ StackTop:	;栈顶
 ;最终还是指定一个标准的section .text
 [section .text]
 global _start
+global _restart
 _start:
 	;将栈移到内核内存空间中
 	mov esp, StackTop;
 	sgdt [gdt_ptr]	;给全局变量赋值
-	call head
+	call head	;head中进行初始化gdt idt的工作
 	lgdt [gdt_ptr]	;使用新的gdt
 	
 	lidt [idt_ptr]	;	
@@ -26,7 +27,7 @@ csinit:	;这个跳转指令强制使用刚刚初始化的结构
 	popfd	;清空eflag寄存器的值	
 	;ud2	;让cpu产生undefined error 测试异常向量是否设置正确
 	;开中断
-	sti
+	;sti	;现在还不能开中断，要kmain中初始化进程表之后才能开中断,kmain中调用restart，restart中iret后自动开中断，然后就可以切换到进程中了
 	;hlt
 	;jmp $-1
 	;跳转到kernel主函数
@@ -34,7 +35,7 @@ csinit:	;这个跳转指令强制使用刚刚初始化的结构
 	ret
 
 ;save 在中断发生时，保存当前进程寄存器的值
-save:
+_save:
 	;中断发生时，是从ring1以上跳到ring0，首先cpu会自动从TSS中的esp0中取出esp的值（已经在进程第一次启动调用restart时，被设置成该进程的进程表栈顶），然后中断时cpu会将cs eip等值入栈。
 	;call save时，会将save的返回地址也压栈，（保存在进程表中的retaddr里面）
 	;保存原寄存器的值
@@ -59,22 +60,22 @@ save:
 	jne .1			
 	mov esp, StackTop	;将esp从进程表切换到内核栈
 	;下面可以放心使用push pop了，因为esp已经在内核栈中了
-	push restart			;将retaddr执行完后的返回地址压栈
+	push _restart			;将retaddr执行完后的返回地址压栈
 	jmp [esi+RETADR - P_STACKBASE]	;返回到进程表项中的retaddr指向地址,起始retaddr就是call save的下一条指令
 .1:
 	;说明已经在内核中了，不需要从新设置进程的ldt和tss esp0等值
-	push restart_reenter
+	push _restart_reenter
 	jmp [esi+RETADR - P_STACKBASE]
 
 
 
 ;从内核中恢复用户线程上下
-restart:
+_restart:
 	mov esp, [p_proc_ready]		;设置esp指向占有cpu时间片的进程表项
 	lldt [esp+P_LDT_SEL]		;加载进程ldt
 	lea eax, [esp+P_STACKTOP]
 	mov dword[g_tss+TSS3_S_SP0], eax	;设置下次中断发生，从低特权跳到高特权级别时esp的位置到进程表项的栈底位置
-restart_reenter:
+_restart_reenter:
 	dec dword [k_reenter]		;中断返回前k_reenter 减1
 	pop gs				
 	pop fs
@@ -192,7 +193,7 @@ global  _hwint15
 	;中断发生时，从ring1跳入ring0，首先esp的值会被变成tss中esp0的值，也就是上次中断返回之前设置成的进程表栈底
 	;然后原进程的cs eip esp等入栈
 	;然后call save，会把save返回地址入栈
-	call save		;save保存进程上下文，并把esp从进程表转到内核栈中，并将restart或restart_reenter入栈
+	call _save		;save保存进程上下文，并把esp从进程表转到内核栈中，并将restart或restart_reenter入栈
 	in al, INT_M_CTLMASK
 	or al, (1<<%1)
 	out INT_M_CTLMASK, al	;屏蔽同种类的中断

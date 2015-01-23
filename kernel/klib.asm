@@ -2,6 +2,7 @@
 %include	"kernel.inc"
 [section .text]
 global _memcpy          ;void _memcpy(void * dest, void * src, int length);
+global _memset		;void _memset(void * p_dst, char ch, int size);
 global _hlt
 global _disp_str
 global _clean
@@ -60,7 +61,39 @@ _memcpy:
 	mov esp, ebp
 	pop ebp
 	
-	ret	
+	ret
+
+;
+_memset:
+	push ebp
+	mov ebp, esp
+	
+	push esi
+	push edi
+	push ecx
+	
+	mov edi, [ebp + 8]	;dst
+	mov edx, [ebp +12]	;char to be putted
+	mov ecx, [ebp +16]	;counter
+.1:
+	cmp ecx, 0
+	jz .2
+	
+	mov byte[edi], dl
+	inc edi
+
+	dec ecx
+	jmp .1
+.2:
+	pop ecx
+	pop edi
+	pop esi
+	mov esp, ebp
+	pop ebp
+	
+	ret		
+		
+;
 _hlt:
 	hlt
 	ret

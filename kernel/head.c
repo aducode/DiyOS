@@ -7,16 +7,30 @@ static void reset_gdt();
 
 static void setup_interrupt();
 
+static void setup_tss_selector();
+
+static void setup_ldt_selector();
+
 static void init_8259A();
+
+static void init_desc(struct descriptor * p_desc, u32 base, u32 limit, u16 attribute);
 
 static void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege);
 void head()
 {
 	//调用之前gdt_ptr中已经加载进gdt寄存器的值了
-        _disp_str("Reset GDT now ...\n", 4, 0,COLOR_WHITE);
-	reset_gdt();	
-	_disp_str("setup interrupt table now ...\n",6,0, COLOR_WHITE);
+        _disp_str("Reset GDT now ...", 4, 0,COLOR_GREEN);
+	reset_gdt();
+	//_disp_str("[OK]",4,40,COLOR_GREEN);
+	_disp_str("setup interrupt table now ...",5,0, COLOR_GREEN);
 	setup_interrupt();
+	//_disp_str("[OK]",5,40,COLOR_GREEN);
+	_disp_str("setup tss selector ...", 6, 0, COLOR_GREEN);
+	setup_tss_selector();
+	//_disp_str("[OK]",6,40,COLOR_GREEN);
+	_disp_str("setup ldt selector ... ", 7, 0, COLOR_GREEN);
+	setup_ldt_selector();	//设置gdt中ldt选择子
+	//_disp_str("[OK]",7,40,COLOR_GREEN);
 }
 
 void reset_gdt()
@@ -77,12 +91,42 @@ void setup_interrupt()
 	init_idt_desc(INT_VECTOR_IRQ8 + 4 , DA_386IGate, _hwint12, PRIVILEGE_KERNEL);
 	init_idt_desc(INT_VECTOR_IRQ8 + 5 , DA_386IGate, _hwint13, PRIVILEGE_KERNEL);
 	init_idt_desc(INT_VECTOR_IRQ8 + 6 , DA_386IGate, _hwint14, PRIVILEGE_KERNEL);
-	init_idt_desc(INT_VECTOR_IRQ8 + 7 , DA_386IGate, _hwint15, PRIVILEGE_KERNEL);
-	
-	
-	
-
+	init_idt_desc(INT_VECTOR_IRQ8 + 7 , DA_386IGate, _hwint15, PRIVILEGE_KERNEL);	
 }
+
+//初始化tss
+void setup_tss_selector()
+{
+	_memset(&g_tss,0,sizeof(struct tss));
+	g_tss.ss0 = SELECTOR_KERNEL_DS;
+	init_desc(&gdt[INDEX_TSS], &g_tss, sizeof(g_tss)-1, DA_386TSS);
+	g_tss.iobase = sizeof(g_tss);	//No IO permission bitmap
+}
+
+//设置ldt的gdt选择子
+void setup_ldt_selector()
+{
+	int i;
+	for(i=0;i<MAX_PROCESS_COUNT;i++)
+	{
+		_memset(&proc_table[i], 0, sizeof(struct process));
+		
+		proc_table[i].ldt_sel = SELECTOR_LDT_FIRST + (i<<3);
+	
+		init_desc(&gdt[INDEX_LDT_FIRST + i], (u32)proc_table[i].ldts, MAX_LDT_ITEMS * sizeof(struct descriptor) -1 , DA_LDT);
+	}
+}
+void init_desc(struct descriptor * p_desc, u32 base, u32 limit, u16 attribute)
+{
+	//设置描述符
+	p_desc->limit_low	=	limit & 0x0FFFF;
+	p_desc->base_low	=	base & 0x0FFFF;
+	p_desc->base_mid	=	(base>>16)&0x0FF;
+	p_desc->attr1		=	attribute & 0xFF;
+	p_desc->limit_high_attr2=	((limit>>16) && 0x0F)|((attribute>>8)&0xF0);
+	p_desc->base_high	=	(base>>24)&0x0FF;
+}
+
 void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege)
 {
 	struct gate * p_gate = &idt[vector];
