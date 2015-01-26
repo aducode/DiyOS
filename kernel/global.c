@@ -44,4 +44,19 @@ struct process proc_table[MAX_PROCESS_COUNT];	//全局线程表
 //TSS
 struct tss g_tss;
 //全局变量，判断是否在中断中(由于中断是可重入的，所以需要判断中断之前是否执行的是中断函数）
-int k_reenter = -1;	//初始值是1 ，当进入中断时+1 ，中断返回时-1,用于判断是否有重入的中断，（只允许不同种类中断重入，同种中断会在中断发生时被屏蔽掉)
+//int k_reenter = -1;	//初始值是1 ，当进入中断时+1 ，中断返回时-1,用于判断是否有重入的中断，（只允许不同种类中断重入，同种中断会在中断发生时被屏蔽掉)
+int k_reenter = 0;	//由于最开始执行中断时，会先减1 ，所以这里改成0
+
+
+
+//这里定义Task
+struct task task_table[TASKS_COUNT] = {
+	/* entry        stack size        task name */
+	/* -----        ----------        --------- */
+	{testA,		0x80,		"TeatA"}
+};
+
+
+
+//定义任务栈空间
+char task_stack[STACK_SIZE_TOTAL];

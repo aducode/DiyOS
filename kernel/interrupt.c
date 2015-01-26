@@ -25,9 +25,9 @@ void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 			    "#MC Machine Check",
 			    "#XF SIMD Floating-Point Exception"
 	};
-	_clean(0,0,25,80);
-	_disp_str("System Error    :(    Message is:\n",2,0,COLOR_SYS_ERROR);
-	_disp_str(err_msg[vec_no],3,0, COLOR_SYS_ERROR);		
+//	_clean(0,0,25,80);
+	_disp_str("System Error    :(    Message is:\n",22,0,COLOR_SYS_ERROR);
+	_disp_str(err_msg[vec_no],23,0, COLOR_SYS_ERROR);		
 }
 
 //硬件中断处理函数

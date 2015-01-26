@@ -8,6 +8,14 @@
 #define PROCS_COUNT		30	//用户进程数量
 
 #define MAX_PROCESS_COUNT	(TASKS_COUNT + PROCS_COUNT)	
+
+//RPL LEVEL
+#define RPL_TASK	1
+
+
+//stacks of tasks
+#define STACK_SIZE_TESTA	0x8000
+#define STACK_SIZE_TOTAL	(STACK_SIZE_TESTA)
 //进程表的栈，用来保存进程寄存器的值
 struct stackframe{
 	//中断开始时，由我们的中断处理函数进行压栈
@@ -43,6 +51,14 @@ struct process{
 	int priority;	//进程优先级
 	
 	u32 pid;	//进程id
-	char p_nam[16];	//进程名
+	char p_name[16];	//进程名
+};
+
+typedef void (*proc_entry_point)();
+//任务
+struct task{
+	proc_entry_point	entry;
+	int stacksize;
+	char name[32];	
 };
 #endif

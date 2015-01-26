@@ -17,5 +17,11 @@ extern struct process  proc_table[];
 extern struct tss g_tss;
 
 extern int k_reenter;
+
+extern struct task task_table[];
+extern char task_stack[];
+
+//process in main,just for test
+extern void testA();
 #endif
 #endif

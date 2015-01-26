@@ -16,6 +16,9 @@ static void init_8259A();
 static void init_desc(struct descriptor * p_desc, u32 base, u32 limit, u16 attribute);
 
 static void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege);
+
+static void put_irq_handler(int irq_no, irq_handler handler);
+
 void head()
 {
 	//调用之前gdt_ptr中已经加载进gdt寄存器的值了
@@ -92,6 +95,12 @@ void setup_interrupt()
 	init_idt_desc(INT_VECTOR_IRQ8 + 5 , DA_386IGate, _hwint13, PRIVILEGE_KERNEL);
 	init_idt_desc(INT_VECTOR_IRQ8 + 6 , DA_386IGate, _hwint14, PRIVILEGE_KERNEL);
 	init_idt_desc(INT_VECTOR_IRQ8 + 7 , DA_386IGate, _hwint15, PRIVILEGE_KERNEL);	
+	
+	//这里设置一下我们定义的irq_handler_table, 都设置成默认值
+	int i;
+	for(i=0;i<MAX_IRQ_HANDLER_COUNT;i++){
+		irq_handler_table[i] = default_irq_handler;
+	}	
 }
 
 //初始化tss
@@ -161,7 +170,7 @@ void init_8259A()
 	_out_byte(INT_S_CTLMASK,	0x1);
 	/* Master 8259, OCW1.  */
 //	_out_byte(INT_M_CTLMASK,	0xFF);	//0xFF表示主8259的中断全部被屏蔽
-	_out_byte(INT_M_CTLMASK,	0xFC);	//0xFD 二进制11111101	表示1号硬件中断被打开（keyboard)
+	_out_byte(INT_M_CTLMASK,	0xFF);	//0xFD 二进制11111101	表示1号硬件中断被打开（keyboard)
 	/* Slave  8259, OCW1.  */
 	_out_byte(INT_S_CTLMASK,	0xFF);
 }

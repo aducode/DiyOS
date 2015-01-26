@@ -175,5 +175,16 @@ struct tss{
 // 系统级别
 //R0
 #define	PRIVILEGE_KERNEL	0	//内核级别
+#define PRIVILEGE_TASK		1
 #define PRIVILEGE_USER		3	//用户级别
+//SA_:selector attribute
+#define SA_RPL_MASK		0xFFFC
+#define SA_RPL0			0
+#define SA_RPL1			1
+#define SA_RPL2			2
+#define SA_RPL3			3
+
+#define SA_TI_MASK		0xFFFB
+#define SA_TIG			0
+#define SA_TIL			4
 #endif

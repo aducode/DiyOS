@@ -3,11 +3,14 @@
 [section .text]
 global _memcpy          ;void _memcpy(void * dest, void * src, int length);
 global _memset		;void _memset(void * p_dst, char ch, int size);
+global _strcpy		;vpid _strcpy(void * p_dst, char * p_src);
 global _hlt
 global _disp_str
 global _clean
 global _out_byte
 global _in_byte
+global _disable_irq	;void _disable_irq(int irq_no);
+global _enable_irq	;void _enable_irq(int irq_no);
 ;-----------------------------------------------------------------
 ;定义一些函数供c语言使用
 ;void out_byte(u16 port, u8 value)
@@ -92,6 +95,22 @@ _memset:
 	pop ebp
 	
 	ret		
+;_strcpy
+_strcpy:
+	push ebp
+	mov ebp, esp
+	mov esi, [ebp+12]	;source
+	mov edi, [ebp+8	]	;dest
+.1:
+	mov al, [esi]
+	inc esi
+	mov byte[edi],al
+	inc edi
+	cmp al, 0
+	jnz .1
+	mov eax, [ebp+8]
+	pop ebp
+	ret
 		
 ;
 _hlt:
@@ -209,4 +228,57 @@ _clean:
 	pop ebp
 	ret	
 
+;_disable_irq
+_disable_irq:
+	mov ecx, [esp + 4]	;irq_no
+	pushf
+	cli
+	mov ah, 1
+	rol ah, cl
+	cmp cl, 8
+	jae _disable_8
+_disable_0:
+	in al, INT_M_CTLMASK
+	test al, ah
+	jnz _dis_already
+	or al, ah
+	out INT_M_CTLMASK, al
+	popf
+	mov eax, 1
+	ret
+_disable_8:
+	in al, INT_S_CTLMASK
+	test al, ah
+	jnz _dis_already
+	or al, ah
+	out INT_S_CTLMASK, al
+	popf
+	mov eax, 1
+	ret
+_dis_already:
+	popf
+	xor eax, eax
+	ret
 
+;_enable_irq
+_enable_irq:
+	mov ecx, [esp + 4];irq_no
+	pushf
+	cli
+	mov al, ~1
+	rol ah, cl
+	cmp cl, 8
+	jae _enable_8
+_enable_0:
+	in al, INT_M_CTLMASK
+	and al, ah
+	out INT_M_CTLMASK, al
+	popf
+	ret
+_enable_8:
+	in al, INT_S_CTLMASK
+	and al, ah
+	out INT_S_CTLMASK, al
+	popf
+	ret
+		
