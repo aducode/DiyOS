@@ -4,8 +4,8 @@
 #ifndef _DIYOS_PROC_H
 #define _DIYOS_PROC_H
 //#define MAX_PROCESS_COUNT	32	//最多32个进程
-#define TASKS_COUNT		2	//系统进程个数
-#define PROCS_COUNT		30	//用户进程数量
+#define TASKS_COUNT		1	//系统进程个数
+#define PROCS_COUNT		0	//用户进程数量
 
 #define MAX_PROCESS_COUNT	(TASKS_COUNT + PROCS_COUNT)	
 
