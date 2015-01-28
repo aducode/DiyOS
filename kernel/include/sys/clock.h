@@ -5,6 +5,8 @@ extern void init_clock();
 #define MAX_TICKS	0xFFFFFFFFFFFL
 
 //8253/8254 PIT（Programmable Interval Timer)
+//默认的中断频率是18.2HZ
+//通过如下参数设置后会10ms发生一次时钟中断
 #define TIMER0		0x40	//I/O port for timer channel 0
 #define TIMER_MODE	0x43    //I/O port for timer mode control
 #define RATE_GENERATOR	0x34    //00-11-010-0:
