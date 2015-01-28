@@ -3,17 +3,21 @@
 #include "klib.h"
 #include "global.h"
 #include "interrupt.h"
-
+#include "proc.h"
 static void clock_handler(int irq_no);
 /**
  * 时钟中断处理函数
  */
 void clock_handler(int irq_no)
-{
+{	
+	static char msg[20];
+	_disp_str("IN CLOCK INT...\tticks now is:",4,0,COLOR_GREEN);
 	ticks++;
 	if(ticks>MAX_TICKS)ticks=0;
-	_clean(0,0,25,80);
-	_disp_str("IN CLOCK HANDLER yooooo!!!!",(ticks&24)+1,0,COLOR_WHITE);	
+//	_clean(0,0,25,80);
+	itoa(ticks,msg, 10);
+	_disp_str(msg,5,0,COLOR_GREEN);
+	schedule();
 }
 void init_clock()
 {

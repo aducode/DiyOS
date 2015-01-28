@@ -23,6 +23,11 @@ _start:
 	lidt [idt_ptr]	;	
 	jmp SELECTOR_KERNEL_CS:csinit
 csinit:	;这个跳转指令强制使用刚刚初始化的结构
+	;设置tss   如果不设置TSS的化，中断响应会有问题
+	xor eax,eax
+	mov ax, SELECTOR_TSS
+	ltr ax
+
 	push 0
 	popfd	;清空eflag寄存器的值	
 	;ud2	;让cpu产生undefined error 测试异常向量是否设置正确
@@ -72,7 +77,8 @@ _save:
 ;从内核中恢复用户线程上下
 _restart:
 ;	sti
-;	ret
+;	ret	;当kmain中调用_restart时，如果这里直接开中断，返回，那么硬件中断（比如时钟中断）是没问题的，但是当切换到进程时，中断没有响应
+;	原因是，由于涉及到iret从ring0跳到ring1执行，所以需要提前使用ltr SELECTOR_TSS  设置tss结构，之前没有设置，所以不能进行中断
 	mov esp, [p_proc_ready]		;设置esp指向占有cpu时间片的进程表项
 	lldt [esp+P_LDT_SEL]		;加载进程ldt
 	lea eax, [esp+P_STACKTOP]

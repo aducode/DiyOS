@@ -1,12 +1,16 @@
 ;汇编函数库
 %include	"kernel.inc"
 [section .text]
+;内存/字符串操作
 global _memcpy          ;void _memcpy(void * dest, void * src, int length);
 global _memset		;void _memset(void * p_dst, char ch, int size);
 global _strcpy		;vpid _strcpy(void * p_dst, char * p_src);
-global _hlt
 global _disp_str
 global _clean
+
+
+;对c语言不能直接操作的一些汇编指令的封装
+global _hlt		;void _hlt(); 在ring1以上级别调用的时候会出现GP异常，非内核级慎用
 global _out_byte
 global _in_byte
 global _disable_irq	;void _disable_irq(int irq_no);
