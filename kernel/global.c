@@ -63,3 +63,8 @@ struct task task_table[TASKS_COUNT] = {
 
 //定义任务栈空间
 char task_stack[STACK_SIZE_TOTAL];
+
+
+
+//全局时钟
+int ticks;

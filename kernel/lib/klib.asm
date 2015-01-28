@@ -115,6 +115,7 @@ _strcpy:
 ;
 _hlt:
 	hlt
+;	nop
 	ret
 
 

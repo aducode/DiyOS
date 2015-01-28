@@ -71,6 +71,8 @@ _save:
 
 ;从内核中恢复用户线程上下
 _restart:
+;	sti
+;	ret
 	mov esp, [p_proc_ready]		;设置esp指向占有cpu时间片的进程表项
 	lldt [esp+P_LDT_SEL]		;加载进程ldt
 	lea eax, [esp+P_STACKTOP]

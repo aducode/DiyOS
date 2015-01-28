@@ -1,5 +1,7 @@
 #include "type.h"
 #include "interrupt.h"
+#include "protect.h"
+#include "proc.h"
 #ifndef _DIYOS_GLOBAL_H
 #define _DIYOS_GLOBAL_H
 #ifndef _DIYOS_GLOBAL_C_HERE
@@ -21,5 +23,6 @@ extern int k_reenter;
 extern struct task task_table[];
 extern char task_stack[];
 
+extern int ticks;
 #endif
 #endif

@@ -53,14 +53,17 @@ void kmain(){
 	//设置将要开始的进程
 	p_proc_ready = proc_table;
 	//开启时钟中断
-	_disable_irq(CLOCK_IRQ);
-	irq_handler_table[CLOCK_IRQ] = default_irq_handler;
-	_enable_irq(CLOCK_IRQ);
+	init_clock();
+//	_disable_irq(CLOCK_IRQ);
+//	irq_handler_table[CLOCK_IRQ] = default_irq_handler;
+//	_enable_irq(CLOCK_IRQ);
 	//启动进程
 	_disp_str("start new process now ...",17,0, COLOR_GREEN);
 	_clean(0,0,25,80);
 	_restart();
+	//上面restart之后就会进入到进程里，下面不会被执行
 	while(1){
+		_disp_str("yoooooooo!",0,0,COLOR_GREEN);
 		_hlt();
 	}
 }
@@ -69,7 +72,7 @@ void testA()
 {
 	static int len=0;
 	while(1){
-		_disp_str("testA",len++,0, COLOR_WHITE);
+		_disp_str("###                 ",len++,0, COLOR_RED);
 		if(len>7)len=0;
 		_hlt();
 	}
@@ -78,7 +81,7 @@ void testA()
 void testB()
 {
 	while(1){
-		_disp_str("testB",17,0, COLOR_GREEN);	
+		_disp_str("$$$                ",17,0, COLOR_GREEN);	
 		_hlt();
 	}
 }
