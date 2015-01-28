@@ -71,11 +71,11 @@ void kmain(){
 void testA()
 {
 	static char msg[20];
-	_disp_str("IN RING1 PROC A...\tticks now is:",0,0, COLOR_RED);
+	_disp_str("IN RING1 PROC A...    ticks now is:",0,0, COLOR_GREEN);
 	while(1){
 		//_clean(0,0,25,80);
 		itoa(ticks,msg,10);
-		_disp_str(msg,1,0, COLOR_RED);
+		_disp_str(msg,1,0, COLOR_GREEN);
 //		_hlt();			//将运行在ring1 ，ring1执行hlt会报异常
 	}
 }
@@ -83,7 +83,7 @@ void testA()
 void testB()
 {	
 	static char msg[20];
-	_disp_str("IN RING1 PROC B...\tticks now is:",2,0,COLOR_WHITE);
+	_disp_str("IN RING1 PROC B...    ticks now is:",2,0,COLOR_WHITE);
 	while(1){
 		itoa(ticks, msg,10);
 		_disp_str(msg,3,0, COLOR_WHITE);	

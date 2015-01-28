@@ -11,12 +11,12 @@ static void clock_handler(int irq_no);
 void clock_handler(int irq_no)
 {	
 	static char msg[20];
-	_disp_str("IN CLOCK INT...\tticks now is:",4,0,COLOR_GREEN);
-	ticks++;
+	_disp_str("IN RING0 CLOCKINT...  ticks now is:",4,0,COLOR_RED);
+	ticks+=1;
 	if(ticks>MAX_TICKS)ticks=0;
 //	_clean(0,0,25,80);
-	itoa(ticks,msg, 10);
-	_disp_str(msg,5,0,COLOR_GREEN);
+	itoa((int)ticks,msg, 10);
+	_disp_str(msg,5,0,COLOR_RED);
 	schedule();
 }
 void init_clock()
