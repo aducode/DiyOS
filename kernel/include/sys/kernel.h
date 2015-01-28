@@ -2,6 +2,8 @@
 #include "protect.h"
 #include "proc.h"
 #include "global.h"	//定义了全局变量
+
+#include "string.h"
 #ifndef _DIYOS_KERNEL_H
 #define _DIYOS_KERNEL_H
 //klib.asm中的汇编函数

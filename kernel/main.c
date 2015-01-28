@@ -3,7 +3,11 @@
  * 初始化全局描述符表
  */
 void kmain(){
+	char str[256];   //itoa使用
 //	_clean(0,0,25,80);
+	itoa(SELECTOR_LDT_FIRST, str, 16);
+        _disp_str(str, 20, 0, COLOR_WHITE);
+
 	_disp_str("hello kernel\nI can display some string in screen :)\n",15,0,COLOR_LIGHT_WHITE);
 	//设置进程
 	//任务表中的第一项
@@ -49,6 +53,7 @@ void kmain(){
 		p_task++;
 		selector_ldt+=1<<3;
 	}
+	k_reenter = 0;
 	//设置将要开始的进程
 	p_proc_ready = proc_table;
 	//开启时钟中断
@@ -58,7 +63,7 @@ void kmain(){
 	//TODO 设置进程的ldt
 	//启动进程，开中断
 	_disp_str("start new process now ...",17,0, COLOR_GREEN);
-	_restart();
+	//_restart();
 	while(1){
 		_hlt();
 	}

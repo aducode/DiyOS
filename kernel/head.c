@@ -29,9 +29,12 @@ void head()
 	setup_interrupt();
 	//_disp_str("[OK]",5,40,COLOR_GREEN);
 	_disp_str("setup tss selector ...", 6, 0, COLOR_GREEN);
+	//将tss放入gdt中
 	setup_tss_selector();
 	//_disp_str("[OK]",6,40,COLOR_GREEN);
 	_disp_str("setup ldt selector ... ", 7, 0, COLOR_GREEN);
+	//将local descriptor table 放入gdt中
+	//循环最大进程数次
 	setup_ldt_selector();	//设置gdt中ldt选择子
 	//_disp_str("[OK]",7,40,COLOR_GREEN);
 }
