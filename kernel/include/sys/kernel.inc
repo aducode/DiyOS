@@ -55,7 +55,7 @@ EOI		equ	0x20
 
 ;进程表中的栈相关宏
 P_STACKBASE	equ	0x00
-GSREG		equ	P_STACKBASE	+	4
+GSREG		equ	P_STACKBASE
 FSREG		equ	GSREG		+	4
 ESREG		equ	FSREG		+	4
 DSREG		equ	ESREG		+	4

@@ -139,7 +139,8 @@ struct tss{
 #define	SELECTOR_DUMMY		(INDEX_DUMMY << 3)		// ┓
 #define	SELECTOR_FLAT_C		(INDEX_FLAT_C << 3)     	// ┣ LOADER 里面已经确定了的.
 #define	SELECTOR_FLAT_RW	(INDEX_FLAT_RW << 3)		// ┃
-#define	SELECTOR_VIDEO		(INDEX_VIDEO << 3 + 3)	        // ┛<-- RPL=3
+#define	SELECTOR_VIDEO		((INDEX_VIDEO << 3) + 3)        // ┛<-- RPL=3
+/**注意，<<操作的优先级是小于+的，所以上面要多加一个括号，之前没有加，结果导致结果从正确的3<<3=3*8=24变成了错误的 3<<(3+3)=3*48=192，导致系统GP错误**/
 
 #define SELECTOR_TSS		(INDEX_TSS << 3)	
 #define SELECTOR_LDT_FIRST	(INDEX_LDT_FIRST << 3)

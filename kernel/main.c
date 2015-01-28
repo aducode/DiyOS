@@ -3,11 +3,7 @@
  * 初始化全局描述符表
  */
 void kmain(){
-	char str[256];   //itoa使用
 //	_clean(0,0,25,80);
-	itoa(SELECTOR_LDT_FIRST, str, 16);
-        _disp_str(str, 20, 0, COLOR_WHITE);
-
 	_disp_str("hello kernel\nI can display some string in screen :)\n",15,0,COLOR_LIGHT_WHITE);
 	//设置进程
 	//任务表中的第一项
@@ -60,10 +56,10 @@ void kmain(){
 	_disable_irq(CLOCK_IRQ);
 	irq_handler_table[CLOCK_IRQ] = default_irq_handler;
 	_enable_irq(CLOCK_IRQ);
-	//TODO 设置进程的ldt
-	//启动进程，开中断
+	//启动进程
 	_disp_str("start new process now ...",17,0, COLOR_GREEN);
-	//_restart();
+	_clean(0,0,25,80);
+	_restart();
 	while(1){
 		_hlt();
 	}
@@ -71,6 +67,18 @@ void kmain(){
 
 void testA()
 {
-	_clean(0,0,25,80);
-	_disp_str("testA",17,0, COLOR_WHITE);
+	static int len=0;
+	while(1){
+		_disp_str("testA",len++,0, COLOR_WHITE);
+		if(len>7)len=0;
+		_hlt();
+	}
+}
+
+void testB()
+{
+	while(1){
+		_disp_str("testB",17,0, COLOR_GREEN);	
+		_hlt();
+	}
 }
