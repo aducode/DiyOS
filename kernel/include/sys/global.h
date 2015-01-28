@@ -23,6 +23,7 @@ extern int k_reenter;
 extern struct task task_table[];
 extern char task_stack[];
 
-extern int ticks;
+//extern int ticks;
+extern long long ticks;
 #endif
 #endif

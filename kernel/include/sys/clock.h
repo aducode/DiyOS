@@ -1,8 +1,8 @@
 #ifndef _DIYOS_CLOCK_H
 #define _DIYOS_CLOCK_H
 extern void init_clock();
-#define MAX_TICKS	0x7FFFABCD
-//#define MAX_TICKS	0xFFFFFFFFFFFL
+//#define MAX_TICKS	0x7FFFABCD
+#define MAX_TICKS	0xFFFFFFFFFFFL
 
 //8253/8254 PIT（Programmable Interval Timer)
 #define TIMER0		0x40	//I/O port for timer channel 0

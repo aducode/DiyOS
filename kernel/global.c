@@ -67,4 +67,5 @@ char task_stack[STACK_SIZE_TOTAL];
 
 
 //全局时钟
-int ticks;
+//int ticks;
+long long ticks;
