@@ -113,7 +113,7 @@ void setup_tss_selector()
 {
 	_memset(&g_tss,0,sizeof(struct tss));
 	g_tss.ss0 = SELECTOR_KERNEL_DS;
-	init_desc(&gdt[INDEX_TSS], &g_tss, sizeof(g_tss)-1, DA_386TSS);
+	init_desc(&gdt[INDEX_TSS], (u32)&g_tss, sizeof(g_tss)-1, DA_386TSS);
 	g_tss.iobase = sizeof(g_tss);	//No IO permission bitmap
 }
 
