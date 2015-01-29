@@ -103,7 +103,9 @@ void setup_interrupt()
 	int i;
 	for(i=0;i<MAX_IRQ_HANDLER_COUNT;i++){
 		irq_handler_table[i] = default_irq_handler;
-	}	
+	}
+	//系统中断
+	init_idt_desc(INT_VECTOR_SYS_CALL, DA_386IGate, _sys_call, PRIVILEGE_USER);
 }
 
 //初始化tss

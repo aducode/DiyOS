@@ -71,3 +71,11 @@ char task_stack[STACK_SIZE_TOTAL];
 //这里不是类似unix时间戳，而是系统启动以来发生时钟中断的次数
 //时钟中断通过init_clock设置为每隔10ms中断一次，也就是说一个进程的cpu时间片约为10ms
 long long ticks;
+
+
+
+//in main
+extern sys_get_ticks();
+//系统调用
+system_call sys_call_table[MAX_SYSCALL_COUNT] =
+{sys_get_ticks};

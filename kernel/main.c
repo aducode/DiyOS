@@ -67,7 +67,7 @@ void kmain(){
 		_hlt();
 	}
 }
-
+/********************* testA  testB 是ring1级别的 ***************************/
 void testA()
 {
 	static char msg[20];
@@ -88,5 +88,16 @@ void testB()
 		itoa(ticks, msg,10);
 		_disp_str(msg,3,0, COLOR_WHITE);	
 //		_hlt();
+		get_ticks();
 	}
+}
+
+
+/************************ 这里的函数是ring0级别系统调用*******************/
+void sys_get_ticks()
+{	
+	static char msg[20];
+	_disp_str("IN SYS CALL get_ticks  ticks now is:",12,0, COLOR_WHITE);
+	itoa(ticks, msg, 10);
+	_disp_str(msg,13, 0, COLOR_WHITE);
 }

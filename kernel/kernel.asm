@@ -13,6 +13,7 @@ StackTop:	;栈顶
 [section .text]
 global _start
 global _restart
+global _sys_call	;系统调用
 _start:
 	;将栈移到内核内存空间中
 	mov esp, StackTop;
@@ -92,6 +93,16 @@ _restart_reenter:
 	popad				;恢复各个寄存器的值
 	add esp, 4			;esp跳过进程表中retaddr
 	iretd				;中断返回，cs eip esp等寄存器会从进程表栈中恢复，继续之前的进程执行
+
+;_sys_call
+_sys_call:
+	call _save
+	sti
+	call [sys_call_table + eax*4]
+	mov  [esi + EAXREG - P_STACKBASE], eax
+	cli
+	ret
+
 
 
 ; 中断和异常 -- 异常

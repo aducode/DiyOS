@@ -40,6 +40,9 @@
 #define	INT_VECTOR_IRQ0			0x20
 #define	INT_VECTOR_IRQ8			0x28
 
+
+//系统中断
+#define INT_VECTOR_SYS_CALL		0x80
 //定义gdt ldt idt等
 /**
  * 段描述符

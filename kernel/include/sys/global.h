@@ -25,5 +25,8 @@ extern char task_stack[];
 
 //extern int ticks;
 extern long long ticks;
+
+//sys_call
+extern system_call sys_call_table[];
 #endif
 #endif

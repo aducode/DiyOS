@@ -4,6 +4,8 @@
 typedef void (*int_handler)();			//中断向量的表项
 typedef void (*irq_handler)(int irq_no);	//定义硬件中断处理函数
 #define MAX_IRQ_HANDLER_COUNT	16
+
+#define MAX_SYSCALL_COUNT	1		//系统调用数
 /* Hardware interrupts */
 #define CLOCK_IRQ       0
 #define KEYBOARD_IRQ    1

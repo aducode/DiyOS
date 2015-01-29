@@ -15,10 +15,6 @@ extern void * _memcpy(void * dest, void * src, int size);
 extern void _memset(void * dest, char ch, int size);
 extern void _out_byte(u16 port, u8 value);
 extern u8 _in_byte(u16 port);
-//kernel.asm
-extern void _restart();
-
-
 extern void _disable_irq(int irq_no);
 extern void _enable_irq(int irq_no);
 #endif

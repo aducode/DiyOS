@@ -6,3 +6,8 @@
 
 #include "string.h"
 #include "klib.h"
+
+#include "stdlib.h"
+
+extern void _restart();
+extern void _sys_call();
