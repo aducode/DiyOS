@@ -2,6 +2,7 @@
 #include "interrupt.h"
 #include "protect.h"
 #include "proc.h"
+#include "keyboard.h"
 #ifndef _DIYOS_GLOBAL_H
 #define _DIYOS_GLOBAL_H
 #ifndef _DIYOS_GLOBAL_C_HERE
@@ -28,5 +29,8 @@ extern long long ticks;
 
 //sys_call
 extern system_call sys_call_table[];
+
+//keybaord buffer
+extern struct keyboard_buffer_t keyboard_buffer;
 #endif
 #endif

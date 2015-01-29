@@ -1,7 +1,5 @@
-#include "type.h"	//平台无关的基本数据类型
-#include "protect.h"	//保护模式下gdt ldt等数据结构
-#include "interrupt.h"	
-#include "proc.h"
+#ifndef _DIYOS_GLOBAL_H
+#define _DIYOS_GLOBAL_H
 #define _DIYOS_GLOABL_C_HERE
 #include "global.h"
 /**
@@ -81,3 +79,7 @@ extern sys_get_ticks();
 //系统调用
 system_call sys_call_table[MAX_SYSCALL_COUNT] =
 {sys_get_ticks};
+
+//键盘全局缓冲
+struct keyboard_buffer_t keyboard_buffer;
+#endif

@@ -15,6 +15,8 @@ global _out_byte
 global _in_byte
 global _disable_irq	;void _disable_irq(int irq_no);
 global _enable_irq	;void _enable_irq(int irq_no);
+global _disable_int	;void _disable_int();
+global _enable_int	;void _enable_int();
 ;-----------------------------------------------------------------
 ;定义一些函数供c语言使用
 ;void out_byte(u16 port, u8 value)
@@ -286,4 +288,12 @@ _enable_8:
 	out INT_S_CTLMASK, al
 	popf
 	ret
-		
+
+
+_disable_int:
+	cli
+	ret
+
+_enable_int:
+	sti
+	ret	
