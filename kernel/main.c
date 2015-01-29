@@ -92,6 +92,16 @@ void testB()
 	}
 }
 
+void testC()
+{
+	static char msg[20];
+	_disp_str("IN RING1 PROC C...    ticks now is:",4,0,COLOR_YELLOW);
+	while(1)
+	{
+		itoa(ticks, msg, 10);
+		_disp_str(msg, 5,0,COLOR_YELLOW);
+	}
+}
 
 /************************ 这里的函数是ring0级别系统调用*******************/
 void sys_get_ticks()

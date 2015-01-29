@@ -52,11 +52,13 @@ int k_reenter = -1;	//由于最开始执行中断时，会先减1 ，所以这�
 //这里定义Task
 extern void testA();
 extern void testB();
+extern void testC();
 struct task task_table[TASKS_COUNT] = {
 	/* entry        stack size        task name */
 	/* -----        ----------        --------- */
 	{testA,		0x80,		"TeatA"},
-	{testB,		0x80,		"TestB"}
+	{testB,		0x80,		"TestB"},
+	{testC,		0x80,		"TestC"}
 };
 
 

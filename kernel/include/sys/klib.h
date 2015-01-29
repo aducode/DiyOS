@@ -7,6 +7,7 @@ extern void _clean(int top, int left, int bottom, int right);
 //color
 #define COLOR_GREEN		0x02
 #define COLOR_RED		0x04
+#define COLOR_YELLOW		0x06
 #define COLOR_LIGHT_WHITE	0x07
 #define	COLOR_WHITE		0x0F
 #define COLOR_SYS_ERROR		0x74
