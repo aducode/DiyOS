@@ -7,17 +7,20 @@
  * 处理键盘硬件中断
  */
 static void keyboard_handler(int irq_no);
-
+//
+static struct keyboard_buffer_t keyboard_buffer;
 
 static void init_kb();
 static void put_code_into_buffer();
 static u8 get_code_from_buffer();
 void keyboard_handler(int irq_no)
 {
-	static int color = 0x00;
-	static char msg[256];
 	//u8 scan_code = _in_byte(IO_8042_PORT);	//清空8042缓冲才能下一次中断
 	put_code_into_buffer();
+}
+void keyboard_read(){
+	static int color = 0x00;
+	static char msg[256];
 	u8 scan_code = get_code_from_buffer();
 	
 	_disp_str("Press a key :)",10,0,color++);

@@ -12,4 +12,5 @@ struct keyboard_buffer_t{
 	int count;	//计数器
 	char buffer[KEYBOARD_BUFFER_SIZE];
 };
+extern void keyboard_read();
 #endif

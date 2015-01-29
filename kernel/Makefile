@@ -30,35 +30,51 @@ DASM=ndisasm
 DASMFLAGS=-u -o $(KERNEL_ENTRY_POINT) -e $(KERNEL_ENTRY_OFFSET)
 DASMOUTPUT=$(KERNEL).bin.asm
 
-OBJECTS=$(KERNEL).o main.o global.o head.o klib.o  interrupt.o string.o clock.o keyboard.o proc.o  syscall.o
+OBJECTS=$(KERNEL).o main.o global.o head.o klib.o  interrupt.o string.o clock.o keyboard.o proc.o  syscall.o tty.o test.o
 
 all:$(KERNEL).bin
 
 $(KERNEL).bin:$(OBJECTS)
 	$(LD) $(LDFLAGS) $(OBJECTS) -o $(KERNEL).bin
 
-interrupt.o:interrupt.c
-	$(CC) $(CFLAGS) interrupt.c -o interrupt.o
+#################################kernel main ######################################
+$(KERNEL).o:$(KERNEL).asm
+	$(ASM) $(ASMFLAGS) $(KERNEL).asm -o $(KERNEL).o
+klib.o:lib/klib.asm
+	$(ASM) $(ASMFLAGS) lib/klib.asm -o klib.o
 head.o:head.c
 	$(CC) $(CFLAGS) head.c -o head.o
 global.o:global.c
 	$(CC) $(CFLAGS) global.c -o global.o
 main.o:main.c
 	$(CC) $(CFLAGS) main.c -o main.o
-klib.o:lib/klib.asm
-	$(ASM) $(ASMFLAGS) lib/klib.asm -o klib.o
-syscall.o:lib/syscall.asm
-	$(ASM) $(ASMFLAGS) lib/syscall.asm -o syscall.o
-clock.o:clock.c
-	$(CC) $(CFLAGS) clock.c -o clock.o
-keyboard.o:keyboard.c
-	$(CC) $(CFLAGS) keyboard.c -o keyboard.o
 proc.o:proc.c
 	$(CC) $(CFLAGS) proc.c -o proc.o
+
+
+############################# lib ############################################
+syscall.o:lib/syscall.asm
+	$(ASM) $(ASMFLAGS) lib/syscall.asm -o syscall.o
 string.o:lib/string.c
-	$(CC) $(CFLAGS) lib/string.c -o string.o	
-$(KERNEL).o:$(KERNEL).asm
-	$(ASM) $(ASMFLAGS) $(KERNEL).asm -o $(KERNEL).o
+	$(CC) $(CFLAGS) lib/string.c -o string.o
+
+
+################################# SYS INT ###################################
+interrupt.o:int/interrupt.c
+	$(CC) $(CFLAGS) int/interrupt.c -o interrupt.o
+clock.o:int/clock.c
+	$(CC) $(CFLAGS) int/clock.c -o clock.o
+keyboard.o:int/keyboard.c
+	$(CC) $(CFLAGS) int/keyboard.c -o keyboard.o
+
+
+########################### TASKS ##########################################
+tty.o:task/tty.c
+	$(CC) $(CFLAGS) task/tty.c -o tty.o
+test.o:task/test.c
+	$(CC) $(CFLAGS) task/test.c -o test.o
+	
+########################### PHONY ##########################################
 disasm:$(KERNEL).bin
 	$(DASM) $(DASMFLAGS) $(KERNEL).bin > $(DASMOUTPUT)
 clean:

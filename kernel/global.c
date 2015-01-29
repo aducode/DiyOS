@@ -48,6 +48,9 @@ int k_reenter = -1;	//由于最开始执行中断时，会先减1 ，所以这�
 
 
 //这里定义Task
+//task/tty.c
+extern void task_tty();
+//task/test.c
 extern void testA();
 extern void testB();
 extern void testC();
@@ -56,7 +59,8 @@ struct task task_table[TASKS_COUNT] = {
 	/* -----        ----------        --------- */
 	{testA,		0x80,		"TeatA"},
 	{testB,		0x80,		"TestB"},
-	{testC,		0x80,		"TestC"}
+	{testC,		0x80,		"TestC"},
+	{task_tty,	0x80,		"TTY"  }
 };
 
 
@@ -80,6 +84,4 @@ extern sys_get_ticks();
 system_call sys_call_table[MAX_SYSCALL_COUNT] =
 {sys_get_ticks};
 
-//键盘全局缓冲
-struct keyboard_buffer_t keyboard_buffer;
 #endif

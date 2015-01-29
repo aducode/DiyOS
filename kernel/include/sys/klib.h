@@ -1,3 +1,4 @@
+#include "type.h"
 #ifndef _DIYOS_KLIB_H
 #define _DIYOS_KLIB_H
 //klib.asm中的汇编函数

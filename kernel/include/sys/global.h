@@ -30,7 +30,5 @@ extern long long ticks;
 //sys_call
 extern system_call sys_call_table[];
 
-//keybaord buffer
-extern struct keyboard_buffer_t keyboard_buffer;
 #endif
 #endif
