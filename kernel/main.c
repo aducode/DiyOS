@@ -54,6 +54,8 @@ void kmain(){
 	p_proc_ready = proc_table;
 	//开启时钟中断
 	init_clock();
+	//
+	init_keyboard();
 //	_disable_irq(CLOCK_IRQ);
 //	irq_handler_table[CLOCK_IRQ] = default_irq_handler;
 //	_enable_irq(CLOCK_IRQ);
@@ -71,8 +73,8 @@ void kmain(){
 void testA()
 {
 	static char msg[20];
-	_disp_str("IN RING1 PROC A...    ticks now is:",0,0, COLOR_GREEN);
 	while(1){
+		_disp_str("IN RING1 PROC A...    ticks now is:",0,0, COLOR_GREEN);
 		//_clean(0,0,25,80);
 		itoa(ticks,msg,10);
 		_disp_str(msg,1,0, COLOR_GREEN);
@@ -83,8 +85,8 @@ void testA()
 void testB()
 {	
 	static char msg[20];
-	_disp_str("IN RING1 PROC B...    ticks now is:",2,0,COLOR_WHITE);
 	while(1){
+		 _disp_str("IN RING1 PROC B...    ticks now is:",2,0,COLOR_WHITE);
 		itoa(ticks, msg,10);
 		_disp_str(msg,3,0, COLOR_WHITE);	
 //		_hlt();
@@ -95,9 +97,9 @@ void testB()
 void testC()
 {
 	static char msg[20];
-	_disp_str("IN RING1 PROC C...    ticks now is:",4,0,COLOR_YELLOW);
 	while(1)
 	{
+		_disp_str("IN RING1 PROC C...    ticks now is:",4,0,COLOR_YELLOW);
 		itoa(ticks, msg, 10);
 		_disp_str(msg, 5,0,COLOR_YELLOW);
 	}
