@@ -18,16 +18,6 @@ void keyboard_handler(int irq_no)
 	//u8 scan_code = _in_byte(IO_8042_PORT);	//清空8042缓冲才能下一次中断
 	put_code_into_buffer();
 }
-void keyboard_read(){
-	static int color = 0x00;
-	static char msg[256];
-	u8 scan_code = get_code_from_buffer();
-	
-	_disp_str("Press a key :)",10,0,color++);
-	itoa(scan_code, msg,16);
-	_disp_str(msg,11,0,COLOR_WHITE);
-	if(color>0xFF)color=0x00;	
-}
 
 /**
  * 初始化键盘
@@ -89,3 +79,39 @@ u8 get_code_from_buffer()
 	_enable_int();	
 	return scan_code;
 }
+
+
+
+//////////////////////////////////
+/**
+ * 供task/tty.c中使用，用于显示keyboard input字符串
+ */
+void keyboard_read(){
+        static int color = 0x00;
+        static char msg[256];
+
+	u8 scan_code;
+	char output[2];
+	int make;
+	_memset(output,0,2);
+	if(keyboard_buffer.count>0){
+		_disable_int();
+	
+	        scan_code = get_code_from_buffer();
+		
+		_enable_int();
+		//
+		if(scan_code == 0xE1) {
+			//ignore
+		} else if (scan_code == 0xE0) {
+			//ignore
+		} else {
+			//make = (scan_code & FLAG_BREAK ?FALSE:TRUE);
+		}	
+        	_disp_str("Press a key :)",10,0,color++);
+	        itoa(scan_code, msg,16);
+	        _disp_str(msg,11,0,COLOR_WHITE);
+	        if(color>0xFF)color=0x00;
+	}
+}
+
