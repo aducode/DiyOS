@@ -110,7 +110,9 @@ void dispatch_tty(struct tty *p_tty, u32 key){
 			case F10:
 			case F11:
 			case F12:
-				if((key&FLAG_CTRL_L)||(key&FLAG_CTRL_R)){
+				//if((key&FLAG_CTRL_L)||(key&FLAG_CTRL_R)){
+				//由于在我的linux中 alt+fn 有其他的操作，所以用ctrl+fn测试，通过了
+				if((key & FLAG_ALT_L) || (key & FLAG_ALT_R )){
 					//ALT + Fn
 					select_console(raw_code - F1);
 				}
