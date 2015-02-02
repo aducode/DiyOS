@@ -54,8 +54,8 @@ void kmain(){
 	p_proc_ready = proc_table;
 	//开启时钟中断
 	init_clock();
-	//
-	init_keyboard();
+	//初始化键盘放到tty task里面进行
+	//init_keyboard();
 //	_disable_irq(CLOCK_IRQ);
 //	irq_handler_table[CLOCK_IRQ] = default_irq_handler;
 //	_enable_irq(CLOCK_IRQ);

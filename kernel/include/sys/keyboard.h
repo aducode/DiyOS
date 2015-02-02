@@ -1,9 +1,13 @@
+#include "tty.h"
 #ifndef _DIYOS_KEYBOARD_H
 #define _DIYOS_KEYBOARD_H
 
 /** 8042寄存器 **/
 #define IO_8042_PORT	0x60
 #define CTL_8042_PORT	0x64
+
+#define LED_CODE	0xED
+#define KB_ACK		0xFA
 extern void init_keyboard();
 //键盘环形缓冲
 #define KEYBOARD_BUFFER_SIZE	32
@@ -116,5 +120,5 @@ struct keyboard_buffer_t{
 	int count;	//计数器
 	char buffer[KEYBOARD_BUFFER_SIZE];
 };
-extern void keyboard_read();
+extern void keyboard_read(struct tty *p_tty);
 #endif

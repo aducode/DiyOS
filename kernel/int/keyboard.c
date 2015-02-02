@@ -20,6 +20,18 @@ static int column;
  * 处理键盘硬件中断
  */
 static void keyboard_handler(int irq_no);
+/**
+ *设置键盘led
+ */
+static void set_leds();
+/**
+ * 等待8042输入缓冲区空
+ */
+static void kb_wait();
+/**
+ *read from the keyboard controller until a KB_ACk is received.
+ */
+static void kb_ack();
 //
 static struct keyboard_buffer_t keyboard_buffer;
 
@@ -173,11 +185,49 @@ void keyboard_handler(int irq_no)
 	put_code_into_buffer();
 }
 
+void set_leds()
+{
+	u8 leds = (caps_lock<<2)|(num_lock<<1)|scroll_lock;
+	kb_wait();
+	_out_byte(IO_8042_PORT, LED_CODE);
+	kb_ack();
+
+	kb_wait();
+	_out_byte(IO_8042_PORT, leds);
+	kb_ack();
+}
+
+void kb_wait()
+{
+	u8 kb_stat;
+	do{
+		kb_stat = _in_byte(CTL_8042_PORT);
+	}while(kb_stat & 0x02);
+}
+
+void kb_ack()
+{
+	u8 kb_read;
+	do{
+		kb_read  = _in_byte(IO_8042_PORT);
+	} while (kb_read!=KB_ACK);
+}
 /**
  * 初始化键盘
  */
 void init_keyboard()
 {
+	//初始化按键状态
+	shift_l = shift_r = 0;
+	alt_l = alt_r = 0;
+	ctrl_l = ctrl_r = 0;
+
+	caps_lock = 0;
+	num_lock = 1;
+	scroll_lock = 0;
+	
+	column = 0;
+	set_leds(); //设置键盘状态灯
 	//初始化全局键盘缓冲区，在global.c中
 	init_kb();
 	//开启键盘硬件中断响应
@@ -240,7 +290,7 @@ u8 get_code_from_buffer()
 /**
  * 供task/tty.c中使用，用于显示keyboard input字符串
  */
-void keyboard_read(){
+void keyboard_read(struct tty * p_tty){
         static int color = 0x00;
         static char msg[256];
 
@@ -302,11 +352,16 @@ void keyboard_read(){
 			}
 		}
 		if((key!=PAUSEBREAK) && (key!=PRINTSCREEN)) {
+			int caps; //大小写
 			//首先判断Make Code还是Break Code
 			make = (scan_code & FLAG_BREAK ?0:1);
 			keyrow = &keymap[(scan_code & 0x7F) * MAP_COLS];
 			column = 0;
-			if(shift_l || shift_r)
+			caps = shift_l || shift_r;
+			if(caps_lock && keyrow[0] >= 'a' && keyrow[0] <= 'z'){
+				caps = ! caps;
+			}
+			if(caps)
 			{
 				column = 1;
 			}
@@ -340,36 +395,106 @@ void keyboard_read(){
 				alt_r = make;
 				key = 0;
 				break;
+			case CAPS_LOCK:
+				if(make){
+					caps_lock = !caps_lock;
+					set_leds();
+				}
+				break;
+			case NUM_LOCK:
+				if(make){
+					num_lock = !num_lock;
+					set_leds();
+				}
+				break;
+			case SCROLL_LOCK:
+				if(make){
+					scroll_lock = !scroll_lock;
+					set_leds();
+				}
+				break;
 			default:
 				break;
 			}
 			if(make){//忽略break code
+				int pad = 0;
+				//处理小键盘
+				if ((key>=PAD_SLASH) && (key<=PAD_9)){
+					pad =1;
+					switch(key){
+						case PAD_SLASH:
+							key = '/';
+							break;
+						case PAD_STAR:
+							key = '*';
+							break;
+						case PAD_MINUS:
+							key = '-';
+							break;
+						case PAD_PLUS:
+							key = '+';
+							break;
+						case PAD_ENTER:
+							key = ENTER;
+							break;
+						default:
+							//其余的按键根据num_lock不同可能是数字或控制按键
+							if(num_lock){
+								if(key>=PAD_0 && key <= PAD_9){
+									key = key - PAD_0 + '0';
+								}else if (key == PAD_DOT){
+									key = '.';
+								}
+							} else {
+								switch(key){
+									case PAD_HOME:
+										key = HOME;
+										break;
+									case PAD_END:
+										key = END;
+										break;
+									case PAD_PAGEUP:
+										key = PAGEUP;
+										break;
+									case PAD_PAGEDOWN:
+										key = PAGEDOWN;
+										break;
+									case PAD_INS:
+										key = INSERT;
+										break;
+									case PAD_UP:
+										key = UP;
+										break;
+									case PAD_DOWN:
+										key = DOWN;
+										break;
+									case PAD_LEFT:
+										key = LEFT;
+										break;
+									case PAD_RIGHT:
+										key = RIGHT;
+										break;
+									case PAD_DOT:
+										key = DELETE;
+										break;
+									default:
+										break;
+								}
+							}
+							break;
+					}
+				}
 				key |= shift_l ? FLAG_SHIFT_L:0;
 				key |= shift_r ? FLAG_SHIFT_R:0;
 				key |= ctrl_l  ? FLAG_CTRL_L :0;
 				key |= ctrl_r  ? FLAG_CTRL_R :0;
 				key |= alt_l   ? FLAG_ALT_L  :0;
 				key |= alt_r   ? FLAG_ALT_R  :0;
-				
-				//tty.c show
-				show(key);
+				key |= pad     ? FLAG_PAD    :0;	
+				//tty.c dispatch_tty(struct tty * p_tty);
+				dispatch_tty(p_tty, key);
 			}
-			/*
-			if(key){
-				//make code 则打印
-				output[0] = key;
-				output[1]='\0';
-				_disp_str("Press a key:)",10,0, color++);
-				_disp_str(output,11,0, COLOR_WHITE);
-				if(color>0xFF) color = 0x00;
-				
-			}
-			*/
 		}	
-        	//_disp_str("Press a key :)",10,0,color++);
-	        //itoa(scan_code, msg,16);
-	        //_disp_str(msg,11,0,COLOR_WHITE);
-	        //if(color>0xFF)color=0x00;
 	}
 }
 

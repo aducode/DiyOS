@@ -84,4 +84,6 @@ extern sys_get_ticks();
 system_call sys_call_table[MAX_SYSCALL_COUNT] =
 {sys_get_ticks};
 
+//当前的console
+int current_console;
 #endif
