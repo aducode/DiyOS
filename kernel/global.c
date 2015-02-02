@@ -84,6 +84,10 @@ extern sys_get_ticks();
 system_call sys_call_table[MAX_SYSCALL_COUNT] =
 {sys_get_ticks};
 
-//当前的console
+//
+#define CONSOLE_COUNT	3
+struct tty tty_table[CONSOLE_COUNT];
+struct console console_table[CONSOLE_COUNT];
+//当前的console下标
 int current_console;
 #endif

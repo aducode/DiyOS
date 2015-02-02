@@ -30,6 +30,9 @@ extern long long ticks;
 //sys_call
 extern system_call sys_call_table[];
 
+//
+extern struct tty tty_table[];
+extern struct console console_table[];
 //当前console
 extern int current_console;
 #endif

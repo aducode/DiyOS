@@ -1,3 +1,5 @@
+#include "type.h"
+#include "console.h"
 #ifndef _DIYOS_TTY_H
 #define _DIYOS_TTY_H
 
@@ -20,20 +22,6 @@ struct tty{
 	int	inbuf_count;		//缓冲区已经填充了多少
 	struct console* p_console;	//记录光标位置等控制台信息
 };
-/**
- * console
- */
-struct console{
-	unsigned int current_start_addr; 	//当前显示到了什么位置
-	unsigned int original_addr;		//当前控制台对应显存位置
-	unsigned int v_mem_limit;		//当前控制台占的显存大小
-	unsigned int cursor;			//光标位置
-};
-/**
- * tty和console
- */
-extern struct tty tty_table[];
-extern struct console console_table[];
 extern void dispatch_tty(struct tty *p_tty, u32 key);
 
 

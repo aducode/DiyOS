@@ -1,5 +1,6 @@
 #include "type.h"
 #include "tty.h"
+#include "console.h"
 #include "keyboard.h"
 #include "klib.h"
 #include "global.h"
