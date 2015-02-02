@@ -3,6 +3,7 @@
 #include "global.h"
 #include "string.h"
 #include "keyboard.h"
+#include "tty.h"
 //键盘按键状态
 static int code_with_E0 = 0;
 static int shift_l;	//左shift键状态
@@ -250,17 +251,57 @@ void keyboard_read(){
 	u32* keyrow;	//表示keymap[]中的某一行
 	_memset(output,0,2);
 	if(keyboard_buffer.count>0){
-		_disable_int();
+	//	_disable_int();
 	
 	        scan_code = get_code_from_buffer();
 		
-		_enable_int();
+	//	_enable_int();
 		//
 		if(scan_code == 0xE1) {
-			//ignore
+			int i;
+			u8 pausebreak_scode[] = {0xE1, 0x1D, 0x45, 0xE1, 0x9D, 0xC5};
+			int is_pausebreak = 1;
+			for(i=1;i<6;i++){
+				if(get_code_from_buffer()!=pausebreak_scode[i]){
+					is_pausebreak = 0;
+					break;
+				}
+			}
+			if(is_pausebreak){
+				key = PAUSEBREAK;
+			}
 		} else if (scan_code == 0xE0) {
-			code_with_E0 = 1;
-		} else {
+			int i;
+			u8 t_scan_code;
+			u8 printscreen_make_scode[] = {0xE0, 0x2A,0xE0,0x37};
+			u8 printscreen_break_scode[] = {0xE0,0xB7,0xE0,0xAA};
+			int is_printscreen_make=1;
+			int is_printscreen_break = 1;
+			for(i=1;i<4;i++){
+				t_scan_code = get_code_from_buffer();
+				if(t_scan_code != printscreen_make_scode[i]){
+					is_printscreen_make = 0;
+					break;
+				}
+				if(t_scan_code != printscreen_break_scode[i]){
+					is_printscreen_break = 0;
+					break;
+				} 
+			}
+			if(is_printscreen_make){
+				key = PRINTSCREEN;
+				make = 1;
+			}
+			if(is_printscreen_break){
+				key = PRINTSCREEN;
+				make = 0;
+			}
+			if(key != 0){
+				//说明不是printscreen
+				code_with_E0 = 1;
+			}
+		}
+		if((key!=PAUSEBREAK) && (key!=PRINTSCREEN)) {
 			//首先判断Make Code还是Break Code
 			make = (scan_code & FLAG_BREAK ?0:1);
 			keyrow = &keymap[(scan_code & 0x7F) * MAP_COLS];
@@ -300,11 +341,20 @@ void keyboard_read(){
 				key = 0;
 				break;
 			default:
-				if(!make){ //如果是break code
-					key = 0;
-				}
 				break;
 			}
+			if(make){//忽略break code
+				key |= shift_l ? FLAG_SHIFT_L:0;
+				key |= shift_r ? FLAG_SHIFT_R:0;
+				key |= ctrl_l  ? FLAG_CTRL_L :0;
+				key |= ctrl_r  ? FLAG_CTRL_R :0;
+				key |= alt_l   ? FLAG_ALT_L  :0;
+				key |= alt_r   ? FLAG_ALT_R  :0;
+				
+				//tty.c show
+				show(key);
+			}
+			/*
 			if(key){
 				//make code 则打印
 				output[0] = key;
@@ -314,6 +364,7 @@ void keyboard_read(){
 				if(color>0xFF) color = 0x00;
 				
 			}
+			*/
 		}	
         	//_disp_str("Press a key :)",10,0,color++);
 	        //itoa(scan_code, msg,16);
