@@ -84,40 +84,39 @@ void dispatch_tty(struct tty *p_tty, u32 key){
 				p_tty->p_inbuf_head = p_tty->in_buf;
 			}
 			p_tty -> inbuf_count++;
-		} else {
-			int raw_code = key & MASK_RAW;
-			switch(raw_code){
-				//功能按键
-				case UP:
-					/*if((key & FLAG_SHIFT_L)||(key & FLAG_SHIFT_R)){
-						_disable_int();
-						
-					}
-					*/
-					break;
-				case DOWN:
-					break;
-				case F1:
-				case F2:
-				case F3:
-				case F4:
-				case F5:
-				case F6:
-				case F7:
-				case F8:
-				case F9:
-				case F10:
-				case F11:
-				case F12:
-					if((key&FLAG_CTRL_L)||(key&FLAG_CTRL_R)){
-						//ALT + Fn
-						_disp_str("ctrl+fn",0,0,COLOR_WHITE);
-						select_console(raw_code - F1);
-					}
-				default:
-					break;
-			}	
 		}
+	} else {
+		int raw_code = key & MASK_RAW;
+		switch(raw_code){
+			//功能按键
+			case UP:
+				/*if((key & FLAG_SHIFT_L)||(key & FLAG_SHIFT_R)){
+					_disable_int();
+					
+				}
+				*/
+				break;
+			case DOWN:
+				break;
+			case F1:
+			case F2:
+			case F3:
+			case F4:
+			case F5:
+			case F6:
+			case F7:
+			case F8:
+			case F9:
+			case F10:
+			case F11:
+			case F12:
+				if((key&FLAG_CTRL_L)||(key&FLAG_CTRL_R)){
+					//ALT + Fn
+					select_console(raw_code - F1);
+				}
+			default:
+				break;
+		}	
 		//output[0] = key & 0xFF;
 		//_disp_str(output,11,0,COLOR_WHITE);
 	}	
