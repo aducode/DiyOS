@@ -52,6 +52,7 @@ void init_screen(struct tty *p_tty)
 	p_tty->p_console->current_start_addr = p_tty->p_console->original_addr;
 	//默认光标位置在开始处
 	p_tty->p_console->cursor = p_tty->p_console->original_addr;
+//	p_tty->p_console->cursor = 10;
 	out_char(p_tty->p_console, nr_tty+'0');
 	out_char(p_tty->p_console,'#');
 	set_cursor(p_tty->p_console->cursor);

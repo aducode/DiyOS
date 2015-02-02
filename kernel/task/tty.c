@@ -35,6 +35,7 @@ void task_tty()
 		init_tty(p_tty);
 	}
 	current_console = 0;
+//	select_console(current_console);
 	while(1)
 	{
 		for(p_tty = tty_table; p_tty < tty_table + CONSOLE_COUNT;p_tty++){
@@ -67,23 +68,24 @@ void init_tty(struct tty *p_tty)
 {
 	p_tty->inbuf_count = 0;
 	p_tty->p_inbuf_head = p_tty->p_inbuf_tail = p_tty->in_buf;
-	int nr_tty = p_tty - tty_table;
 	init_screen(p_tty);
 }
 /**
  * 转发到不同的tty
  * 供keyboard.c/keyboard_read(struct tty * p_tty)函数调用
  */
-void dispatch_tty(struct tty *p_tty, u32 key){
+void tty_dispatch(struct tty *p_tty, u32 key){
 	char output[2] = {'\0','\0'};
 	if(!(key& FLAG_EXT)){
-		if(p_tty->inbuf_count < TTY_IN_BYTES){
-			*(p_tty->p_inbuf_head) = key;
-			p_tty->p_inbuf_head ++;
-			if(p_tty->p_inbuf_head == p_tty->in_buf+TTY_IN_BYTES){
-				p_tty->p_inbuf_head = p_tty->in_buf;
+		if(key != FLAG_CTRL_L && key != FLAG_CTRL_R && key != FLAG_ALT_L && key != FLAG_ALT_R && key != FLAG_SHIFT_L && key != FLAG_SHIFT_R){
+			if(p_tty->inbuf_count < TTY_IN_BYTES){
+				*(p_tty->p_inbuf_head) = key;
+				p_tty->p_inbuf_head ++;
+				if(p_tty->p_inbuf_head == p_tty->in_buf+TTY_IN_BYTES){
+					p_tty->p_inbuf_head = p_tty->in_buf;
+				}
+				p_tty -> inbuf_count++;
 			}
-			p_tty -> inbuf_count++;
 		}
 	} else {
 		int raw_code = key & MASK_RAW;
@@ -110,9 +112,9 @@ void dispatch_tty(struct tty *p_tty, u32 key){
 			case F10:
 			case F11:
 			case F12:
-				//if((key&FLAG_CTRL_L)||(key&FLAG_CTRL_R)){
+				if((key&FLAG_CTRL_L)||(key&FLAG_CTRL_R)){
 				//由于在我的linux中 alt+fn 有其他的操作，所以用ctrl+fn测试，通过了
-				if((key & FLAG_ALT_L) || (key & FLAG_ALT_R )){
+				//if((key & FLAG_ALT_L) || (key & FLAG_ALT_R )){
 					//ALT + Fn
 					select_console(raw_code - F1);
 				}

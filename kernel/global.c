@@ -89,5 +89,5 @@ system_call sys_call_table[MAX_SYSCALL_COUNT] =
 struct tty tty_table[CONSOLE_COUNT];
 struct console console_table[CONSOLE_COUNT];
 //当前的console下标
-int current_console;
+int current_console = 0;
 #endif

@@ -22,7 +22,7 @@ struct tty{
 	int	inbuf_count;		//缓冲区已经填充了多少
 	struct console* p_console;	//记录光标位置等控制台信息
 };
-extern void dispatch_tty(struct tty *p_tty, u32 key);
+extern void tty_dispatch(struct tty *p_tty, u32 key);
 
 
 #endif

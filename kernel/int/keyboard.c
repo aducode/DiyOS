@@ -491,8 +491,8 @@ void keyboard_read(struct tty * p_tty){
 				key |= alt_l   ? FLAG_ALT_L  :0;
 				key |= alt_r   ? FLAG_ALT_R  :0;
 				key |= pad     ? FLAG_PAD    :0;	
-				//tty.c dispatch_tty(struct tty * p_tty);
-				dispatch_tty(p_tty, key);
+				//tty.c tty_dispatch(struct tty * p_tty);
+				tty_dispatch(p_tty, key);
 			}
 		}	
 	}

@@ -31,6 +31,9 @@ void itoa(int value, char * string, int radix)
 		*(s+i)=*(s+len-1-i);
 		*(s+len-1-i)=tmp;
 	}
+	if(len<=0){
+		*(s+len++)='0';
+	}
 	switch(radix)
 	{
 		case 16:
