@@ -1,3 +1,4 @@
+#include "type.h"
 #include "keyboard.h"
 #include "klib.h"
 /**
@@ -15,7 +16,7 @@ void task_tty()
 /**
  *处理键盘码，显示到屏幕
  */
-void show(u8 key){
+void show(u32 key){
 	char output[2] = {'\0','\0'};
 	if(!(key& FLAG_EXT)){
 		output[0] = key & 0xFF;
