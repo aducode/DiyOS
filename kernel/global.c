@@ -64,7 +64,21 @@ struct task task_table[TASKS_COUNT] = {
 };
 
 
-
+/**
+ * 用户级线程
+ */
+extern void testA();
+extern void testB();
+extern void testC();
+extern void testD();
+struct task user_proc_table[PROCS_COUNT] = {
+	/*entry		stack size	task name8*/
+	/*----		----------	----------*/
+	{testA,		0x80,		"TestA"},
+	{testB,		0x80,		"TestB"},
+	{testC,		0x80,		"TestC"},
+	{testD,		0x80,		"TestD"}
+};
 //定义任务栈空间
 char task_stack[STACK_SIZE_TOTAL];
 

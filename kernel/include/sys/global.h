@@ -22,6 +22,7 @@ extern struct tss g_tss;
 extern int k_reenter;
 
 extern struct task task_table[];
+extern struct task user_proc_table[];
 extern char task_stack[];
 
 //extern int ticks;

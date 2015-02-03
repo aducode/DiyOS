@@ -7,16 +7,31 @@ void kmain(){
 	_disp_str("hello kernel\nI can display some string in screen :)\n",15,0,COLOR_LIGHT_WHITE);
 	//设置进程
 	//任务表中的第一项
-	struct task * p_task	= task_table;
+	struct task * p_task;//	= task_table;
 	//进程表中的第一项
 	struct process * p_proc	= proc_table;
 	char * p_task_stack	= task_stack + STACK_SIZE_TOTAL	;//栈低地址增长
 	//GDT中ldt选择子
 	u16 selector_ldt 	= SELECTOR_LDT_FIRST;
 	
+	u8 privilege;
+	u8 rpl;
+	int eflags;
 	int i;
 	for(i=0;i<TASKS_COUNT + PROCS_COUNT;i++)
 	{	
+		if(i<TASKS_COUNT){
+			//ring1
+			p_task = task_table + i;
+			privilege = PRIVILEGE_TASK;
+			rpl = RPL_TASK;
+			eflags = 0x1202;
+		} else {
+			p_task = user_proc_table + (i-TASKS_COUNT);
+			privilege = PRIVILEGE_USER;
+			rpl = RPL_USER;
+			eflags =0x202;
+		}
 		//把task中的名称复制到进程表项中
 		_strcpy(p_proc->p_name, p_task->name);
 		//设置进程id
@@ -27,26 +42,26 @@ void kmain(){
 		//设置ldt第一项为gdt的代码段
 		_memcpy(&p_proc->ldts[0], &gdt[SELECTOR_KERNEL_CS>>3], sizeof(struct descriptor));
 		//重新设置代码段属性值
-		p_proc->ldts[0].attr1 = DA_C | PRIVILEGE_TASK <<5;
+		p_proc->ldts[0].attr1 = DA_C | privilege <<5;
 		//设置ldt第二项为gdt的数据段
 		_memcpy(&p_proc->ldts[1], &gdt[SELECTOR_KERNEL_DS>>3],sizeof(struct descriptor));
 		//重新设置数据段属性
-		p_proc->ldts[1].attr1 = DA_DRW|PRIVILEGE_TASK<<5;
+		p_proc->ldts[1].attr1 = DA_DRW| privilege<<5;
 		//设置寄存器的值
-		p_proc->regs.cs = ((8*0)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|RPL_TASK;
-		p_proc->regs.ds = ((8*1)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|RPL_TASK;
-		p_proc->regs.es = ((8*1)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|RPL_TASK;
-		p_proc->regs.fs = ((8*1)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|RPL_TASK;
-		p_proc->regs.ss = ((8*1)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|RPL_TASK;
-		p_proc->regs.gs = (SELECTOR_KERNEL_GS & SA_RPL_MASK)|RPL_TASK;
+		p_proc->regs.cs = ((8*0)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|rpl;
+		p_proc->regs.ds = ((8*1)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|rpl;
+		p_proc->regs.es = ((8*1)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|rpl;
+		p_proc->regs.fs = ((8*1)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|rpl;
+		p_proc->regs.ss = ((8*1)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|rpl;
+		p_proc->regs.gs = (SELECTOR_KERNEL_GS & SA_RPL_MASK)|rpl;
 		p_proc->regs.eip = (u32)p_task->entry;
 		p_proc->regs.esp = (u32)p_task_stack;
-		p_proc->regs.eflags = 0x1202;	//IF=0 IOPL=1
+		p_proc->regs.eflags = eflags;	//IF=0 IOPL=1
 		
 		//下一个进程ldt的值	
 		p_task_stack -= p_task->stacksize;
 		p_proc++;
-		p_task++;
+		//p_task++;
 		selector_ldt+=1<<3;
 	}
 	k_reenter = 0;
@@ -77,4 +92,5 @@ void sys_get_ticks()
 	_disp_str("IN SYS CALL get_ticks  ticks now is:",12,0, COLOR_WHITE);
 	itoa(ticks, msg, 10);
 	_disp_str(msg,13, 0, COLOR_WHITE);
+	_disp_str("fuck",14,0,COLOR_WHITE);
 }
