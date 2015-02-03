@@ -8,7 +8,7 @@ extern void schedule();
 //#define MAX_PROCESS_COUNT	32	//最多32个进程
 #define TASKS_COUNT		1	//系统进程个数
 #define PROCS_COUNT		4	//用户进程数量
-
+//这里暂时将PROCS_COUNT写死，所以MAX_PROCESS_COUNT就为tasks + procs
 #define MAX_PROCESS_COUNT	(TASKS_COUNT + PROCS_COUNT)	
 
 //RPL LEVEL

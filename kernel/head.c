@@ -121,7 +121,7 @@ void setup_tss_selector()
 void setup_ldt_selector()
 {
 	int i;
-	for(i=0;i<MAX_PROCESS_COUNT;i++)
+	for(i=0;i<TASKS_COUNT + PROCS_COUNT;i++)
 	{
 		_memset(&proc_table[i], 0, sizeof(struct process));
 		
