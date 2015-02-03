@@ -183,6 +183,16 @@ void keyboard_handler(int irq_no)
 {
 	//u8 scan_code = _in_byte(IO_8042_PORT);	//清空8042缓冲才能下一次中断
 	put_code_into_buffer();
+	/*
+	_clean(10,0,25,80);
+	int i=0;
+	char msg[20];
+	u8 * iter = keyboard_buffer.p_tail;
+	for(;iter<keyboard_buffer.p_head;iter++,i++){
+		itoa(*iter,msg, 16);
+		_disp_str(msg, 10+i,0, COLOR_YELLOW);
+	}
+	*/	
 }
 
 void set_leds()
@@ -316,32 +326,26 @@ void keyboard_read(struct tty * p_tty){
 				key = PAUSEBREAK;
 			}
 		} else if (scan_code == 0xE0) {
-			int i;
-			u8 t_scan_code;
-			u8 printscreen_make_scode[] = {0xE0, 0x2A,0xE0,0x37};
-			u8 printscreen_break_scode[] = {0xE0,0xB7,0xE0,0xAA};
-			int is_printscreen_make=1;
-			int is_printscreen_break = 1;
-			for(i=1;i<4;i++){
-				t_scan_code = get_code_from_buffer();
-				if(t_scan_code != printscreen_make_scode[i]){
-					is_printscreen_make = 0;
-					break;
+			scan_code = get_code_from_buffer();
+			//printscreen pressed
+			if(scan_code == 0x2A){
+				if(get_code_from_buffer() == 0xE0){
+					if(get_code_from_buffer()==0x37){
+						key = PRINTSCREEN;
+						make = 1;
+					}
 				}
-				if(t_scan_code != printscreen_break_scode[i]){
-					is_printscreen_break = 0;
-					break;
-				} 
 			}
-			if(is_printscreen_make){
-				key = PRINTSCREEN;
-				make = 1;
+			//printscreen released
+			if(scan_code == 0xB7){
+				if(get_code_from_buffer() == 0xE0){
+					if(get_code_from_buffer()==0xAA){
+						key = PRINTSCREEN;
+						make = 0;
+					}
+				}
 			}
-			if(is_printscreen_break){
-				key = PRINTSCREEN;
-				make = 0;
-			}
-			if(key != 0){
+			if(key == 0){
 				//说明不是printscreen
 				code_with_E0 = 1;
 			}
