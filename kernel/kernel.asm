@@ -97,8 +97,12 @@ _restart_reenter:
 ;_sys_call
 _sys_call:
 	call _save
+	push dword[p_proc_ready]	;当前进程压栈
 	sti
+	push ecx
+	push ebx
 	call [sys_call_table + eax*4]
+	add esp, 4*3
 	mov  [esi + EAXREG - P_STACKBASE], eax
 	cli
 	ret

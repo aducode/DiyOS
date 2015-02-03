@@ -57,7 +57,8 @@ void kmain(){
 		p_proc->regs.eip = (u32)p_task->entry;
 		p_proc->regs.esp = (u32)p_task_stack;
 		p_proc->regs.eflags = eflags;	//IF=0 IOPL=1
-		
+		//指定tty索引，默认都是0
+		p_proc->tty_idx = 0;	
 		//下一个进程ldt的值	
 		p_task_stack -= p_task->stacksize;
 		p_proc++;
@@ -85,12 +86,3 @@ void kmain(){
 	}
 }
 
-/************************ 这里的函数是ring0级别系统调用*******************/
-void sys_get_ticks()
-{	
-	static char msg[20];
-	_disp_str("IN SYS CALL get_ticks  ticks now is:",12,0, COLOR_WHITE);
-	itoa(ticks, msg, 10);
-	_disp_str(msg,13, 0, COLOR_WHITE);
-	_disp_str("fuck",14,0,COLOR_WHITE);
-}

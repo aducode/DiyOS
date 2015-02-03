@@ -55,6 +55,7 @@ struct process{
 	
 	u32 pid;	//进程id
 	char p_name[16];	//进程名
+	int tty_idx;	//tty表索引
 };
 
 typedef void (*proc_entry_point)();

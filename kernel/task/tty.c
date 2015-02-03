@@ -29,6 +29,10 @@ static void init_tty(struct tty *p_tty);
  */
 static void put_key(struct tty *p_tty, u32 key);
 /**
+ * 向tty中的console输出
+ */
+static void tty_write(struct tty *p_tty, char *buffer, int size);
+/**
  * tty进程体
  */
 void task_tty()
@@ -138,4 +142,24 @@ void tty_dispatch(struct tty *p_tty, u32 key){
 				break;
 		}	
 	}	
+}
+
+/****************************************************************************************************************/
+void tty_write(struct tty *p_tty, char *buffer, int size){
+	char *p = buffer;
+	int i = size;
+	while(i){
+		out_char(p_tty->p_console, *p++);
+		i--;
+	}
+}
+
+
+/**
+ *系统调用
+ */
+int sys_write(char *buffer,int size, struct process *p_proc)
+{
+	tty_write(&tty_table[p_proc->tty_idx], buffer, size);
+	return 0;
 }

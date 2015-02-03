@@ -7,6 +7,20 @@
 //	itoa(20, str, 10);
 //	printf("%s\n",str);
 //}
+#include "klib.h"
+void strcpy(char * p_dst, char * p_src)
+{
+	int size = strlen(p_src)+1;
+	_strcpy(p_dst, p_src, size);
+}
+int strlen(char * p_str)
+{
+	if(!p_str) return 0;
+	int i;
+	char * p;
+	for(p=p_str,i=0;*p!='\0';p++,i++){}
+	return i;
+}
 void itoa(int value, char * string, int radix)
 {
 	int len=0,i,t;
