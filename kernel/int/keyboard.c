@@ -291,15 +291,10 @@ u8 get_code_from_buffer()
  * 供task/tty.c中使用，用于显示keyboard input字符串
  */
 void keyboard_read(struct tty * p_tty){
-        static int color = 0x00;
-        static char msg[256];
-
 	u8 scan_code;
-	char output[2];
 	int make; //1:make code 0:break code
 	u32 key=0; //key表示定义在keyboard.h中的一个键
 	u32* keyrow;	//表示keymap[]中的某一行
-	_memset(output,0,2);
 	if(keyboard_buffer.count>0){
 	//	_disable_int();
 	
