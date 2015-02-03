@@ -75,7 +75,6 @@ void init_tty(struct tty *p_tty)
  * 供keyboard.c/keyboard_read(struct tty * p_tty)函数调用
  */
 void tty_dispatch(struct tty *p_tty, u32 key){
-	char output[2] = {'\0','\0'};
 	if(!(key& FLAG_EXT)){
 		if(key != FLAG_CTRL_L && key != FLAG_CTRL_R && key != FLAG_ALT_L && key != FLAG_ALT_R && key != FLAG_SHIFT_L && key != FLAG_SHIFT_R){
 			if(p_tty->inbuf_count < TTY_IN_BYTES){
@@ -123,7 +122,5 @@ void tty_dispatch(struct tty *p_tty, u32 key){
 			default:
 				break;
 		}	
-		//output[0] = key & 0xFF;
-		//_disp_str(output,11,0,COLOR_WHITE);
 	}	
 }
