@@ -92,8 +92,9 @@ long long ticks;
 
 
 
-//in main
+//in task/tty.c
 extern sys_write(char *buf, int len, struct process *p_proc);
+
 //系统调用
 system_call sys_call_table[MAX_SYSCALL_COUNT] =
 {sys_write};
