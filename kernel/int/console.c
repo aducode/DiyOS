@@ -5,6 +5,10 @@
 static void set_cursor(unsigned int position);
 static void set_video_start_addr(u32 addr);
 /**
+ * 刷新
+ */
+static void flush(struct console *p_console);
+/**
  * 判断是否是当前console
  */
 int is_current_console(struct console *p_console)
@@ -16,12 +20,43 @@ int is_current_console(struct console *p_console)
  */
 void out_char(struct console *p_console, char ch)
 {
-	u8 *p_vmem = (u8*)(V_MEM_BASE + p_console->cursor * 2);
-	
-	*p_vmem++ = ch;
-	*p_vmem++ = DEFAULT_CHAR_COLOR;
-	p_console->cursor++;
-	set_cursor(p_console->cursor);
+	//u8 *p_vmem = (u8*)(V_MEM_BASE + p_console->cursor * 2);
+	u8 * p_vmem;
+	switch(ch){
+		case '\n':
+			if(p_console->cursor<p_console->original_addr + p_console->v_mem_limit-SCR_WIDTH){
+				//*p_vmem = ' ';
+				//*(p_vmem+1) = DEFAULT_CHAR_COLOR;
+				p_console->cursor = p_console->original_addr + SCR_WIDTH * ((p_console->cursor - p_console->original_addr)/SCR_WIDTH + 1);
+				p_vmem = (u8*)(V_MEM_BASE + p_console->cursor*2);
+				*p_vmem = ' ';
+				*(p_vmem+1) = DEFAULT_CHAR_COLOR;
+			}
+			break;
+		case '\b':
+			if(p_console->cursor > p_console->original_addr){
+				p_console->cursor--;
+				p_vmem = (u8*)(V_MEM_BASE + p_console->cursor*2);
+				*p_vmem=' ';
+				*(p_vmem+1)=DEFAULT_CHAR_COLOR;
+			}
+			break;
+		default:
+			if(p_console->cursor<p_console->original_addr + p_console->v_mem_limit -1){
+				p_vmem = (u8*)(V_MEM_BASE + p_console->cursor*2);	
+				*p_vmem++ = ch;
+				*p_vmem++ = DEFAULT_CHAR_COLOR;
+				p_console->cursor++;
+				*p_vmem = ' ';
+				*(p_vmem+1) = DEFAULT_CHAR_COLOR;
+			}
+			break;
+	}
+	while(p_console->cursor >= p_console->current_start_addr + SCR_SIZE){
+		scroll_screen(p_console, SCR_DN);
+	}
+	//set_cursor(p_console->cursor);
+	flush(p_console);
 }
 
 /**
@@ -55,7 +90,9 @@ void init_screen(struct tty *p_tty)
 //	p_tty->p_console->cursor = 10;
 	out_char(p_tty->p_console, nr_tty+'0');
 	out_char(p_tty->p_console,'#');
-	set_cursor(p_tty->p_console->cursor);
+	out_char(p_tty->p_console,'>');
+	//set_cursor(p_tty->p_console->cursor);
+	flush(p_tty->p_console);
 }
 /**
  * 滚屏
@@ -72,8 +109,9 @@ void scroll_screen(struct console *p_console, int direction)
 		}
 	} else {
 	}
-	set_video_start_addr(p_console->current_start_addr);
-	set_cursor(p_console->cursor);
+	flush(p_console);
+//	set_video_start_addr(p_console->current_start_addr);
+//	set_cursor(p_console->cursor);
 }
 
 /**
@@ -85,8 +123,9 @@ void select_console(int console_idx)
 		return;
 	}
 	current_console = console_idx;
-	set_cursor(console_table[console_idx].cursor);
-	set_video_start_addr(console_table[console_idx].current_start_addr);
+	flush(&console_table[console_idx]);
+	//set_cursor(console_table[console_idx].cursor);
+	//set_video_start_addr(console_table[console_idx].current_start_addr);
 }
 
 void set_video_start_addr(u32 addr)
@@ -99,3 +138,7 @@ void set_video_start_addr(u32 addr)
 	_enable_int();
 }
 
+void flush(struct console *p_console){
+	set_cursor(p_console->cursor);
+	set_video_start_addr(p_console->current_start_addr);
+}

@@ -23,6 +23,11 @@ static void tty_do_write(struct tty *p_tty);
  * 初始化tty
  */
 static void init_tty(struct tty *p_tty);
+
+/**
+ * 放入tty的缓冲区
+ */
+static void put_key(struct tty *p_tty, u32 key);
 /**
  * tty进程体
  */
@@ -70,6 +75,17 @@ void init_tty(struct tty *p_tty)
 	p_tty->p_inbuf_head = p_tty->p_inbuf_tail = p_tty->in_buf;
 	init_screen(p_tty);
 }
+
+void put_key(struct tty *p_tty, u32 key){
+	if(p_tty->inbuf_count < TTY_IN_BYTES){
+		*(p_tty->p_inbuf_head) = key;
+		p_tty->p_inbuf_head++;
+		if(p_tty->p_inbuf_head == p_tty->in_buf+TTY_IN_BYTES){
+			p_tty->p_inbuf_head = p_tty->in_buf;
+		}
+		p_tty->inbuf_count++;
+	}
+}
 /**
  * 转发到不同的tty
  * 供keyboard.c/keyboard_read(struct tty * p_tty)函数调用
@@ -77,19 +93,18 @@ void init_tty(struct tty *p_tty)
 void tty_dispatch(struct tty *p_tty, u32 key){
 	if(!(key& FLAG_EXT)){
 		if(key != FLAG_CTRL_L && key != FLAG_CTRL_R && key != FLAG_ALT_L && key != FLAG_ALT_R && key != FLAG_SHIFT_L && key != FLAG_SHIFT_R){
-			if(p_tty->inbuf_count < TTY_IN_BYTES){
-				*(p_tty->p_inbuf_head) = key;
-				p_tty->p_inbuf_head ++;
-				if(p_tty->p_inbuf_head == p_tty->in_buf+TTY_IN_BYTES){
-					p_tty->p_inbuf_head = p_tty->in_buf;
-				}
-				p_tty -> inbuf_count++;
-			}
+			put_key(p_tty, key);
 		}
 	} else {
 		int raw_code = key & MASK_RAW;
 		switch(raw_code){
 			//功能按键
+			case ENTER:
+				put_key(p_tty, '\n');
+				break;
+			case BACKSPACE:
+				put_key(p_tty, '\b');
+				break;
 			case UP:
 				if((key & FLAG_SHIFT_L)||(key & FLAG_SHIFT_R)){
 					scroll_screen(p_tty->p_console, SCR_UP);
