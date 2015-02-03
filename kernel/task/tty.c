@@ -92,13 +92,13 @@ void tty_dispatch(struct tty *p_tty, u32 key){
 			//功能按键
 			case UP:
 				if((key & FLAG_SHIFT_L)||(key & FLAG_SHIFT_R)){
-					scroll_screen(p_tty->p_console, SCR_DN);
+					scroll_screen(p_tty->p_console, SCR_UP);
 					
 				}
 				break;
 			case DOWN:
 				if((key&FLAG_SHIFT_L)||(key&FLAG_SHIFT_R)){
-					scroll_screen(p_tty->p_console, SCR_UP);
+					scroll_screen(p_tty->p_console, SCR_DN);
 				}
 				break;
 			case F1:
