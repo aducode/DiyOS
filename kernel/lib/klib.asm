@@ -272,7 +272,7 @@ _enable_irq:
 	mov ecx, [esp + 4];irq_no
 	pushf
 	cli
-	mov al, ~1
+	mov ah, ~1
 	rol ah, cl
 	cmp cl, 8
 	jae _enable_8
