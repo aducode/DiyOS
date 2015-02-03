@@ -57,6 +57,24 @@ void init_screen(struct tty *p_tty)
 	out_char(p_tty->p_console,'#');
 	set_cursor(p_tty->p_console->cursor);
 }
+/**
+ * 滚屏
+ */
+void scroll_screen(struct console *p_console, int direction)
+{
+	if(direction == SCR_UP){
+		if(p_console->current_start_addr > p_console->original_addr){
+			p_console->current_start_addr -= SCR_WIDTH;
+		} else if(direction == SCR_DN){
+			if(p_console->current_start_addr + SCR_SIZE < p_console->original_addr + p_console->v_mem_limit){
+				p_console->current_start_addr += SCR_WIDTH;
+			}
+		} else {
+		}
+		set_video_start_addr(p_console->current_start_addr);
+		set_cursor(p_console->cursor);
+	}
+}
 
 /**
  * 切换控制台
@@ -80,3 +98,4 @@ void set_video_start_addr(u32 addr)
 	_out_byte(CRTC_DATA_REG, addr & 0xFF);
 	_enable_int();
 }
+

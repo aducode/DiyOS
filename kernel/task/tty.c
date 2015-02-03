@@ -31,7 +31,7 @@ void task_tty()
 	//进程开始时先初始化键盘
 	init_keyboard();
 	struct tty *p_tty;
-	for(p_tty = tty_table;p_tty<tty_table + CONSOLE_COUNT;p_tty++){
+	for(p_tty = tty_table+CONSOLE_COUNT-1;p_tty>=tty_table;p_tty--){
 		init_tty(p_tty);
 	}
 	current_console = 0;
@@ -92,13 +92,15 @@ void tty_dispatch(struct tty *p_tty, u32 key){
 		switch(raw_code){
 			//功能按键
 			case UP:
-				/*if((key & FLAG_SHIFT_L)||(key & FLAG_SHIFT_R)){
-					_disable_int();
+				if((key & FLAG_SHIFT_L)||(key & FLAG_SHIFT_R)){
+					scroll_screen(p_tty->p_console, SCR_DN);
 					
 				}
-				*/
 				break;
 			case DOWN:
+				if((key&FLAG_SHIFT_L)||(key&FLAG_SHIFT_R)){
+					scroll_screen(p_tty->p_console, SCR_UP);
+				}
 				break;
 			case F1:
 			case F2:

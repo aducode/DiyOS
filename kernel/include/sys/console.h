@@ -28,4 +28,11 @@ struct console{
 extern void init_screen(struct tty *p_tty);
 extern void out_char(struct console *p_console, char ch);
 extern int is_current_console(struct console *p_console);
+#define SCR_UP	1 //scroll upward
+#define SCR_DN -1 //scroll downward
+
+#define SCR_SIZE (80 *25)
+#define SCR_WIDTH 80
+extern void scroll_screen(struct console *p_console, int direction);
+extern void select_console(int console_idx);
 #endif

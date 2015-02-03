@@ -484,13 +484,18 @@ void keyboard_read(struct tty * p_tty){
 							break;
 					}
 				}
+				//if(pad){
+				//	key |= FLAG_PAD;
+				//} else { //小键盘时alt shift ctrl键无用
 				key |= shift_l ? FLAG_SHIFT_L:0;
 				key |= shift_r ? FLAG_SHIFT_R:0;
 				key |= ctrl_l  ? FLAG_CTRL_L :0;
 				key |= ctrl_r  ? FLAG_CTRL_R :0;
 				key |= alt_l   ? FLAG_ALT_L  :0;
 				key |= alt_r   ? FLAG_ALT_R  :0;
-				key |= pad     ? FLAG_PAD    :0;	
+				key |= pad     ? FLAG_PAD    :0; 
+				//}
+				//key |= pad     ? FLAG_PAD    :0;	
 				//tty.c tty_dispatch(struct tty * p_tty);
 				tty_dispatch(p_tty, key);
 			}
