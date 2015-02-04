@@ -1,3 +1,4 @@
+//#define _DEBUG_
 #include "kernel.h"
 /**
  * 初始化全局描述符表
@@ -55,6 +56,12 @@ void kmain(){
 		p_proc->regs.ss = ((8*1)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|rpl;
 		p_proc->regs.gs = (SELECTOR_KERNEL_GS & SA_RPL_MASK)|rpl;
 		p_proc->regs.eip = (u32)p_task->entry;
+#ifdef	_DEBUG_
+		char msg[10];
+		static int row = 10;
+		itoa(p_proc->regs.eip, msg, 16);
+		_disp_str(msg, row++, 0, COLOR_RED);
+#endif
 		p_proc->regs.esp = (u32)p_task_stack;
 		p_proc->regs.eflags = eflags;	//IF=0 IOPL=1
 		//指定tty索引，默认都是0
@@ -65,6 +72,9 @@ void kmain(){
 		//p_task++;
 		selector_ldt+=1<<3;
 	}
+#ifdef _DEBUG_
+	while(1);
+#endif
 	k_reenter = 0;
 	//设置将要开始的进程
 	p_proc_ready = proc_table;

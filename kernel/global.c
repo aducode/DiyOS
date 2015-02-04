@@ -50,17 +50,10 @@ int k_reenter = -1;	//由于最开始执行中断时，会先减1 ，所以这�
 //这里定义Task
 //task/tty.c
 extern void task_tty();
-//task/test.c
-//extern void testA();
-//extern void testB();
-//extern void testC();
 struct task task_table[TASKS_COUNT] = {
 	/* entry        stack size        task name */
 	/* -----        ----------        --------- */
-//	{testA,		0x80,		"TeatA"},
-//	{testB,		0x80,		"TestB"},
-//	{testC,		0x80,		"TestC"},
-	{task_tty,	0x80,		"TTY"  }
+	{task_tty,	0x80,		"TTY"  },
 };
 
 
@@ -77,7 +70,7 @@ struct task user_proc_table[PROCS_COUNT] = {
 	{testA,		0x80,		"TestA"},
 	{testB,		0x80,		"TestB"},
 	{testC,		0x80,		"TestC"},
-	{testD,		0x80,		"TestD"}
+	{testD,		0x80,		"TestD"},
 };
 //定义任务栈空间
 char task_stack[STACK_SIZE_TOTAL];

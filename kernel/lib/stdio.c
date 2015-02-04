@@ -1,12 +1,23 @@
 #include "type.h"
 #include "string.h"
 #include "stdlib.h"
-static int vsprintf(char *buf, const char * fmt, va_list args);
+#include "klib.h"
+static vsprintf(char * buf, const char *fmt, va_list args);
+
+
+/**
+ *printf
+ */
 int printf(const char *fmt, ...)
 {
 	int i;
 	char buf[256];
-	va_list arg = (va_list)((char*)(&fmt+4));
+	//开始写成下面的，导致不定参赛出错
+	//va_list arg = (va_list)((char*)(&fmt+4));
+	//正确写法如下，&fmt取地址（地址类型是4Byte 32bit的，我机器是32位），将4Byte的地址转换成char* 变为1Byte 这样后面+4 就是真正的加4Byte，变成下一个参数首地址
+	va_list arg = (va_list)((char*)(&fmt)+4);
+	//或者下面这种写法
+	//va_list arg = (va_list)((char*)(&fmt+1));
 	i = vsprintf(buf,fmt, arg);
 	write(buf, i);
 	return i;
@@ -43,10 +54,14 @@ int vsprintf(char *buf, const char * fmt, va_list args)
 				p+=strlen(tmp);
 				break;
 			case 's':
+				//p_next_arg 是char *类型的地址，所以这里要把类型转成char **  代表是char *的地址，然后在*运算符取地址，变成char*类型
+				strcpy(p,(*((char**)p_next_arg)));
+				p += strlen(*((char**)p_next_arg));
+				p_next_arg += 4;
 				break;
 			default:
 				break;
 		}
-		return (p-buf);
 	}
+	return (p-buf);
 }

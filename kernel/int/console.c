@@ -41,6 +41,21 @@ void out_char(struct console *p_console, char ch)
 				*(p_vmem+1)=DEFAULT_CHAR_COLOR;
 			}
 			break;
+		case '\t':
+			if(p_console->cursor<p_console->original_addr + p_console->v_mem_limit -1){
+				unsigned int tmp = ((p_console->cursor - p_console->original_addr)/SCR_WIDTH + 1) * SCR_WIDTH ;
+				if(tmp - p_console->cursor >= 4){
+					p_console->cursor += 4;
+				} else {
+					p_console->cursor = tmp;
+				}
+				p_vmem = (u8*)(V_MEM_BASE + p_console->cursor*2);
+				*p_vmem = ' ';
+				*(p_vmem + 1) = DEFAULT_CHAR_COLOR;
+			}
+			break;
+		case '\a':
+			break;	
 		default:
 			if(p_console->cursor<p_console->original_addr + p_console->v_mem_limit -1){
 				p_vmem = (u8*)(V_MEM_BASE + p_console->cursor*2);	

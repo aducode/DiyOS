@@ -5,7 +5,8 @@
 /********************* testA  testB 是ring1级别的 ***************************/
 void testA()
 {
-	printf("hello in testA\n");
+	//printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
+	printf("%s\ttest\a\aaaaa\n","abaadfadfa\nsdfadfa");
        // static char msg[20];
         while(1){
 //		printf("hello in testA\n");	
@@ -18,7 +19,7 @@ void testA()
 }
 void testB()
 {
-	printf("testB %d\n", 11);
+	printf("aaaab testB %d\n", 11);
         //static char msg[20];
         while(1){
 //		printf("testB %d\n",10);
@@ -31,7 +32,7 @@ void testB()
 }
 void testC()
 {
-	printf("testC %x\n",17);
+	printf("adfadfadfadfasd testC %x\n",17);
         //static char msg[20];
         while(1)
         {
@@ -43,7 +44,7 @@ void testC()
 }
 
 void testD(){
-	printf("testD \n%s\n", "hehehe");
+	printf("adfadfadfa dfadfadfasdf testD\n");
 	while(1){
 	//	printf("testD, \n%s\n","hehehehe");
 	}

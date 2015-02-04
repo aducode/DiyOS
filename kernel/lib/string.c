@@ -1,18 +1,31 @@
-//
-//#include <stdio.h>
-//void itoa(int value, char * string, int radix);
-//int main(int argv, char ** argc)
-//{
-//	char str[256];
-//	itoa(20, str, 10);
-//	printf("%s\n",str);
-//}
-#include "klib.h"
-void strcpy(char * p_dst, char * p_src)
+/*
+#include <stdio.h>
+void itoa(int value, char * string, int radix);
+void strcpy(char *, char*);
+int main(int argv, char ** argc)
 {
-	int size = strlen(p_src)+1;
-	_strcpy(p_dst, p_src, size);
+	char str[256];
+	char str2[256]="hello world";
+	itoa(20, str, 8);
+	strcpy(str2+11, str);
+	printf("%s\n",str2);
 }
+*/
+//#include "klib.h"
+/**
+ *不依赖汇编函数
+ */
+char* strcpy(char * p_dst, char *p_src)
+{
+	char * r = p_dst;
+	while((*(p_dst++)=*(p_src++))!='\0');
+	return r;
+}
+//void strcpy(char * p_dst, char * p_src)
+//{
+//	int size = strlen(p_src)+1;
+//	_strcpy(p_dst, p_src, size);
+//}
 int strlen(char * p_str)
 {
 	if(!p_str) return 0;
