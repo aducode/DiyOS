@@ -6,6 +6,6 @@ typedef unsigned int		u32; //32bit长度
 typedef unsigned short		u16; //16bit长度
 typedef unsigned char 		u8;  //8bit长度
 
-typedef void * 			va_list;
+typedef char * 			va_list;
 typedef void* 			system_call;//系统调用
 #endif
