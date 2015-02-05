@@ -4,7 +4,7 @@
 ;内存/字符串操作
 global _memcpy          ;void _memcpy(void * dest, void * src, int length);
 global _memset		;void _memset(void * p_dst, char ch, int size);
-global _strcpy		;vpid _strcpy(void * p_dst, char * p_src);
+global _strcpy		;void _strcpy(void * p_dst, char * p_src);
 global _disp_str
 global _clean
 

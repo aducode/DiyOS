@@ -1,5 +1,5 @@
 //定义一些全局类型
-#ifndef _DIYOS__TYPE_H
+#ifndef _DIYOS_TYPE_H
 #define _DIYOS_TYPE_H
 typedef unsigned long long	u64; //64bit长度
 typedef unsigned int		u32; //32bit长度

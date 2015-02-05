@@ -13,6 +13,7 @@ extern void _clean(int top, int left, int bottom, int right);
 #define	COLOR_WHITE		0x0F
 #define COLOR_SYS_ERROR		0x74
 extern void _disp_str(char * msg, int row, int column, u8 color);
+extern void _strcpy(char *p_dst, char * p_src);
 extern void * _memcpy(void * dest, void * src, int size);
 extern void _memset(void * dest, char ch, int size);
 extern void _out_byte(u16 port, u8 value);

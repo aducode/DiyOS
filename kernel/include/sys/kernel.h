@@ -9,6 +9,8 @@
 #include "klib.h"
 
 //#include "stdlib.h"
-
+#ifndef _DIYOS_KERNEL_H
+#define _DIYOS_KERNEL_H
 extern void _restart();
 extern void _sys_call();
+#endif

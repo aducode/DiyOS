@@ -2,7 +2,7 @@
 #include "string.h"
 #include "stdlib.h"
 #include "klib.h"
-static vsprintf(char * buf, const char *fmt, va_list args);
+static int vsprintf(char * buf, const char *fmt, va_list args);
 
 
 /**
