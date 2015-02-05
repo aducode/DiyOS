@@ -157,8 +157,10 @@ void tty_write(struct tty *p_tty, char *buffer, int size){
 
 /**
  *系统调用
+ * 现在系统调用使用了4个参数，这个地方nop存储edx的值，但是write没有使用edx，这里
+ * 忽略
  */
-int sys_write(char *buffer,int size, struct process *p_proc)
+int sys_write(char *buffer,int size,int nop, struct process *p_proc)
 {
 	tty_write(&tty_table[p_proc->tty_idx], buffer, size);
 	return 0;

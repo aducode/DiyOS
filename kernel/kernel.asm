@@ -97,12 +97,17 @@ _restart_reenter:
 ;_sys_call
 _sys_call:
 	call _save
-	push dword[p_proc_ready]	;当前进程压栈
 	sti
+	push esi
+	;下面4个push是系统调用的参数
+	push dword[p_proc_ready]	;当前进程压栈
+	push edx
 	push ecx
 	push ebx
 	call [sys_call_table + eax*4]
-	add esp, 4*3
+	add esp, 4*4
+	
+	pop esi
 	mov  [esi + EAXREG - P_STACKBASE], eax
 	cli
 	ret

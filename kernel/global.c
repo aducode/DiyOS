@@ -90,7 +90,7 @@ extern sys_write(char *buf, int len, struct process *p_proc);
 
 //系统调用
 system_call sys_call_table[MAX_SYSCALL_COUNT] =
-{sys_write};
+{sys_write, sys_write};
 
 //
 #define CONSOLE_COUNT	3
