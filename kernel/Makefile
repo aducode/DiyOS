@@ -6,6 +6,7 @@ KERNEL_ENTRY_OFFSET=0x0400
 
 
 CC=gcc
+#使用clang编译的时候，不定参数会出现问题
 #CC=clang
 CFLAGS=-I include/ -I include/sys/ -c -fno-builtin
 ASM=nasm

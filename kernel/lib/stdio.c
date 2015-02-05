@@ -1,7 +1,6 @@
 #include "type.h"
 #include "string.h"
 #include "stdlib.h"
-#include "klib.h"
 static int vsprintf(char * buf, const char *fmt, va_list args);
 
 
@@ -52,6 +51,10 @@ int vsprintf(char *buf, const char * fmt, va_list args)
 				strcpy(p, tmp);
 				p_next_arg += 4;
 				p+=strlen(tmp);
+				break;
+			case 'c':
+				*p++ = *((char*)p_next_arg);
+				p_next_arg += 4;
 				break;
 			case 's':
 				//p_next_arg 是char *类型的地址，所以这里要把类型转成char **  代表是char *的地址，然后在*运算符取地址，变成char*类型

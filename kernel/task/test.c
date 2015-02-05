@@ -1,13 +1,9 @@
-#include "klib.h"
-#include "global.h"
-#include "string.h"
 #include "stdio.h"
 /********************* testA  testB 是ring1级别的 ***************************/
 void testA()
 {
-	_disp_str("start....",20,0,COLOR_RED);
 	//printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
-	printf("testA\ntestA\t1234567890\tabcdefg\t%o\n", 12);
+	printf("testA\ntestA\t1234567890\tabcdefg\t%c\n", '@');
        // static char msg[20];
         while(1){
 //		printf("hello in testA\n");	
