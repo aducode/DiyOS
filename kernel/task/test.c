@@ -1,7 +1,9 @@
 #include "stdio.h"
+#include "assert.h"
 /********************* testA  testB 是ring1级别的 ***************************/
 void testA()
 {
+	assert(0);
 	//printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
 	printf("testA\ntestA\t1234567890\tabcdefg\t%c\n", '@');
        // static char msg[20];

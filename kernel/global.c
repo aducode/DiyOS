@@ -91,10 +91,10 @@ long long ticks;
 
 //in task/tty.c
 extern int sys_write(char *buf, int len, struct process *p_proc);
-
+extern int sys_printk(int _unused1, int _unused2, char * s, struct process *p_proc);
 //系统调用
 system_call sys_call_table[MAX_SYSCALL_COUNT] =
-{sys_write, sys_write};
+{sys_write,sys_printk, sys_write};
 
 //
 #define CONSOLE_COUNT	3

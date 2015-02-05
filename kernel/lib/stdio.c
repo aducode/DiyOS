@@ -1,9 +1,6 @@
 #include "type.h"
 #include "string.h"
 #include "stdlib.h"
-static int vsprintf(char * buf, const char *fmt, va_list args);
-
-
 /**
  *printf
  */
@@ -21,7 +18,16 @@ int printf(const char *fmt, ...)
 	write(buf, i);
 	return i;
 }
-
+/**
+ *格式化输出到字符串
+ */
+int sprintf(char *buffer, const char *fmt, ...)
+{
+	int i;
+	va_list arg = (va_list)((char*)(&fmt)+4);
+	i = vsprintf(buffer, fmt, arg);
+	return i;
+}
 int vsprintf(char *buf, const char * fmt, va_list args)
 {
 	char *p;

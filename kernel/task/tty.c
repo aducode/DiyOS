@@ -2,8 +2,8 @@
 #include "tty.h"
 #include "console.h"
 #include "keyboard.h"
-#include "klib.h"
 #include "global.h"
+#include "assert.h"
 //全局变量
 /**
  *tty和console表
@@ -37,6 +37,8 @@ static void tty_write(struct tty *p_tty, char *buffer, int size);
  */
 void task_tty()
 {
+//	panic("hhhh");
+//	assert(0);
 	//进程开始时先初始化键盘
 	init_keyboard();
 	struct tty *p_tty;
@@ -157,11 +159,54 @@ void tty_write(struct tty *p_tty, char *buffer, int size){
 
 /**
  *系统调用
- * 现在系统调用使用了4个参数，这个地方nop存储edx的值，但是write没有使用edx，这里
+ * 现在系统调用使用了4个参数，这个地方_unsed1存储ebx的值，但是write没有使用ebx，这里
  * 忽略
  */
-int sys_write(char *buffer,int size,int nop, struct process *p_proc)
+int sys_write(int _unsed1, char *buffer,int size, struct process *p_proc)
 {
 	tty_write(&tty_table[p_proc->tty_idx], buffer, size);
+	return 0;
+}
+/**
+ *系统调用，内核级打印
+ */
+int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
+{
+	const char * p;
+	char ch;
+	char reenter_err [] = "? k_reenter is incorrect for unknown reason";
+	reenter_err[0] = MAG_CH_PANIC;
+	//目前系统没有做内存分页所以ring0 和ring123不需要区分
+	if(k_reenter == 0) {
+		//ring1 --- ring3调用
+		p=s;
+	} else if(k_reenter>0){
+		//ring0调用
+		p=s;
+	} else {
+		p=reenter_err;
+	}
+	//通过字符串第一个字符判断错误级别
+	if((*p == MAG_CH_PANIC)||(*p== MAG_CH_ASSERT && p_proc_ready < &proc_table[TASKS_COUNT])){
+		_disable_int();
+		char *v = (char*)V_MEM_BASE;
+		const char * q = p+1;	//skip
+		while(v<(char*)(V_MEM_BASE+V_MEM_SIZE)){
+			*v++ = *q++;
+			*v++ = RED_CHAR;
+			if(!*q){
+				while(((int)v - V_MEM_BASE)%(SCR_WIDTH*16)){
+					v++;
+					*v++ = GRAY_CHAR;
+				}
+				q = p+1;
+			}
+		}
+		__asm__ __volatile__("hlt");
+	}
+	while((ch=*p++)!=0){
+		if(ch==MAG_CH_PANIC ||ch==MAG_CH_ASSERT) continue;
+		out_char(tty_table[p_proc->tty_idx].p_console, ch);
+	}
 	return 0;
 }
