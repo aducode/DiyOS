@@ -5,8 +5,9 @@
 /********************* testA  testB 是ring1级别的 ***************************/
 void testA()
 {
+	_disp_str("start....",20,0,COLOR_RED);
 	//printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
-	printf("%s\ttest\a\aaaaa\n","abaadfadfa\nsdfadfa");
+	printf("testA\ntestA\t1234567890\tabcdefg\t%o\n", 12);
        // static char msg[20];
         while(1){
 //		printf("hello in testA\n");	

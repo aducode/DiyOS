@@ -5,8 +5,8 @@ KERNEL_ENTRY_POINT=0x0400
 KERNEL_ENTRY_OFFSET=0x0400
 
 
-#CC=gcc
-CC=clang
+CC=gcc
+#CC=clang
 CFLAGS=-I include/ -I include/sys/ -c -fno-builtin
 ASM=nasm
 ASMFLAGS=-I include/ -I include/sys/ -f elf
