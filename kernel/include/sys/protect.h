@@ -9,7 +9,9 @@
 #define MAX_IDT_ITEMS	256	//做多有256个中断描述符表
 
 #define MAX_LDT_ITEMS	2	//每个进程ldt个数
-
+//LDT index
+#define	INDEX_LDT_C	0
+#define	INDEX_LDT_RW	1
 //8259A端口
 #define INT_M_CTL	0x20	//I/O port for interrupt cotroller <Master>
 #define INT_M_CTLMASK	0x21	//setting bits in this port disables ints <Master>

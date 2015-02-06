@@ -5,7 +5,7 @@ void testA()
 {
 //	assert(0);
 	//printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
-	printf("testA\ntestA\t1234567890\tabcdefg\t%c\n", '@');
+	printf("testA\ntestA\t1234567890\tabcdefg\t%c\n", '#');
        // static char msg[20];
         while(1){
 //		printf("hello in testA\n");	

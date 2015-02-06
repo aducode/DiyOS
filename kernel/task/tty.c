@@ -1,4 +1,5 @@
 #include "type.h"
+#include "proc.h"
 #include "tty.h"
 #include "console.h"
 #include "keyboard.h"
@@ -37,7 +38,7 @@ static void tty_write(struct tty *p_tty, char *buffer, int size);
  */
 void task_tty()
 {
-//	panic("hhhh");
+//	panic("test");
 //	assert(0);
 	//进程开始时先初始化键盘
 	init_keyboard();
@@ -176,10 +177,11 @@ int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
 	char ch;
 	char reenter_err [] = "? k_reenter is incorrect for unknown reason";
 	reenter_err[0] = MAG_CH_PANIC;
-	//目前系统没有做内存分页所以ring0 和ring123不需要区分
 	if(k_reenter == 0) {
 		//ring1 --- ring3调用
-		p=s;
+		//需要将虚拟地址转为线性地址
+		p = va2la(proc2pid(p_proc), s);	
+		//p=s;
 	} else if(k_reenter>0){
 		//ring0调用
 		p=s;

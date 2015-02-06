@@ -5,6 +5,10 @@
 #define _DIYOS_PROC_H
 
 extern void schedule();
+
+void* va2la(int pid, void* va);
+
+#define proc2pid(x)	(x-proc_table)
 //#define MAX_PROCESS_COUNT	32	//最多32个进程
 #define TASKS_COUNT		1	//系统进程个数
 #define PROCS_COUNT		1	//用户进程数量
