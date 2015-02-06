@@ -44,9 +44,28 @@ LOADER_START:
 	mov dh, 0	;disp_str row position
 	call disp_str16
 
+;获取内存数
+	mov ebx, 0
+	mov di, _MemChkBuf	;es:di 指向下一个地址范围描述结构
+.MemChkLoop:
+	mov eax, 0xE820		;eax = 0x0000E820
+	mov ecx, 20		;ecx = 地址范围描述结构大小
+	mov edx, 0x0534D4150	;edx = 'SMAP'
+	int 0x15		;
+	jc .MemChkFail
+	add di, 20
+	inc dword [_dwMCRNumber];dwMCRNumber = ARDS 个数
+	cmp ebx, 0
+	jne .MemChkLoop
+	jmp .MemChkOK
+.MemChkFail:
+	mov dword [_dwMCRNumber], 0
+.MemChkOK:
+	;下面开始在软盘中寻找kernel
+	;复位软驱
 	xor ah, ah
-	xor dl, dl
-	int 0x13
+        xor dl, dl
+        int 0x13
 	
 	mov word[wSectorNo], SectorNoOfRootDirectory
 LABEL_SEARCH_IN_ROOT_DIR_BEGIN:
@@ -223,7 +242,7 @@ LABEL_FILE_LOADED:
 ;	mov edi, [ebp+8]		;destination
 ;	mov esi,[ebp+12]	;source
 ;	mov ecx, [ebp+16]	;counter	
-.;1:
+;.1:
 ;	cmp ecx, 0
 ;	jz .2
 ;	
@@ -280,7 +299,9 @@ LABEL_PM_START:
 	mov fs, ax	;FS寄存器指向当前活动线程的TEB结构（线程结构）
 	mov ss, ax
 	mov esp, TopOfStack
-
+	;检查内存，并启动分页
+	call _check_mem
+	call _setup_paging
 	;32保护模式下的显示字符串
 	push MessagePM
 	mov eax, [dwDispPos]
@@ -316,6 +337,84 @@ LABEL_PM_START:
 	jmp SelectorFlatC:KernelEntryPointPhyAddr
 
 
+_check_mem:
+	push esi
+	push edi
+	push ecx
+	mov esi, MemChkBuf
+	mov ecx, [dwMCRNumber]
+.loop:
+	mov edx, 5
+	mov edi, ARDStruct
+.1:
+	mov eax, [esi]	
+	stosd
+	add esi, 4
+	dec edx
+	cmp edx, 0
+	jnz .1
+	cmp dword[dwType], 1		;书上说type可能1 2(不可用) 但是我得到3类型了,3也作为不可用的
+	jne .2
+	mov eax, [dwBaseAddrLow]
+	add eax, [dwLengthLow]
+	cmp eax, [dwMemSize]
+	jb .2   ;<
+	mov [dwMemSize], eax
+.2:
+	loop .loop
+;	cmp ecx, 0
+;	je .3
+;	dec ecx
+;	jmp .loop	
+;.3:
+	pop ecx
+	pop edi
+	pop esi
+	ret
+;启动分页机制
+_setup_paging:
+	xor edx, edx
+	mov eax, [dwMemSize]
+	mov ebx, 0x400000	;一个页表对应内存大小
+	div ebx
+	mov ecx, eax	;此时ecx为页表个数，PDE应该个数
+	test edx, edx
+	jz .no_remainder
+	inc ecx		;如果余数不为0就增加一个页表
+.no_remainder:
+	push ecx	;暂存页表个数
+	; 为简化处理, 所有线性地址对应相等的物理地址. 并且不考虑内存空洞.
+	; 首先初始化页目录
+	mov	ax, SelectorFlatRW
+	mov	es, ax
+	mov	edi, PageDirBase	; 此段首地址为 PageDirBase
+	xor	eax, eax
+	mov	eax, PageTblBase | PG_P  | PG_USU | PG_RWW
+.1:
+	stosd
+	add eax, 4096	;所有页表在内存中是连续的
+	loop .1
+	;再初始化所有表项
+	pop eax	;页表个数
+	mov ebx, 1024	;每个页表1024个PTE
+	mul ebx
+	mov ecx, eax
+	mov edi, PageTblBase
+	xor eax, eax
+	mov eax, PG_P|PG_USU|PG_RWW
+.2:
+	stosd
+	add eax, 4096
+	loop .2
+	mov eax, PageDirBase
+	mov cr3, eax
+	mov eax, cr0
+	or eax, 0x80000000
+	mov cr0, eax
+	jmp short .3
+.3:
+	nop
+	ret
 ;保护模式下的数据
 [SECTION .data]		;数据段
 ALIGN	32
@@ -325,6 +424,24 @@ MessagePM:	equ	BaseOfLoaderPhyAddr + _MessagePM;保护模式下，由于数据�
 _dwDispPos:	dd	(80*2+0)*2	;屏幕第2行第0列
 dwDispPos	equ	BaseOfLoaderPhyAddr + _dwDispPos	
 ;保存内存信息
+_MemChkBuf:	times	256 db 0
+MemChkBuf	equ	BaseOfLoaderPhyAddr + _MemChkBuf
+_dwMCRNumber	dd	0	;Memory Check Result
+dwMCRNumber	equ	BaseOfLoaderPhyAddr + _dwMCRNumber
+_dwMemSize:	dd	0	;记录内存信息
+dwMemSize	equ	BaseOfLoaderPhyAddr + _dwMemSize
+_ARDStruct:
+	_dwBaseAddrLow:		dd	0
+	_dwBaseAddrHigh:	dd	0
+	_dwLengthLow:		dd	0
+	_dwLengthHigh:		dd	0
+	_dwType:		dd	0
+ARDStruct		equ	BaseOfLoaderPhyAddr + _ARDStruct
+	dwBaseAddrLow	equ	BaseOfLoaderPhyAddr + _dwBaseAddrLow
+	dwBaseAddrHigh	equ	BaseOfLoaderPhyAddr + _dwBaseAddrHigh
+	dwLengthLow	equ	BaseOfLoaderPhyAddr + _dwLengthLow
+	dwLengthHigh	equ	BaseOfLoaderPhyAddr + _dwLengthHigh
+	dwType		equ 	BaseOfLoaderPhyAddr + _dwType
 ;SECTION .data结束
 
 [SECTION .gs]		;全局堆栈段

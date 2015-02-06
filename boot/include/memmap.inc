@@ -18,4 +18,19 @@ BaseOfKernelFilePhyAddr	equ	BaseOfKernelFile * 0x10	;loader中使用的物理地
 ;loader.bin在使用bios服务获取一些机器硬件信息后，将废除bios以及bios中断，将内核加载到物理地址开始
 KernelEntryPointPhyAddr		equ	0x0400	;必须于ld -Ttext值相等
 
+;分页表项位置
+PageDirBase			equ	0x100000	;1MB位置
+PageTblBase			equ	0x101000	;1M+4K位置
 ;在kernel.bin开始将重新设置中断
+
+;int 0x15中断得到的内存信息
+;BaseAddrLow	BaseAddrHigh	LengthLow	LengthHigh	Type
+;----------	----------	----------	----------	----------
+;0x00000000	0x00000000	0x0009f000	0x00000000	0x00000001
+;0x0009f000	0x00000000	0x00001000	0x00000000	0x00000002
+;0x000e8000	0x00000000	0x00018000	0x00000000	0x00000002
+;0x00100000	0x00000000	0x01ef0000	0x00000000	0x00000001
+;0x01ff0000	0x00000000	0x00010000	0x00000000	0x00000003
+;0xfffc0000	0x00000000	0x00040000	0x00000000	0x00000002
+;将页表结构放置在内存1M处
+;用户进程放在0x200000 也就是2M处
