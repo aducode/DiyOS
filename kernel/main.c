@@ -34,7 +34,7 @@ void kmain(){
 			eflags =0x202;
 		}
 		//把task中的名称复制到进程表项中
-		_strcpy(p_proc->p_name, p_task->name);
+		_strcpy(p_proc->name, p_task->name);
 		//设置进程id
 		p_proc->pid = i;
 		//设置进程的ldt选择子

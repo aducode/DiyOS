@@ -3,15 +3,19 @@
 #include "protect.h"
 #ifndef _DIYOS_PROC_H
 #define _DIYOS_PROC_H
-
-extern void schedule();
-
-void* va2la(int pid, void* va);
-
-#define proc2pid(x)	(x-proc_table)
 //#define MAX_PROCESS_COUNT	32	//最多32个进程
 #define TASKS_COUNT		1	//系统进程个数
-#define PROCS_COUNT		1	//用户进程数量
+#define PROCS_COUNT		4	//用户进程数量
+//消息广播
+#define ANY	(TASKS_COUNT + PROCS_COUNT + 10)
+//
+#define NO_TASK	(TASKS_COUNT + PROCS_COUNT + 20)
+#define HARD_INT		1
+//中断类型消息
+#define INTERRUPT		-10
+//任务状态
+#define SENDING			0x02
+#define RECEIVING		0x04
 //这里暂时将PROCS_COUNT写死，所以MAX_PROCESS_COUNT就为tasks + procs
 #define MAX_PROCESS_COUNT	(TASKS_COUNT + PROCS_COUNT)	
 
@@ -58,7 +62,14 @@ struct process{
 	int priority;	//进程优先级
 	
 	u32 pid;	//进程id
-	char p_name[16];	//进程名
+	char name[16];	//进程名
+	int p_flags;		//进程标志 1阻塞，不分配cpu时间片 0分配时间片runnable
+	struct message *p_msg;	//存储进程接受或发送的消息
+	int p_recvfrom;		//消息来源的pid
+	int p_sendto;		//消息发送的目的pid
+	int has_int_msg;	//如果非0，说明正在处理中断
+	struct process *q_sending;	//向该进程发送消息的队列
+	struct process *next_sending;	//队列头
 	int tty_idx;	//tty表索引
 };
 
@@ -69,4 +80,14 @@ struct task{
 	int stacksize;
 	char name[32];	
 };
+
+
+#define proc2pid(x)     (x-proc_table)
+extern void schedule();
+extern void* va2la(int pid, void* va);
+extern void reset_msg(struct message *p_msg);
+extern void block(struct process *p_proc);
+extern void unblock(struct process *p_proc);
+extern msg_send(struct process *current, int dest,struct message *m);
+extern msg_receive(struct process *current, int src, struct message *m);
 #endif

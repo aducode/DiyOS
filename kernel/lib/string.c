@@ -15,6 +15,31 @@ int main(int argv, char ** argc)
 /**
  *不依赖汇编函数
  */
+/**
+ * memcpy
+ */
+void* memcpy(void* p_dst,const void* p_src, int size)
+{
+	void *ret = p_dst;
+	int i;
+	for(i=0;i<size;i++)
+	{
+		//void* 类型不能直接用*取值，需要转换类型
+		*(char*)p_dst = *(char*)p_src;
+		p_dst = (char*)p_dst + 1;
+		p_src = (char*)p_src + 1;
+	}
+	return ret;
+}
+void memset(void* p_dst, char ch, int size)
+{
+	int i;
+	for(i=0;i<size;i++)
+	{
+		*(char*)p_dst = ch;
+		p_dst = (char*)p_dst + 1;
+	}
+}
 char* strcpy(char * p_dst, char *p_src)
 {
 	char * r = p_dst;

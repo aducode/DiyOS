@@ -8,4 +8,49 @@ typedef unsigned char 		u8;  //8bit长度
 
 typedef char* 			va_list;
 typedef void* 			system_call;//系统调用
+
+
+/**
+ * 内部全部为整形的结构体
+ */
+struct mess1 {
+	int m1i1;
+	int m1i2;
+	int m1i3;
+	int m1i4;
+};
+/** 
+ *指针message
+ */
+struct mess2{
+	void* m2p1;
+	void* m2p2;
+	void* m2p3;
+	void* m2p4;
+};
+/**
+ *message类型3
+ */
+struct mess3{
+	int m3i1;
+	int m3i2;
+	int m3i3;
+	int m3i4;
+	u64 m3l1;
+	u64 m3l2;
+	void* m3p1;
+	void* m3p2;
+};
+/**
+ * 定义ipc使用的message结构体
+ */
+struct message {
+	int source;	//来自哪个线程
+	int type;	//消息类型（以上定义了3种消息)
+	union {
+		struct mess1 m1;
+		struct mess2 m2;
+		struct mess3 m3;
+	} u;	//消息体，根据type不同而不同
+};
 #endif

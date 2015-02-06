@@ -1,11 +1,20 @@
 #include "stdio.h"
 #include "assert.h"
+#include "string.h"
 /********************* testA  testB 是ring1级别的 ***************************/
 void testA()
 {
 //	assert(0);
 	//printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
-	printf("testA\ntestA\t1234567890\tabcdefg\t%c\n", '#');
+	printf("testA\ntestA\t1234567890\tabcdefg\t%c\n", '#');	
+	char msg[200];
+	char msg2[200];
+	memset(msg, 'a',10);
+	msg[10]='\0';
+	printf(msg);
+	memcpy(msg2, msg, 11);
+	printf("\n");
+	printf(msg2);
        // static char msg[20];
         while(1){
 //		printf("hello in testA\n");	
@@ -31,7 +40,7 @@ void testB()
 }
 void testC()
 {
-	printf("adfadfadfadfasd testC %x\n",17);
+	printf("adfadfadfadfasd testC %x\n",217);
         //static char msg[20];
         while(1)
         {

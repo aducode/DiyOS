@@ -7,7 +7,7 @@ global _memset		;void _memset(void * p_dst, char ch, int size);
 global _strcpy		;void _strcpy(void * p_dst, char * p_src);
 global _disp_str
 global _clean
-
+;
 
 ;对c语言不能直接操作的一些汇编指令的封装
 global _hlt		;void _hlt(); 在ring1以上级别调用的时候会出现GP异常，非内核级慎用
