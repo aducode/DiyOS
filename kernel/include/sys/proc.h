@@ -63,7 +63,7 @@ struct process{
 	
 	u32 pid;	//进程id
 	char name[16];	//进程名
-	int p_flags;		//进程标志 1阻塞，不分配cpu时间片 0分配时间片runnable
+	int p_flags;		//进程标志 SENDING正在发消息状态阻塞 RECEIVING正在接收消息状态阻塞  0分配时间片正在运行或准备运行
 	struct message *p_msg;	//存储进程接受或发送的消息
 	int p_recvfrom;		//消息来源的pid
 	int p_sendto;		//消息发送的目的pid
