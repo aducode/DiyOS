@@ -1,5 +1,6 @@
 #include "klib.h"
 #include "protect.h"
+#include "string.h"
 //异常处理函数
 static char * err_msg[] = {"#DE Divide Error",
                             "#DB RESERVED",
@@ -24,9 +25,17 @@ static char * err_msg[] = {"#DE Divide Error",
         		};
 void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 {
-	_clean(0,0,25,80);
-	_disp_str("System Error    :(    Message is:\n",22,0,COLOR_SYS_ERROR);
-	_disp_str(err_msg[vec_no],23,0, COLOR_SYS_ERROR);	
+//	_clean(0,0,25,80);
+	char msg[40];
+	_disp_str("System Error    :(    Message is:\n",19,0,COLOR_SYS_ERROR);
+	_disp_str(err_msg[vec_no],20,0, COLOR_SYS_ERROR);
+	_disp_str("eip, cs, eflags are:",21,0,COLOR_SYS_ERROR);
+	itoa(eip,msg, 16);
+	_disp_str(msg, 22, 0,COLOR_SYS_ERROR);
+	itoa(cs, msg, 16);
+	_disp_str(msg, 23,0, COLOR_SYS_ERROR);
+	itoa(eflags, msg, 2);
+	_disp_str(msg, 24, 0,COLOR_SYS_ERROR);
 }
 
 //硬件中断处理函数

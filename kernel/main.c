@@ -66,6 +66,16 @@ void kmain(){
 		p_proc->regs.eflags = eflags;	//IF=0 IOPL=1
 		//指定tty索引，默认都是0
 		p_proc->tty_idx = 0;	
+		//设置进程状态
+		p_proc->p_flags = 0;
+		p_proc->p_msg = 0;
+		p_proc->p_recvfrom = NO_TASK;
+		p_proc->p_sendto = NO_TASK;
+		p_proc->has_int_msg = 0;
+		p_proc->q_sending = 0;
+		p_proc->next_sending = 0;
+		//优先级 时间片
+		p_proc->ticks = p_proc->priority = 1;
 		//下一个进程ldt的值	
 		p_task_stack -= p_task->stacksize;
 		p_proc++;

@@ -4,19 +4,36 @@
 #include "global.h"
 #include "string.h"
 #include "assert.h"
-
 static int ldt_seg_linear(struct process *p_proc, int idx);
 //判断消息发送是否有环
 static int deadlock(int src, int dest);
+
+static int msg_send(struct process *p_proc, int dest, struct message *msg);
+
+static int msg_receive(struct process *p_prc, int src, struct message *msg);
+
+static void block(struct process *p_proc);
+
+static void unblock(struct process *p_proc);
+
 /**
  * 进程调度
  */
 void schedule()
-{	
+{
 	static int i=0;
+	struct process *p;
 	i++;
+	//这里能使用printf是因为我们0号进程设置成task_tty了，printf会用到tty的write,所以当时钟中断发生时write已经可以被调用了
 	if(i>=TASKS_COUNT + PROCS_COUNT) i=0;
-	p_proc_ready = proc_table+i;
+	p=proc_table + i;
+	while(p->p_flags>0){
+		//p_flags不为0表示需要阻塞线程，不分配cpu时间片
+		i++;
+		if(i>=TASKS_COUNT + PROCS_COUNT) i=0;
+		p=proc_table + i;
+	}
+	p_proc_ready = p;
 }
 /**
  * 计算线程ldt中idx索引的线性地址
@@ -92,9 +109,8 @@ int deadlock(int src, int dest)
 				printk("=_=");
 				return 1;
 			}
-			else {
-				break;
-			}
+		}else {
+			break;
 		}
 	}
 	return 0;	
@@ -116,17 +132,19 @@ int msg_send(struct process *current, int dest, struct message *m)
 	if(deadlock(src,dest)){
 		panic(">>DEADLOCK<< %s->%s", sender->name, receiver->name);
 	}
+	//printf("[msg_send]receiver pid:%d,receiver->p_flags:%d, sender pid:%d, sender->p_flags:%d\n", dest, receiver->p_flags, src, sender->p_flags);
+	printf("[msg_send]\t[%d] send message to [%d]\n",src, dest);
 	if((receiver->p_flags & RECEIVING) && //dest is waiting for the msg
 		(receiver->p_recvfrom == src || receiver->p_recvfrom == ANY)){
 		//目标进程在等待消息，并且发送的目标接收者被设置成本进程，或接收广播
 		assert(receiver->p_msg);
 		assert(m);
 		memcpy(va2la(dest,receiver->p_msg), va2la(src,m), sizeof(struct message));
+		//msg_receive中会把消息地址设置成receiver->p_msg,所以上面的memcpy会把消息体复制到那个地址，复制完后，下面把p_msg归零
 		receiver->p_msg = 0; 
-		receiver->p_flags &= ~RECEIVING;	//表示已经接收了
-		receiver->p_recvfrom = NO_TASK;		
+		receiver->p_flags &= ~RECEIVING;	//表示已经接收了 这里解除阻塞
+		receiver->p_recvfrom = NO_TASK;		//将receiver->p_recvfrom重置成NO_TASK	
 		unblock(receiver);
-
 		assert(receiver->p_flags == 0);
 		assert(receiver->p_msg == 0);
 		assert(receiver->p_recvfrom == NO_TASK);
@@ -171,8 +189,10 @@ int msg_receive(struct process *current, int src, struct message *m)
 	struct process *sender = 0;
 	struct process *prev = 0;
 	int copyok = 0;
-	
+	//printf("####################\n");
+	//printf("[msg_receive]receiver pid:%d,receiver->p_flags:%d,sender pid:%d,sender->p_flags:%d\n", 111/*proc2pid(current)*/, 0/*current->p_flags*/, src, sender->p_flags);
 	int dest = proc2pid(receiver);
+	printf("[msg_receive]\t[%d] receive message from [%d]\n", dest,src);
 	assert(dest != src);
 	if((receiver->has_int_msg) && ((src==ANY)||(src==INTERRUPT))){
 		//处理中断
@@ -210,6 +230,7 @@ int msg_receive(struct process *current, int src, struct message *m)
 		sender = proc_table + src;
 		if((sender->p_flags & SENDING) &&
 			(sender->p_sendto == dest)){
+			//说明sender（消息来源）正好在给该进程发消息
 			copyok = 1;
 			struct process *p = receiver->q_sending;
 			assert(p);
@@ -255,7 +276,7 @@ int msg_receive(struct process *current, int src, struct message *m)
 	} else {
 		//nobody's sending any msg
 		receiver->p_flags |= RECEIVING;
-		receiver->p_msg = m;
+		receiver->p_msg = m;  //这里将消息地址设置给receiver->p_msg，在msg_send中会使用这个地址
 		if(src == ANY){
 			receiver->p_recvfrom = ANY;
 		} else {
@@ -269,4 +290,28 @@ int msg_receive(struct process *current, int src, struct message *m)
 		assert(receiver->has_int_msg == 0);
 	}
 	return 0;
+}
+
+//ring0
+int sys_sendrec(int function, int dest_src, struct message *msg , struct process *p_proc)
+{
+	assert(k_reenter == 0); //make sure we are not in ring0
+	assert((dest_src >= 0 && dest_src < TASKS_COUNT + PROCS_COUNT) || dest_src == ANY || dest_src == INTERRUPT);	
+	int ret;
+	int caller = proc2pid(p_proc);
+	struct message *mla = (struct message *)va2la(caller, msg);
+	mla->source = caller;
+	assert(mla->source != dest_src);
+	switch(function){
+		case SEND:
+			ret = msg_send(p_proc, dest_src, msg);
+			break;
+		case RECEIVE:
+			ret = msg_receive(p_proc, dest_src, msg);
+			break;
+		default:
+			panic("{sys_sendrec} invalid function:%d (SEND:%d, RECEIVE:%d).",function, SEND, RECEIVE);
+			break;
+	}		
+	return ret;
 }

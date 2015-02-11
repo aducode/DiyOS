@@ -16,7 +16,6 @@ void clock_handler(int irq_no)
 	if(ticks>MAX_TICKS)ticks=0;
 //	_clean(0,0,25,80);
 	//itoa((int)ticks,msg, 10);
-	//_disp_str(msg,23,0,COLOR_RED);
 	schedule();
 }
 void init_clock()

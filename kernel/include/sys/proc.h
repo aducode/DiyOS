@@ -4,8 +4,8 @@
 #ifndef _DIYOS_PROC_H
 #define _DIYOS_PROC_H
 //#define MAX_PROCESS_COUNT	32	//最多32个进程
-#define TASKS_COUNT		1	//系统进程个数
-#define PROCS_COUNT		4	//用户进程数量
+#define TASKS_COUNT		2	//系统进程个数
+#define PROCS_COUNT		1	//用户进程数量
 //消息广播
 #define ANY	(TASKS_COUNT + PROCS_COUNT + 10)
 //
@@ -86,8 +86,8 @@ struct task{
 extern void schedule();
 extern void* va2la(int pid, void* va);
 extern void reset_msg(struct message *p_msg);
-extern void block(struct process *p_proc);
-extern void unblock(struct process *p_proc);
-extern msg_send(struct process *current, int dest,struct message *m);
-extern msg_receive(struct process *current, int src, struct message *m);
+//extern void block(struct process *p_proc);
+//extern void unblock(struct process *p_proc);
+//extern msg_send(struct process *current, int dest,struct message *m);
+//extern msg_receive(struct process *current, int src, struct message *m);
 #endif

@@ -53,4 +53,13 @@ struct message {
 		struct mess3 m3;
 	} u;	//消息体，根据type不同而不同
 };
+
+#define SEND	1
+#define RECEIVE	2
+#define BOTH	3
+
+#define HARD_INT  1
+#define GET_TICKS 2
+
+#define RETVAL u.m3.m3l1
 #endif

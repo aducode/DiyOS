@@ -17,7 +17,7 @@ sendrec:
 	mov eax, SYS_CALL_SENDREC
 	mov ebx, [esp + 4]	;function 区分是send还是receive
 	mov ecx, [esp + 8]	;消息地址
-	mov edx, [esp +12]	;消息体
+	mov edx, [esp +12]	;消息体地址
 	int INT_VECTOR_SYS_CALL
 	ret
 printk:

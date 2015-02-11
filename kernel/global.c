@@ -48,12 +48,15 @@ int k_reenter = -1;	//由于最开始执行中断时，会先减1 ，所以这�
 
 
 //这里定义Task
+//task/ticks.c
+extern void  task_ticks();
 //task/tty.c
 extern void task_tty();
 struct task task_table[TASKS_COUNT] = {
 	/* entry        stack size        task name */
 	/* -----        ----------        --------- */
 	{task_tty,	0x80,		"TTY"  },
+	{task_ticks,	0x80,		"TICKS"},
 };
 
 
@@ -67,10 +70,10 @@ extern void testD();
 struct task user_proc_table[PROCS_COUNT] = {
 	/*entry		stack size	task name8*/
 	/*----		----------	----------*/
-	{testA,		0x80,		"TestA"},
+	//{testA,		0x80,		"TestA"},
 	{testB,		0x80,		"TestB"},
 	{testC,		0x80,		"TestC"},
-	{testD,		0x80,		"TestD"},
+	//{testD,		0x80,		"TestD"},
 };
 //定义任务栈空间
 char task_stack[STACK_SIZE_TOTAL];
@@ -84,13 +87,14 @@ char task_stack[STACK_SIZE_TOTAL];
 long long ticks;
 
 
-
+//proc.c
+extern int sys_sendrec(int function, int dest_src, struct message *msg);
 //in task/tty.c
 extern int sys_write(char *buf, int len, struct process *p_proc);
 extern int sys_printk(int _unused1, int _unused2, char * s, struct process *p_proc);
 //系统调用
 system_call sys_call_table[MAX_SYSCALL_COUNT] =
-{sys_write,sys_printk, sys_write};
+{sys_sendrec,sys_printk, sys_write};
 
 //
 #define CONSOLE_COUNT	3
