@@ -19,6 +19,7 @@ void kmain(){
 	u8 rpl;
 	int eflags;
 	int i;
+	int prio;
 	for(i=0;i<TASKS_COUNT + PROCS_COUNT;i++)
 	{	
 		if(i<TASKS_COUNT){
@@ -27,11 +28,13 @@ void kmain(){
 			privilege = PRIVILEGE_TASK;
 			rpl = RPL_TASK;
 			eflags = 0x1202;
+			prio = 15; //优先级比较高
 		} else {
 			p_task = user_proc_table + (i-TASKS_COUNT);
 			privilege = PRIVILEGE_USER;
 			rpl = RPL_USER;
 			eflags =0x202;
+			prio = 5;	//优先级比较底
 		}
 		//把task中的名称复制到进程表项中
 		_strcpy(p_proc->name, p_task->name);
@@ -75,7 +78,7 @@ void kmain(){
 		p_proc->q_sending = 0;
 		p_proc->next_sending = 0;
 		//优先级 时间片
-		p_proc->ticks = p_proc->priority = 1;
+		p_proc->ticks = p_proc->priority = prio;
 		//下一个进程ldt的值	
 		p_task_stack -= p_task->stacksize;
 		p_proc++;

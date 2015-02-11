@@ -21,6 +21,28 @@ static void unblock(struct process *p_proc);
  */
 void schedule()
 {
+	/*
+	struct process *p;
+        int greatest_ticks = 0;
+        while(!greatest_ticks){
+                for(p=proc_table;p<=proc_table+TASKS_COUNT+PROCS_COUNT-1;p++){
+                        if(p->p_flags == 0){
+                                if(p->ticks > greatest_ticks){
+                                        greatest_ticks = p->ticks;
+                                        p_proc_ready = p;
+                                }
+                        }
+                }
+        }
+        if(!greatest_ticks){
+                for(p=proc_table;p<=proc_table+TASKS_COUNT+PROCS_COUNT+1;p++){
+                        if(p->p_flags == 0){
+                                p->ticks = p->priority;
+                        }
+                }
+        }
+
+	*/
 	static int i=0;
 	struct process *p;
 	i++;
