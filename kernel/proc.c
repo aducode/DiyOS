@@ -195,10 +195,10 @@ int msg_send(struct process *current, int dest, struct message *m)
 		}
 		sender->next_sending = 0;
 		block(sender);
-		assert(sender->p_flags = SENDING);
+		assert(sender->p_flags == SENDING);
 		assert(sender->p_msg != 0);
 		assert(sender->p_recvfrom == NO_TASK);
-		assert(sender->p_sendto = dest);
+		assert(sender->p_sendto == dest);
 	}
 	return 0;
 }
@@ -266,8 +266,8 @@ int msg_receive(struct process *current, int src, struct message *m)
 			}
 			assert(receiver->p_flags==0);
 			assert(receiver->p_msg == 0);
-			assert(receiver->p_recvfrom = NO_TASK);
-			assert(receiver->p_sendto = NO_TASK);
+			assert(receiver->p_recvfrom == NO_TASK);
+			assert(receiver->p_sendto == NO_TASK);
 			assert(receiver->q_sending != 0);
 			assert(sender->p_flags == SENDING);
 			assert(sender->p_msg !=0);
@@ -276,7 +276,7 @@ int msg_receive(struct process *current, int src, struct message *m)
 		}
 	}
 	if(copyok){
-		if(sender = receiver->q_sending){
+		if(sender == receiver->q_sending){
 			//从接收队列中删除
 			assert(prev == 0);
 			receiver->q_sending = sender->next_sending;

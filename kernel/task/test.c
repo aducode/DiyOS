@@ -34,7 +34,7 @@ void testA()
        // static char msg[20];
 	printf("testA running .... %d\n", (int)get_ticks());
         while(1){
-		printf("%d,",(int)get_ticks());
+//		printf("%d,",(int)get_ticks());
 //		printf("%d\n", get_ticks());
 //		printf("hello in testA\n");	
 //                _disp_str("IN RING1 PROC A...    ticks now is:",0,0, COLOR_GREEN);

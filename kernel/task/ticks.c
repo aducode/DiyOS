@@ -3,6 +3,7 @@
 #include "string.h"
 #include "proc.h"
 #include "global.h"
+#include "stdio.h"
 void task_ticks()
 {
 	struct message msg;
