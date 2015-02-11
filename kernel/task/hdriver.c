@@ -4,7 +4,7 @@
 #include "type.h"
 #include "proc.h"
 #include "assert.h"
-static void init_hd();
+#include "hd.h"
 /**
  * Main Loop of HD driver
  */
@@ -16,7 +16,7 @@ void task_hd()
 	while(1){
 		//Main Loop start
 		send_recv(RECEIVE, ANY, &msg); //接收广播消息，没有消息的时候阻塞
-		int src = msg.sources;
+		int src = msg.source;
 		switch(msg.type){
 			case DEV_OPEN:
 				hd_identify(0);
@@ -28,13 +28,9 @@ void task_hd()
 		}
 		send_recv(SEND, src, &msg);
 	}
-
 }
 
-/**
- * 初始化硬盘
- */
-void init_hd()
+void hd_identify(int drive)
 {
-	//Get the number of drives from the BIOS data area
+	
 }

@@ -52,6 +52,8 @@ int k_reenter = -1;	//由于最开始执行中断时，会先减1 ，所以这�
 
 
 //这里定义Task
+//task/hd.c
+extern void task_hd();
 //task/ticks.c
 extern void  task_ticks();
 //task/tty.c
@@ -60,6 +62,7 @@ struct task task_table[TASKS_COUNT] = {
 	/* entry        stack size        task name */
 	/* -----        ----------        --------- */
 	{task_tty,	STACK_SIZE_TASK_TTY,		"TTY"  },
+	{task_hd,	STACK_SIZE_TASK_HD,		"HD"   },
 	{task_ticks,	STACK_SIZE_TASK_TICKS,		"TICKS"},
 };
 

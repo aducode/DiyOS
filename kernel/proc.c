@@ -343,7 +343,8 @@ int sys_sendrec(int function, int dest_src, struct message *msg , struct process
 void dump_msg(const char * title, struct message *msg)
 {
 	int packed = 0;
-	printk("{%s}<0x%x>{%ssrc:%s(%d),%stype:%d,%s(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x)%s}%s\n",
+	//这里能使用printf，是在tty进程已经被启动起来的情况下，所以dump_msg要在tty之后的进程中使用
+	printf("{%s}<0x%x>{%ssrc:%s(%d),%stype:%d,%s(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x)%s}%s\n",
 	title,
 	(int)msg,
 	packed?"":"\n	",
