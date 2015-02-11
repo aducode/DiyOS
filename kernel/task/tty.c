@@ -35,6 +35,7 @@ static void put_key(struct tty *p_tty, u32 key);
 static void tty_write(struct tty *p_tty, char *buffer, int size);
 /**
  * tty进程体
+ * Main Loop of TTY task
  */
 void task_tty()
 {

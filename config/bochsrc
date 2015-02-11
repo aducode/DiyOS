@@ -3,7 +3,11 @@ megs:32
 romimage:file=/usr/local/share/bochs/BIOS-bochs-latest
 vgaromimage:file=/usr/share/vgabios/vgabios.bin
 floppya:1_44=a.img, status=inserted
-boot:floppy
+#hd
+ata0:enabled=1,ioaddr1=0x1f0,ioaddr2=0x3f0,irq=14
+ata0-master:type=disk, path=c.img,mode=flat,cylinders=20,heads=16,spt=63,translation=none,status=inserted
+
+boot:a
 log:bochsout.txt
 mouse:enabled=0
 keyboard:keymap=/usr/local/share/bochs/keymaps/x11-pc-us.map

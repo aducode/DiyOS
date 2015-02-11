@@ -2,7 +2,7 @@
 #include "stdlib.h"
 #include "stdio.h"
 #include "string.h"
-static void spin(char *func_name)
+void spin(const char *func_name)
 {
 	printf("\nspinning in %s ...\n",func_name);
 	while(1){}

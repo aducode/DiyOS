@@ -58,8 +58,17 @@ struct message {
 #define RECEIVE	2
 #define BOTH	3
 
-#define HARD_INT  1
-#define GET_TICKS 2
-
+enum msgtype {
+	HARD_INT = 1,
+	//sys task
+	GET_TICKS, GET_PID,
+	//FS
+	//message type for drivers
+	DEV_OPEN = 1001,
+	DEV_CLOSE,
+	DEV_READ,
+	DEV_WRITE,
+	DEV_IOCTL
+};
 #define RETVAL u.m3.m3l1
 #endif

@@ -18,7 +18,8 @@ long long get_ticks()
 
 /********************* testA  testB 是ring1级别的 ***************************/
 void testA()
-{
+{	
+//	printf("0x%x\n",111);
 //	assert(0);
 //	printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
 //	printf("ticks:%d", get_ticks());	

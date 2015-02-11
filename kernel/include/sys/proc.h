@@ -103,4 +103,12 @@ extern void reset_msg(struct message *p_msg);
 //extern void unblock(struct process *p_proc);
 //extern msg_send(struct process *current, int dest,struct message *m);
 //extern msg_receive(struct process *current, int src, struct message *m);
+/**
+ * 发送接收消息的系统调用
+ * @param function SEND RECEIVE BOTH
+ * @param src_dest  消息的目标或者来源
+ * @param msg 消息体指针
+ */
+extern int send_recv(int function, int src_dest, struct message *msg);
+extern void dump_msg(const char * title, struct message *msg);
 #endif

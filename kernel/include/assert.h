@@ -4,6 +4,7 @@
 #define MAG_CH_ASSERT	'\003'
 #define ASSERT
 #ifdef ASSERT
+extern void spin(const char *);
 extern void assertion_failure(char *exp, char *file, char *base_file, int line);
 #define assert(exp) if(exp);\
 	else assertion_failure(#exp,__FILE__,__BASE_FILE__, __LINE__);

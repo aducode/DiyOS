@@ -5,9 +5,12 @@ BOOT=boot/boot.bin
 LOADER=boot/loader.bin
 KERNEL=kernel/kernel.bin
 FLOPPY=a.img
+DISK=c.img
 LOGS = *.txt *.log
 
-BXIMAGE=bximage -mode=create -fd=1.44M -q
+BXIMAGE=bximage
+FDFLAG=-mode=create -fd=1.44M -q
+HDFLAG=-mode=create -hd=10M -q
 
 
 run:clean img boot kernel
@@ -37,12 +40,13 @@ kernel:
 	make -C kernel/
 
 img:
-	$(BXIMAGE) $(FLOPPY)
+	$(BXIMAGE) $(FDFLAG) $(FLOPPY)
+	$(BXIMAGE) $(HDFLAG) $(DISK)
 
 clean:
 	make clean -C boot
 	make clean -C kernel
-	-rm -rf $(LOGS) $(FLOPPY)
+	-rm -rf $(LOGS) $(FLOPPY) $(DISK)
 
 die:
 	@echo "kill bochs"

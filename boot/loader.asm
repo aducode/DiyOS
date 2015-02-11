@@ -61,6 +61,13 @@ LOADER_START:
 .MemChkFail:
 	mov dword [_dwMCRNumber], 0
 .MemChkOK:
+	;获取硬盘数量
+	mov dx, ds
+	mov ax, 0
+	mov ds, ax
+	mov al, byte[0x475];0x475是Bios Data Area中保存硬盘数量的地址
+	mov ds, dx
+	mov byte[_hdNum], al
 	;下面开始在软盘中寻找kernel
 	;复位软驱
 	xor ah, ah
@@ -332,7 +339,9 @@ LABEL_PM_START:
 	add esi, 0x20
 	dec ecx
 	jnz .BEGIN
-	
+	;之前BaseOfKernelFile位置已经被废弃了，暂时用来保存一下硬件信息
+	mov al, byte[hdNum]
+	mov byte[BaseOfLoaded], al
 	;跳到内核	
 	jmp SelectorFlatC:KernelEntryPointPhyAddr
 
@@ -442,6 +451,9 @@ ARDStruct		equ	BaseOfLoaderPhyAddr + _ARDStruct
 	dwLengthLow	equ	BaseOfLoaderPhyAddr + _dwLengthLow
 	dwLengthHigh	equ	BaseOfLoaderPhyAddr + _dwLengthHigh
 	dwType		equ 	BaseOfLoaderPhyAddr + _dwType
+;硬盘数量
+_hdNum:		db	0
+hdNum		equ	BaseOfLoaderPhyAddr + _hdNum
 ;SECTION .data结束
 
 [SECTION .gs]		;全局堆栈段

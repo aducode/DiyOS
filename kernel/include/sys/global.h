@@ -19,6 +19,8 @@ extern struct process  proc_table[];
 
 extern struct tss g_tss;
 
+extern struct t_hdinfo hdinfo;
+
 extern int k_reenter;
 
 extern struct task task_table[];

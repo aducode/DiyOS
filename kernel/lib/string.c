@@ -86,6 +86,7 @@ void itoa(int value, char * string, int radix)
 	if(len<=0){
 		*(s+len++)='0';
 	}
+	/*
 	switch(radix)
 	{
 		case 16:
@@ -101,6 +102,7 @@ void itoa(int value, char * string, int radix)
 			break;
 			//pass
 	}
+	*/
 	*(s+len)='\0';
 }
 

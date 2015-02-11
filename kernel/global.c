@@ -1,4 +1,5 @@
 #include "proc.h"
+#include "protect.h"
 #ifndef _DIYOS_GLOBAL_H
 #define _DIYOS_GLOBAL_H
 #define _DIYOS_GLOABL_C_HERE
@@ -42,6 +43,8 @@ struct process*  p_proc_ready;	//获得cpu时间的进程
 struct process proc_table[MAX_PROCESS_COUNT];	//全局线程表
 //TSS
 struct tss g_tss;
+//保存BIOS Data Area中的硬件设备信息
+struct t_hdinfo hdinfo;
 //全局变量，判断是否在中断中(由于中断是可重入的，所以需要判断中断之前是否执行的是中断函数）
 //int k_reenter = -1;	//初始值是1 ，当进入中断时+1 ，中断返回时-1,用于判断是否有重入的中断，（只允许不同种类中断重入，同种中断会在中断发生时被屏蔽掉)
 int k_reenter = -1;	//由于最开始执行中断时，会先减1 ，所以这里改成0
