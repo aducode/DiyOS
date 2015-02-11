@@ -5,7 +5,24 @@
 #define _DIYOS_PROC_H
 //#define MAX_PROCESS_COUNT	32	//最多32个进程
 #define TASKS_COUNT		2	//系统进程个数
-#define PROCS_COUNT		1	//用户进程数量
+#define PROCS_COUNT		4	//用户进程数量
+//进程栈
+//stacks of tasks
+#define STACK_SIZE_TASK_TTY	0x8000
+#define STACK_SIZE_TASK_TICKS	0x8000
+//stacks of process
+#define STACK_SIZE_PROC_TESTA	0x8000
+#define STACK_SIZE_PROC_TESTB	0x8000
+#define STACK_SIZE_PROC_TESTC	0x8000
+#define STACK_SIZE_PROC_TESTD	0x8000
+//stacks size
+#define STACK_SIZE_TOTAL        (STACK_SIZE_TASK_TTY + \
+				 STACK_SIZE_TASK_TICKS + \
+				 STACK_SIZE_PROC_TESTA + \
+				 STACK_SIZE_PROC_TESTB + \
+				 STACK_SIZE_PROC_TESTC + \
+				 STACK_SIZE_PROC_TESTD)
+
 //消息广播
 #define ANY	(TASKS_COUNT + PROCS_COUNT + 10)
 //
@@ -23,10 +40,6 @@
 #define RPL_TASK	1
 #define RPL_USER	3
 
-
-//stacks of tasks
-#define STACK_SIZE_TESTA	0x8000
-#define STACK_SIZE_TOTAL	(STACK_SIZE_TESTA)
 //进程表的栈，用来保存进程寄存器的值
 struct stackframe{
 	//中断开始时，由我们的中断处理函数进行压栈

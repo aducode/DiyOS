@@ -1,3 +1,4 @@
+#include "proc.h"
 #ifndef _DIYOS_GLOBAL_H
 #define _DIYOS_GLOBAL_H
 #define _DIYOS_GLOABL_C_HERE
@@ -55,8 +56,8 @@ extern void task_tty();
 struct task task_table[TASKS_COUNT] = {
 	/* entry        stack size        task name */
 	/* -----        ----------        --------- */
-	{task_tty,	0x80,		"TTY"  },
-	{task_ticks,	0x80,		"TICKS"},
+	{task_tty,	STACK_SIZE_TASK_TTY,		"TTY"  },
+	{task_ticks,	STACK_SIZE_TASK_TICKS,		"TICKS"},
 };
 
 
@@ -70,10 +71,10 @@ extern void testD();
 struct task user_proc_table[PROCS_COUNT] = {
 	/*entry		stack size	task name8*/
 	/*----		----------	----------*/
-	//{testA,		0x80,		"TestA"},
-	{testB,		0x80,		"TestB"},
-	{testC,		0x80,		"TestC"},
-	//{testD,		0x80,		"TestD"},
+	{testA,		STACK_SIZE_PROC_TESTA,		"TestA"},
+	{testB,		STACK_SIZE_PROC_TESTB,		"TestB"},
+	{testC,		STACK_SIZE_PROC_TESTC,		"TestC"},
+	{testD,		STACK_SIZE_PROC_TESTD,		"TestD"},
 };
 //定义任务栈空间
 char task_stack[STACK_SIZE_TOTAL];

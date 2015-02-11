@@ -154,8 +154,7 @@ int msg_send(struct process *current, int dest, struct message *m)
 	if(deadlock(src,dest)){
 		panic(">>DEADLOCK<< %s->%s", sender->name, receiver->name);
 	}
-	//printf("[msg_send]receiver pid:%d,receiver->p_flags:%d, sender pid:%d, sender->p_flags:%d\n", dest, receiver->p_flags, src, sender->p_flags);
-	printf("[msg_send]\t[%d] send message to [%d]\n",src, dest);
+	//printf("[msg_send]\t[%d] send message to [%d]\n",src, dest);
 	if((receiver->p_flags & RECEIVING) && //dest is waiting for the msg
 		(receiver->p_recvfrom == src || receiver->p_recvfrom == ANY)){
 		//目标进程在等待消息，并且发送的目标接收者被设置成本进程，或接收广播
@@ -211,10 +210,8 @@ int msg_receive(struct process *current, int src, struct message *m)
 	struct process *sender = 0;
 	struct process *prev = 0;
 	int copyok = 0;
-	//printf("####################\n");
-	//printf("[msg_receive]receiver pid:%d,receiver->p_flags:%d,sender pid:%d,sender->p_flags:%d\n", 111/*proc2pid(current)*/, 0/*current->p_flags*/, src, sender->p_flags);
 	int dest = proc2pid(receiver);
-	printf("[msg_receive]\t[%d] receive message from [%d]\n", dest,src);
+	//printf("[msg_receive]\t[%d] receive message from [%d]\n", dest,src);
 	assert(dest != src);
 	if((receiver->has_int_msg) && ((src==ANY)||(src==INTERRUPT))){
 		//处理中断

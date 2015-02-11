@@ -22,16 +22,17 @@ void testA()
 //	assert(0);
 //	printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
 //	printf("ticks:%d", get_ticks());	
-	char msg[200];
-	char msg2[200];
-	memset(msg, 'a',10);
-	msg[10]='\0';
-	printf(msg);
-	memcpy(msg2, msg, 11);
-	printf("\n");
-	printf(msg2);
-	printf("%d\n",get_ticks());
+//	char msg[200];
+//	char msg2[200];
+//	memset(msg, 'a',10);
+//	msg[10]='\0';
+//	printf(msg);
+//	memcpy(msg2, msg, 11);
+//	printf("\n");
+//	printf(msg2);
+//	printf("%d\n",get_ticks());
        // static char msg[20];
+	printf("testA running .... %d\n", (int)get_ticks());
         while(1){
 //		printf("%d\n", get_ticks());
 //		printf("hello in testA\n");	
@@ -44,9 +45,9 @@ void testA()
 }
 void testB()
 {
-	printf("testB running...\n");
+	printf("testB running...%d\n",(int)get_ticks());
 //	int t=(int)get_ticks();
-	printf("after get_ticks()\t%d\n",(int)get_ticks());//如果有多个用户线程，这里就会阻塞
+//	printf("after get_ticks()\t%d\n",(int)get_ticks());//如果有多个用户线程，这里就会阻塞
         //static char msg[20];
         while(1){
 //	printf("%d,",get_ticks());//如果在循环里调用get_ticks()会出现Page Fault异常
@@ -60,7 +61,7 @@ void testB()
 }
 void testC()
 {
-	printf("adfadfadfadfasd testC %x\n",217);
+	printf("testC running ...%d\n",(int)get_ticks());
         //static char msg[20];
         while(1)
         {
@@ -72,7 +73,7 @@ void testC()
 }
 
 void testD(){
-	printf("adfadfadfa dfadfadfasdf testD\n");
+	printf("testD running ...%d\n", (int)get_ticks());
 	while(1){
 	//	printf("testD, \n%s\n","hehehehe");
 	}
