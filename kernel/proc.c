@@ -131,6 +131,7 @@ int deadlock(int src, int dest)
 				printk("=_=");
 				return 1;
 			}
+			p_proc = proc_table + p_proc->p_sendto;
 		}else {
 			break;
 		}
