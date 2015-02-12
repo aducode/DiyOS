@@ -1,5 +1,5 @@
 #include "type.h"
-#include "stdlib.h"
+#include "syscall.h"
 #include "assert.h"
 /*send_recv ipc
  * 暴露给ring1-3的系统调用是sendrec，这个函数对sendrec做了进一步封装

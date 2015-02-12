@@ -1,5 +1,5 @@
 #include "assert.h"
-#include "stdlib.h"
+#include "syscall.h"
 #include "stdio.h"
 #include "string.h"
 void spin(const char *func_name)

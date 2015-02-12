@@ -5,6 +5,11 @@
 #include "proc.h"
 #include "assert.h"
 #include "hd.h"
+
+static u8 hd_status;
+static u8 hdbuf[SECTOR_SIZE * 2];
+
+static void hd_identify(int drive);
 /**
  * Main Loop of HD driver
  */
@@ -32,5 +37,11 @@ void task_hd()
 
 void hd_identify(int drive)
 {
-	
+/*	struct hd_cmd cmd;	
+	cmd.device = MAKE_DEVICE_REG(0, drive, 0);
+	cmd.command = ATA_IDENTIFY;
+	hd_cmd_out(&cmd);
+	interrupt_wait();
+	port_read(REG_DATA, hdbuf, SECTOR_SIZE);
+	print_identify_info((u16*)hdbuf);		*/
 }
