@@ -1,14 +1,15 @@
-.PHONY:clean boot kernel img run die \
+.PHONY:clean cleanall boot kernel img disk run die \
 	run-without-loader   \
 	run-without-kernel
 BOOT=boot/boot.bin
 LOADER=boot/loader.bin
 KERNEL=kernel/kernel.bin
 FLOPPY=a.img
-DISK=c.img
+DISK=80m.img
 LOGS = *.txt *.log
 
 BXIMAGE=bximage
+FDISK=fdisk
 FDFLAG=-mode=create -fd=1.44M -q
 HDFLAG=-mode=create -hd=80M -q
 
@@ -41,13 +42,18 @@ kernel:
 
 img:
 	$(BXIMAGE) $(FDFLAG) $(FLOPPY)
+#	$(BXIMAGE) $(HDFLAG) $(DISK)
+#	fdisk $(DISK)
+disk:
 	$(BXIMAGE) $(HDFLAG) $(DISK)
-
+#分区
+	$(FDISK) -C 162 -H 16 -u=cylinders $(DISK)	
 clean:
 	make clean -C boot
 	make clean -C kernel
-	-rm -rf $(LOGS) $(FLOPPY) $(DISK)
-
+	-rm -rf $(LOGS) $(FLOPPY)
+cleanall:clean
+	-rm -rf $(DISK)
 die:
 	@echo "kill bochs"
 	@kill -9 `ps aux|grep bochs|grep -v 'grep'|awk '{print $$2}'` 

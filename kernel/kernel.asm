@@ -17,7 +17,7 @@ global _sys_call	;系统调用
 _start:
 	;将硬盘信息移动到内核空间
 	mov al, byte[OLD_KERNEL_FILE_ADR]
-	mov byte[hdinfo], al
+	mov byte[bda], al
 	;将栈移到内核内存空间中
 	mov esp, StackTop;
 	sgdt [gdt_ptr]	;给全局变量赋值

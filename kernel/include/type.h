@@ -67,4 +67,6 @@ enum msgtype {
 	DEV_IOCTL
 };
 #define RETVAL u.m3.m3l1
+
+#define DEVICE	u.m3.m3i4
 #endif

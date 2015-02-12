@@ -5,6 +5,8 @@
 #include "global.h"
 #include "string.h"
 #include "assert.h"
+#include "clock.h"
+#include "hd.h"
 static int ldt_seg_linear(struct process *p_proc, int idx);
 //判断消息发送是否有环
 static int deadlock(int src, int dest);
@@ -388,3 +390,34 @@ void inform_int(int task_idx)
 		p->has_int_msg = 1;
 	}
 }
+
+
+/**
+ * Wait for a certain status
+ * @param port	reg port
+ * @param mask  Status mask
+ * @param val   Required status
+ * @param timeout      Timeout in milliseconds
+ */
+int waitfor(int reg_port, int mask, int val, int timeout)
+{
+        int t = (int)get_ticks();
+        while((((int)get_ticks()-t)*1000/HZ)<timeout){
+                //
+                if((_in_byte(reg_port) & mask) == val){
+                        return 1;
+                }
+        }
+        return 0;
+}
+
+
+/**
+ * wait until a disk interrupt occurs
+ */
+void interrupt_wait()
+{
+        struct message msg;
+        send_recv(RECEIVE, INTERRUPT, &msg);
+}
+

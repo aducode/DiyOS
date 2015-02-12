@@ -18,7 +18,7 @@ extern irq_handler_table	;全局硬件中断处理函数
 
 extern sys_call_table		;系统调用表
 
-extern hdinfo		;硬件信息
+extern bda		;硬件信息
 MAX_GDT_ITEMS	equ	128
 LIMIT_OF_GDT	equ	(MAX_GDT_ITEMS - 1) * 8
 

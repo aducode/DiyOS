@@ -8,6 +8,8 @@
 #define RECEIVE		2
 #define BOTH		3
 //dest_src
+#define INVALID_DRIVER	-20
+#define TASK_TTY	0
 #define TASK_HD		1
 #define TASK_TICKS	2
 #define TASK_FS		3

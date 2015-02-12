@@ -1,4 +1,5 @@
 #include "type.h"
+#include "fs.h"
 #include "interrupt.h"
 #include "protect.h"
 #include "proc.h"
@@ -19,7 +20,7 @@ extern struct process  proc_table[];
 
 extern struct tss g_tss;
 
-extern struct t_hdinfo hdinfo;
+extern struct bios_data_area bda;
 
 extern int k_reenter;
 
@@ -38,5 +39,7 @@ extern struct tty tty_table[];
 extern struct console console_table[];
 //当前console
 extern int current_console;
+//
+extern struct dev_drv_map dd_map[];
 #endif
 #endif

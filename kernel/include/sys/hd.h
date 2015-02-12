@@ -152,6 +152,148 @@ struct hd_cmd{
 	u8	lba_high;
 	u8	device;
 	u8	command;
-};	
+};
+
 extern void init_hd();
+
+//设备相关宏
+//系统最多支持两块硬盘
+#define MAX_DRIVES	2
+//每块硬盘支持的最大分区数
+#define PART_PER_DRIVE	4
+//每个扩展分区最大逻辑分区数
+#define SUB_PER_PART	16
+//每块硬盘的最大逻辑分区数
+#define SUB_PER_DRIVE	(SUB_PER_PART * PART_PER_DRIVE)
+//每块硬盘最大主分区数
+#define PRIM_PER_DRIVE	(PART_PER_DRIVE + 1)
+//系统支持的最大主分区数
+/**
+ *@def MAX_PRIM
+ *Defines the max minor number of the primary partitions.
+ * If there are 2 disks, prim_dev ranges in hd[0-9], this macro will eqauls 9.
+ */
+#define MAX_PRIM	(MAX_DRIVES * PRIM_PER_DRIVE)
+//系统支持的最大逻辑分区数
+#define MAX_SUBPARTITIONS	(SUB_PER_DRIVE * MAX_DRIVES)
+//
+//主设备号
+#define NO_DEV          0
+#define DEV_FLOPPY      1
+#define DEV_CDROM       2
+#define DEV_HD          3
+#define DEV_CHAR_TTY    4
+#define DEV_SCSI        5
+
+//设备号与驱动程序pid映射关系在global.c中指定
+//make device number from major and minor numbers
+#define MAJOR_SHIFT     8
+//根据主设备号和次设备号生成设备号
+#define MAKE_DEV(a,b)   ((a<<MAJOR_SHIFT)|b)
+//separate major and minor numbers from device number
+#define MAJOR(x)        ((x>>MAJOR_SHIFT) & 0xFF)
+#define MINOR(x)        (x & 0xFF)
+//
+//硬盘设备号
+#define MINOR_hd1a      0x10
+#define MINOR_hd2a      (MINOR_hd1a + SUB_PER_PART) 
+//
+#define ROOT_DEV	MAKE_DEV(DEV_HD, MINOR_hd2a)    //我们系统的文件系统根在hd2a
+
+//我们系统的ROOT_DEV
+//分区类型
+//没有分区
+#define NO_PART		0x00
+//扩展分区标示
+#define EXT_PART	0x05
+
+
+#define P_PRIMARY	0
+#define P_EXTENDED	1
+//
+struct part_ent {
+	u8 boot_ind;		/**
+				 * boot indicator
+				 *   Bit 7 is the active partition flag,
+				 *   bits 6-0 are zero (when not zero this
+				 *   byte is also the drive number of the
+				 *   drive to boot so the active partition
+				 *   is always found on drive 80H, the first
+				 *   hard disk).
+				 */
+
+	u8 start_head;		/**
+				 * Starting Head
+				 */
+
+	u8 start_sector;	/**
+				 * Starting Sector.
+				 *   Only bits 0-5 are used. Bits 6-7 are
+				 *   the upper two bits for the Starting
+				 *   Cylinder field.
+				 */
+
+	u8 start_cyl;		/**
+				 * Starting Cylinder.
+				 *   This field contains the lower 8 bits
+				 *   of the cylinder value. Starting cylinder
+				 *   is thus a 10-bit number, with a maximum
+				 *   value of 1023.
+				 */
+
+	u8 sys_id;		/**
+				 * System ID
+				 * e.g.
+				 *   01: FAT12
+				 *   81: MINIX
+				 *   83: Linux
+				 */
+
+	u8 end_head;		/**
+				 * Ending Head
+				 */
+
+	u8 end_sector;		/**
+				 * Ending Sector.
+				 *   Only bits 0-5 are used. Bits 6-7 are
+				 *   the upper two bits for the Ending
+				 *    Cylinder field.
+				 */
+
+	u8 end_cyl;		/**
+				 * Ending Cylinder.
+				 *   This field contains the lower 8 bits
+				 *   of the cylinder value. Ending cylinder
+				 *   is thus a 10-bit number, with a maximum
+				 *   value of 1023.
+				 */
+
+	u32 start_sect;	/**
+				 * starting sector counting from
+				 * 0 / Relative Sector. / start in LBA
+				 */
+
+	u32 nr_sects;		/**
+				 * nr of sectors in partition
+				 */
+
+};
+/**
+ * 分区信息
+ */
+struct part_info
+{
+	u32 base;	//of sart sector(NOT byte offset, but SECTOR
+	u32 size;	//how many sectors in this partition
+};
+/**
+ * 硬盘设备信息
+ */
+struct hd_info
+{
+        int     open_cnt;
+        struct part_info        primary[PRIM_PER_DRIVE];
+	struct part_info	logical[SUB_PER_DRIVE];
+};
+
 #endif
