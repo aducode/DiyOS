@@ -10,7 +10,7 @@ LOGS = *.txt *.log
 
 BXIMAGE=bximage
 FDFLAG=-mode=create -fd=1.44M -q
-HDFLAG=-mode=create -hd=10M -q
+HDFLAG=-mode=create -hd=80M -q
 
 
 run:clean img boot kernel

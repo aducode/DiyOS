@@ -3,6 +3,8 @@
 /************************************************************/
 #include "type.h"
 #include "global.h"
+#include "proc.h"
+#include "syscall.h"
 #include "klib.h"
 #include "assert.h"
 #include "hd.h"
@@ -19,5 +21,5 @@ void init_hd()
 void hd_handler(int irq_no)
 {
 	hd_status = _in_byte(REG_STATUS);
-	_disp_str("hd",23,0,COLOR_YELLOW);
+	inform_int(TASK_HD);	
 }

@@ -1,4 +1,5 @@
 #include "type.h"
+#include "syscall.h"
 #include "assert.h"
 #include "string.h"
 #include "proc.h"

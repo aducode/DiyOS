@@ -1,4 +1,5 @@
 #include "type.h"
+#include "syscall.h"
 #include "protect.h"
 #include "proc.h"
 #include "global.h"

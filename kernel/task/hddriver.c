@@ -2,6 +2,7 @@
 /*	                  硬盘驱动                                 */
 /*******************************************************************/
 #include "type.h"
+#include "syscall.h"
 #include "klib.h"
 #include "proc.h"
 #include "assert.h"

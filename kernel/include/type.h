@@ -54,10 +54,6 @@ struct message {
 	} u;	//消息体，根据type不同而不同
 };
 
-#define SEND	1
-#define RECEIVE	2
-#define BOTH	3
-
 enum msgtype {
 	HARD_INT = 1,
 	//sys task

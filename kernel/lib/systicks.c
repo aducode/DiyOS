@@ -1,6 +1,5 @@
 #include "type.h"
-#include "proc.h"
-#include "stdlib.h"
+#include "syscall.h"
 /**
  * 使用sendrec系统调用
  */
