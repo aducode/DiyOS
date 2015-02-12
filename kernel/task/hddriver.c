@@ -23,6 +23,16 @@ void task_hd()
 				//hd_identify(0);
 				hd_open(msg.DEVICE);
 				break;
+			case DEV_CLOSE:
+				hd_close(msg.DEVICE);
+				break;
+			case DEV_READ:
+			case DEV_WRITE:
+				hd_rdwt(&msg);
+				break;
+			case DEV_IOCTL:
+				hd_ioctl(&msg);
+				break;
 			default:
 				dump_msg("HD driver::unknown msg",&msg);
 				spin("FS::main_loop (invalid msg.type)");

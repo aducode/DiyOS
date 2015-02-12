@@ -95,7 +95,6 @@ void hd_open(int device)
 	assert(drive == 0);//目前只设置了一块硬盘，所以这个结果肯定是0
 		
 	hd_identify(drive);
-
 	if(hd_info[drive].open_cnt++ ==0){
 		//保证只执行一次
 		partition(drive * (PART_PER_DRIVE +1 ), P_PRIMARY);
@@ -103,6 +102,31 @@ void hd_open(int device)
 		print_hdinfo(&hd_info[drive]);
 	}
 	//print_hdinfo(&hd_info[drive]);
+}
+
+/**
+ * 关闭设比
+ * @param device 次设备号
+ */
+void hd_close(int device)
+{
+	//获得是哪个硬盘设备 这里只有一个硬盘所以一定是0
+	int drive = DRV_OF_DEV(device);
+	assert(drive == 0); //only one drive
+	hd_info[drive].open_cnt--;
+}
+
+/**
+ * 读写
+ */
+void hd_rdwt(struct message *msg){
+}
+
+/**
+ *控制
+ */
+void hd_ioctl(struct message *msg)
+{
 }
 /********************** PRIVATE *************************************************/
 void hd_handler(int irq_no)

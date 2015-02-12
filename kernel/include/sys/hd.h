@@ -296,4 +296,12 @@ struct hd_info
 	struct part_info	logical[SUB_PER_DRIVE];
 };
 
+
+
+
+//public function
+extern void hd_open(int device);
+extern void hd_close(int device);
+extern void hd_rdwt(struct message *msg);
+extern void hd_ioctl(struct message *msg);
 #endif

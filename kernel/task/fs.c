@@ -19,5 +19,8 @@ void task_fs()
 	//次设备号就是msg中的DEVICE
 	assert(dd_map[MAJOR(ROOT_DEV)].driver_pid != INVALID_DRIVER);
 	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
+	printf("close dev\n");
+	msg.type=DEV_CLOSE;
+	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
 	spin("FS");
 }
