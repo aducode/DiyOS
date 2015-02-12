@@ -5,6 +5,8 @@
 #include "global.h"
 #include "klib.h"
 #include "assert.h"
+#include "hd.h"
+static u8 hd_status;
 static void hd_handler(int irq_no);
 void init_hd()
 {
@@ -16,6 +18,6 @@ void init_hd()
 }
 void hd_handler(int irq_no)
 {
+	hd_status = _in_byte(REG_STATUS);
 	_disp_str("hd",23,0,COLOR_YELLOW);
 }
-

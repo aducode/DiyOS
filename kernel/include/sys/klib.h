@@ -17,6 +17,8 @@ extern void _strcpy(char *p_dst, char * p_src);
 extern void * _memcpy(void * dest, void * src, int size);
 extern void _memset(void * dest, char ch, int size);
 extern void _out_byte(u16 port, u8 value);
+extern void _port_read(u16 port, void* buf, int n);
+extern void _port_write(u16 port, void*buf, int n);
 extern u8 _in_byte(u16 port);
 extern void _disable_irq(int irq_no);
 extern void _enable_irq(int irq_no);

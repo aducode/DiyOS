@@ -122,13 +122,13 @@ int deadlock(int src, int dest)
 			if(p_proc->p_sendto == src){
 				//表示目标进程也在给源进程发消息
 				p_proc = proc_table + dest;
-				printk("=_=%s", p_proc->name);
+				printf("=_=%s", p_proc->name);
 				do{
 					assert(p_proc->p_msg);
 					p_proc = proc_table + p_proc->p_sendto;
-					printk("->%s", p_proc->name);
+					printf("->%s", p_proc->name);
 				}while(p_proc != proc_table + src);
-				printk("=_=");
+				printf("=_=");
 				return 1;
 			}
 			p_proc = proc_table + p_proc->p_sendto;
@@ -364,3 +364,28 @@ void dump_msg(const char * title, struct message *msg)
 	);
 }
 
+
+
+void inform_int(int task_idx)
+{
+/*
+	struct process *p = proc_table + task_idx;
+	if((p->p_flags & RECEIVING) && ((p->p_recvfrom == INTERRUPT) || (p->p_recvfrom == ANY))){
+		p->p_msg->source = INTERRUPT;
+		p->p_msg->type = HARD_INT;
+		p->p_msg = 0;
+		p->has_int_msg = 0;
+		p->p_flags &= ~RECEIVING;
+		p->p_recvfrom = NO_TASK;
+		assert(p->p_flags == 0);
+		unblock(p);
+
+		assert(p->p_flags == 0);
+		assert(p->p_msg == 0);
+		assert(p->p_recvfrom == NO_TASK);
+		assert(p->p_sendto == NO_TASK);
+	} else {
+		p->has_int_msg = 1;
+	}
+*/
+}

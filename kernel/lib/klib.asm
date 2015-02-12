@@ -13,6 +13,8 @@ global _clean
 global _hlt		;void _hlt(); 在ring1以上级别调用的时候会出现GP异常，非内核级慎用
 global _out_byte
 global _in_byte
+global _port_read
+global _port_write
 global _disable_irq	;void _disable_irq(int irq_no);
 global _enable_irq	;void _enable_irq(int irq_no);
 global _disable_int	;void _disable_int();
@@ -37,6 +39,24 @@ _in_byte:
 	nop
 	nop
 	ret	;返回值在eax中
+;void _port_read(u16 port, void* buf, int n);
+_port_read:
+	mov edx, [esp + 4]		;port
+	mov edi, [esp + 4 + 4]		;buf
+	mov ecx, [esp + 4 + 4 + 4]	;n
+	shr ecx, 1
+	cld
+	rep insw
+	ret
+;void _port_write(u16 port, void*buf, int n)
+_port_write:
+	mov edx, [esp + 4]		;port
+	mov esi, [esp + 4 + 4];		;buf
+	mov ecx, [esp + 4 + 4 + 4]	;n
+	shr ecx, 1
+	cld
+	rep outsw
+	ret
 _memcpy:
 	push ebp
 	mov ebp, esp

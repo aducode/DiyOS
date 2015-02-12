@@ -113,4 +113,5 @@ extern void reset_msg(struct message *p_msg);
  */
 extern int send_recv(int function, int src_dest, struct message *msg);
 extern void dump_msg(const char * title, struct message *msg);
+extern void inform_int(int task_idx);
 #endif
