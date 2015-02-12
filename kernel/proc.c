@@ -368,7 +368,6 @@ void dump_msg(const char * title, struct message *msg)
 
 void inform_int(int task_idx)
 {
-/*
 	struct process *p = proc_table + task_idx;
 	if((p->p_flags & RECEIVING) && ((p->p_recvfrom == INTERRUPT) || (p->p_recvfrom == ANY))){
 		p->p_msg->source = INTERRUPT;
@@ -387,5 +386,4 @@ void inform_int(int task_idx)
 	} else {
 		p->has_int_msg = 1;
 	}
-*/
 }

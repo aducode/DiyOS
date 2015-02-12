@@ -1,8 +1,8 @@
 ;导入宏
 ;disp_str_color		equ	 0x0F
 %include	"kernel.inc"
-[section .bss]	;栈空间
-StackeSpace:	resb	2*1024
+[section .bss]	;栈空间 4KB
+StackeSpace:	resb	4*1024
 StackTop:	;栈顶
 
 
