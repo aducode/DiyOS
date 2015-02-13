@@ -41,5 +41,9 @@ extern struct console console_table[];
 extern int current_console;
 //
 extern struct dev_drv_map dd_map[];
+
+//FS Buffer
+extern u8 * fsbuf;
+extern const int FSBUF_SIZE;
 #endif
 #endif

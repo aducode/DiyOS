@@ -65,10 +65,10 @@ extern void task_fs();
 struct task task_table[TASKS_COUNT] = {
 	/* entry        stack size        task name */
 	/* -----        ----------        --------- */
-	{task_tty,	STACK_SIZE_TASK_TTY,		"TTY"  	},
-	{task_hd,	STACK_SIZE_TASK_HD,		"HD"   	},
-	{task_ticks,	STACK_SIZE_TASK_TICKS,		"TICKS"	},
-	{task_fs,	STACK_SIZE_TASK_FS,		"FS"	},
+	{task_tty,	STACK_SIZE_TASK_TTY,		"TTY"  	},//0
+	{task_hd,	STACK_SIZE_TASK_HD,		"HD"   	},//1
+	{task_ticks,	STACK_SIZE_TASK_TICKS,		"TICKS"	},//2
+	{task_fs,	STACK_SIZE_TASK_FS,		"FS"	},//3
 };
 
 
@@ -126,4 +126,12 @@ struct dev_drv_map dd_map[]={
 	{TASK_TTY},		//<4:TTY
 	{INVALID_DRIVER},	//<5:Reserved for scsi disk driver
 };
+
+
+//FS Buffer
+/**
+ * 6MB~7MB:buffer for FS
+ */
+u8 * fsbuf = (u8*)0x600000;
+const int FSBUF_SIZE = 0x100000;
 #endif

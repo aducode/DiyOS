@@ -74,18 +74,20 @@ enum msgtype {
 	DEV_IOCTL
 };
 //macro for message
-//common return value
+/**common return value**/
 #define RETVAL u.m3.m3l1
-//
+
+/**for message type DEV_IOCTL**/
+#define REQUEST u.m3.m3i2
+
+/**for message type DEV_READ or DEV_WRITE**/
 #define CNT	u.m3.m3i2
-//
-#define REQUEST	u.m3.m3i3
-//
-#define PID	u.m3.m3i4
+#define PID	u.m3.m3i3
 //which device
 #define DEVICE	u.m3.m3i4
 //read write position
 #define POSITION u.m3.m3l1
-//
+//read write buffer
 #define BUF	u.m3.m3p2
+
 #endif

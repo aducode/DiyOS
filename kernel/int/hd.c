@@ -170,6 +170,7 @@ void hd_ioctl(struct message *msg)
 {
 	int device = msg->DEVICE;
 	int drive = DRV_OF_DEV(device);
+	assert(drive==0);
 	struct hd_info *hdi = &hd_info[drive];
 	
 	if(msg->REQUEST == DIOCTL_GET_GEO){

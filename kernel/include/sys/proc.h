@@ -1,11 +1,12 @@
 //定义进程表数据结构
 #include "type.h"
 #include "protect.h"
+#include "fs.h"
 #ifndef _DIYOS_PROC_H
 #define _DIYOS_PROC_H
 //#define MAX_PROCESS_COUNT	32	//最多32个进程
 #define TASKS_COUNT		4	//系统进程个数
-#define PROCS_COUNT		4	//用户进程数量
+#define PROCS_COUNT		0	//用户进程数量
 //进程栈
 //stacks of tasks
 #define STACK_SIZE_TASK_TTY	0x8000
@@ -44,6 +45,13 @@
 #define RPL_TASK	1
 #define RPL_USER	3
 
+
+//fs
+/**
+ * @def MAX_FILE_COUNT
+ * @brief 每个进程可以打开的最大文件数
+ */
+#define MAX_FILE_COUNT	64
 //进程表的栈，用来保存进程寄存器的值
 struct stackframe{
 	//中断开始时，由我们的中断处理函数进行压栈
@@ -88,6 +96,8 @@ struct process{
 	struct process *q_sending;	//向该进程发送消息的队列
 	struct process *next_sending;	//队列头
 	int tty_idx;	//tty表索引
+	//fs
+	struct file_desc *filp[MAX_FILE_COUNT];
 };
 
 typedef void (*proc_entry_point)();

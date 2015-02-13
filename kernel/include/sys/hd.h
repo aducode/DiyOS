@@ -145,6 +145,10 @@
 #define MAKE_DEVICE_REG(lba, drv, lba_highest) (((lba)<<6) | \
 					       ((drv)<<4) | \
 					       (lba_highest & 0xF)|0xA0)
+/**
+ * @struct hd_cmd
+ * @brief 与硬盘寄存器操作的命结构体
+ */
 struct hd_cmd{
 	u8	features;
 	u8	count;
@@ -211,7 +215,10 @@ extern void init_hd();
 
 #define P_PRIMARY	0
 #define P_EXTENDED	1
-//
+/**
+ * @struct part_ent
+ * @brief partition entry 分区表项
+ */
 struct part_ent {
 	u8 boot_ind;		/**
 				 * boot indicator
@@ -280,7 +287,8 @@ struct part_ent {
 
 };
 /**
- * 分区信息
+ * @struct part_info
+ * @brief 分区信息
  */
 struct part_info
 {
@@ -288,7 +296,8 @@ struct part_info
 	u32 size;	//how many sectors in this partition
 };
 /**
- * 硬盘设备信息
+ * @struct hd_info
+ * @brief 硬盘设备信息
  */
 struct hd_info
 {
