@@ -119,7 +119,48 @@ void hd_close(int device)
 /**
  * 读写
  */
-void hd_rdwt(struct message *msg){
+void hd_rdwt(struct message *msg)
+{
+	//根据次设备号获取操作哪一个具体的硬盘
+	int drive = DRV_OF_DEV(msg->DEVICE);
+	u64 pos = msg->POSITION;
+	assert((pos >> SECTOR_SIZE_SHIFT) <(1<<31));
+	//we only allow to R/W from a SECTOR boundary;
+	assert((pos & 0x1FF) == 0);
+	//sector 号 由偏移地址除以sector大小
+	u32 sect_nr = (u32)(pos>>SECTOR_SIZE_SHIFT); //pos/SECTOR_SIZE
+	int logidx = (msg->DEVICE - MINOR_hd1a) % SUB_PER_DRIVE; //逻辑分区的次设备号
+	sect_nr += msg->DEVICE<MAX_PRIM?			//根据DEVICE次设备号是否小于5来判断是一个主分区（扩展分区）还是逻辑分区
+		hd_info[drive].primary[msg->DEVICE].base:	//如果是主分区，那么根据主分区表
+		hd_info[drive].logical[logidx].base;		//如果是逻辑分区，那么根据逻辑分区表
+	struct hd_cmd cmd;
+	cmd.features = 0;
+	cmd.count = (msg->CNT + SECTOR_SIZE - 1)/SECTOR_SIZE;
+	cmd.lba_low = sect_nr & 0xFF;
+	cmd.lba_mid = (sect_nr >> 8)&0xFF;
+	cmd.lba_high = (sect_nr >> 16) & 0xFF;
+	cmd.device = MAKE_DEVICE_REG(1, drive,(sect_nr>>24) & 0xF);
+	cmd.command = (msg->type == DEV_READ) ? ATA_READ:ATA_WRITE;
+	hd_cmd_out(&cmd);
+	int bytes_left = msg->CNT;
+	void *la = (void*)va2la(msg->PID, msg->BUF);
+	while(bytes_left){
+		int bytes = min(SECTOR_SIZE, bytes_left); //以SECTOR为单位读写，如果要求的size大于SECTOR_SIZE那么分多次
+		if(msg->type == DEV_READ){//读
+			interrupt_wait(); //阻塞，数据准备好时，会发生IO中断，解除阻塞
+			_port_read(REG_DATA, hdbuf, SECTOR_SIZE);//开始读
+			memcpy(la, (void*)va2la(TASK_HD, hdbuf), bytes);
+		} else {//写
+			if(!waitfor(REG_STATUS, STATUS_DRQ, STATUS_DRQ, HD_TIMEOUT)){
+				panic("hd writing error.");
+			}
+			_port_write(REG_DATA, la, bytes);
+			interrupt_wait(); //写完之后再进行下一次写
+		}
+		bytes_left -= SECTOR_SIZE;
+		la += SECTOR_SIZE;
+	}
+	
 }
 
 /**
@@ -127,6 +168,17 @@ void hd_rdwt(struct message *msg){
  */
 void hd_ioctl(struct message *msg)
 {
+	int device = msg->DEVICE;
+	int drive = DRV_OF_DEV(device);
+	struct hd_info *hdi = &hd_info[drive];
+	
+	if(msg->REQUEST == DIOCTL_GET_GEO){
+		void *dst = va2la(msg->PID, msg->BUF);
+		void *src = va2la(TASK_HD, device < MAX_PRIM?&hdi->primary[device] : &hdi->logical[(device - MINOR_hd1a) % SUB_PER_DRIVE]);
+		memcpy(dst, src, sizeof(struct part_info));
+	} else {
+		assert(0);
+	}
 }
 /********************** PRIVATE *************************************************/
 void hd_handler(int irq_no)

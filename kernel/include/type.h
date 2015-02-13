@@ -1,6 +1,13 @@
 //定义一些全局类型
 #ifndef _DIYOS_TYPE_H
 #define _DIYOS_TYPE_H
+
+//macro utils
+#define min(a,b) ((a)<(b)?(a):(b))
+#define max(a,b) ((a)>(b)?(a):(b))
+
+
+
 typedef unsigned long long	u64; //64bit长度
 typedef unsigned int		u32; //32bit长度
 typedef unsigned short		u16; //16bit长度
@@ -66,7 +73,19 @@ enum msgtype {
 	DEV_WRITE,
 	DEV_IOCTL
 };
+//macro for message
+//common return value
 #define RETVAL u.m3.m3l1
-
+//
+#define CNT	u.m3.m3i2
+//
+#define REQUEST	u.m3.m3i3
+//
+#define PID	u.m3.m3i4
+//which device
 #define DEVICE	u.m3.m3i4
+//read write position
+#define POSITION u.m3.m3l1
+//
+#define BUF	u.m3.m3p2
 #endif

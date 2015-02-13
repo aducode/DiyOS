@@ -1,9 +1,10 @@
 #include "type.h"
 #ifndef _DIYOS_HD_H
 #define _DIYOS_HD_H
-//
+//hard disk sector
 #define	SECTOR_SIZE	512
 #define SECTOR_BITS	(SECTOR_SIZE * 8)
+#define SECTOR_SIZE_SHIFT	9
 //硬盘
 /********************************************/
 /* I/O Ports used by hard disk controllers. */
@@ -304,4 +305,6 @@ extern void hd_open(int device);
 extern void hd_close(int device);
 extern void hd_rdwt(struct message *msg);
 extern void hd_ioctl(struct message *msg);
+//macro for hd_ioctl
+#define DIOCTL_GET_GEO	1
 #endif
