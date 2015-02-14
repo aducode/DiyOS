@@ -51,6 +51,11 @@ struct super_block{
  * 就是上面的结构体持久化到硬盘所用的大小（sb_dev不需要持久化），上面结构体除去sb_dev外共有14个u32类型成员，所以14*4byte = 56byte
  */
 #define SUPER_BLOCK_SIZE	56
+/**
+ * @def MAX_SUPER_BLOCK_COUNT
+ * @brief 
+ */
+#define MAX_SUPER_BLOCK_COUNT	8
 
 /**
  * @struct inode
@@ -109,6 +114,12 @@ struct inode {
  * The size in memory is larger because of some more members.
  */
 #define INODE_SIZE	32
+
+/**
+ * @def MAX_INODE_COUNT
+ * @brief 系统支持的的最大inode数量
+ */
+#define MAX_INODE_COUNT
 
 /**
  * @def MAX_FILENAME_LEN
@@ -179,4 +190,20 @@ struct file_desc {
 	int 		fd_pos;		//Current position for R/W
 	struct inode *	fd_inode;	//Ptr to the i-node
 };
+
+
+/**
+ * @def MAX_FILE_DESC_COUNT
+ * @brief 最大文件描述符数量
+ */
+#define MAX_FILE_DESC_COUNT	64
+
+
+/**
+ * @def MAX_FILE_COUNT
+ * @brief 最大文件数
+ * @see proc.h
+ * 这个定义在proc.h里，因为struct process里面会保存一个struct file_desc filp[]
+ */
+//#define MAX_FILE_COUNT	64
 #endif

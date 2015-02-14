@@ -45,5 +45,8 @@ extern struct dev_drv_map dd_map[];
 //FS Buffer
 extern u8 * fsbuf;
 extern const int FSBUF_SIZE;
+
+extern struct inode inode_table[];
+extern struct super_block super_block[];
 #endif
 #endif

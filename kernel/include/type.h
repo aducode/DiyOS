@@ -66,6 +66,9 @@ enum msgtype {
 	//sys task
 	GET_TICKS, GET_PID,
 	//FS
+	OPEN, CLOSE, READ, WRITE,LSEEK,STAT, UNLINK,
+	//TTY, SYS, FS, MM, etc
+	SYSCALL_RET,
 	//message type for drivers
 	DEV_OPEN = 1001,
 	DEV_CLOSE,
@@ -89,5 +92,12 @@ enum msgtype {
 #define POSITION u.m3.m3l1
 //read write buffer
 #define BUF	u.m3.m3p2
+
+
+/**for FS message**/
+#define FD		u.m3.m3i1
+#define PATHNAME	u.m3.m3p1
+#define FLAGS		u.m3.m3i1
+#define NAME_LEN	u.m3.m3i2
 
 #endif

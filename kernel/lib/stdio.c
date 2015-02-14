@@ -1,6 +1,7 @@
 #include "type.h"
 #include "string.h"
 #include "syscall.h"
+#include "assert.h"
 /**
  *printf
  */
@@ -73,4 +74,22 @@ int vsprintf(char *buf, const char * fmt, va_list args)
 		}
 	}
 	return (p-buf);
+}
+
+/**
+ * @function open
+ * @brief 打开文件
+ * @param pathname 文件名
+ * @param flags 读写标志
+ */
+void open(const char *pathname, int flags)
+{
+	struct message msg;
+	msg.type = OPEN;
+	msg.PATHNAME = (void*)pathname;
+	msg.FLAGS = flags;
+	msg.NAME_LEN = strlen(pathname);
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.FD;
 }

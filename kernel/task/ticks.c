@@ -14,6 +14,7 @@ void task_ticks()
 		switch(msg.type){
 			case GET_TICKS:
 				msg.RETVAL = ticks;
+				msg.type = SYSCALL_RET;
 				send_recv(SEND, src, &msg);
 				break;
 			default:

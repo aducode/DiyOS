@@ -9,12 +9,14 @@
 #include "fs.h"
 static void init_fs();
 static void mkfs();
+static int do_open(struct message *p_msg);
+static int do_close(struct message *p_msg);
 /**
  * Main Loop 
  */
 void task_fs()
 {
-	printf("Task FS begins.\n");
+	//printf("Task FS begins.\n");
 /*
 	struct message msg;
 	msg.type = DEV_OPEN;
@@ -29,7 +31,26 @@ void task_fs()
 	spin("FS");
 */
 	init_fs();
-	while(1){}
+	struct message msg;
+	while(1){
+		//wait for other process
+		send_recv(RECEIVE, ANY, &msg);
+		int src = msg.source;
+		switch(msg.type){
+			case OPEN:
+				do_open(&msg);
+				break;
+			case CLOSE:
+				do_close(&msg);
+				break;
+			default:
+				panic("invalid msg type:%d\n", msg.type);
+				break;
+		}
+		//返回
+		msg.type = SYSCALL_RET;
+		send_recv(SEND, src, &msg);
+	}
 }
 
 /**
@@ -73,7 +94,7 @@ void mkfs()
 	msg.PID		= TASK_FS;
 	assert(dd_map[MAJOR(ROOT_DEV)].driver_pid != INVALID_DRIVER);
 	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
-	printf("dev size: 0x%x sectors\n", geo.size);
+	//printf("dev size: 0x%x sectors\n", geo.size);
 	//super block
 	struct super_block sb;
 	sb.magic		= MAGIC_V1;
@@ -97,14 +118,14 @@ void mkfs()
 	//write the super block
 	WRITE_SECT(ROOT_DEV, 1);  //sector 0为boot sector
 				  //sector 1super block 写入1
-	printf("devbase:0x%x00, sb:0x%x00, imap:0x%x00, smap:0x%x00 "
-		"inodes:0x%x00 1st_sector:0x%x00\n",	
-		geo.base * 2,
-		(geo.base + 1) * 2,
-		(geo.base + 1 + 1) * 2,
-		(geo.base + 1 + 1 + sb.imap_sects_count) * 2,
-		(geo.base + 1 + 1 + sb.imap_sects_count + sb.smap_sects_count) * 2,
-		(geo.base + sb.first_sect) * 2);
+	//printf("devbase:0x%x00, sb:0x%x00, imap:0x%x00, smap:0x%x00 "
+	//	"inodes:0x%x00 1st_sector:0x%x00\n",	
+	//	geo.base * 2,
+	//	(geo.base + 1) * 2,
+	//	(geo.base + 1 + 1) * 2,
+	//	(geo.base + 1 + 1 + sb.imap_sects_count) * 2,
+	//	(geo.base + 1 + 1 + sb.imap_sects_count + sb.smap_sects_count) * 2,
+	//	(geo.base + sb.first_sect) * 2);
 
 	//inode map
 	memset(fsbuf, 0, SECTOR_SIZE);
@@ -196,4 +217,52 @@ int rw_sector(int io_type, int dev, u64 pos, int bytes, int pid, void*buf)
 	assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
 	send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &msg);
 	return 0;
+}
+
+
+
+/**
+ * @function do_open
+ * @brief open file
+ * @param p_msg msg address
+ *
+ * @return File descriptor if successful, otherwise a negative error code.
+ */
+int do_open(struct message *p_msg)
+{
+	int fd = -1;
+	char pathname[MAX_FILENAME_LEN];
+	int flags = p_msg->FLAGS;
+	int name_len = p_msg->NAME_LEN;
+	int src = p_msg->source;
+	struct process *pcaller = proc_table + src;
+	assert(name_len<MAX_FILENAME_LEN);
+	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
+	pathname[name_len] = 0;
+	//find a free slot in PROCESS:filp[]
+	int i;
+	for(i=0;i<MAX_FILE_COUNT;i++){
+		if(pcaller->filp[i] == 0){
+			fd = i;
+			break;
+		}
+	}
+	if((fd<0)||(fd>=MAX_FILE_COUNT)){
+		panic("filp[] is full (PID:%d)", src);
+	}
+	//find a free slot in f_desc_table[]
+	for(i=0;i<MAX_FILE_DESC_COUNT;i++){
+		if(f_desc_table[i].fd_inode == 0){
+			break;
+		}
+	}
+	if(i>=MAX_FILE_DESC_COUNT){
+		panic("f_desc_table[] is full (PID:%d)", src);
+	}
+//	int inode_nr = search_file(pathname);
+}
+
+
+int do_close(struct message *p_msg)
+{
 }

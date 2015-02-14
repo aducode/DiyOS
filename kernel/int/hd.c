@@ -99,7 +99,7 @@ void hd_open(int device)
 		//保证只执行一次
 		partition(drive * (PART_PER_DRIVE +1 ), P_PRIMARY);
 		//打印信息
-		print_hdinfo(&hd_info[drive]);
+		//print_hdinfo(&hd_info[drive]);
 	}
 	//print_hdinfo(&hd_info[drive]);
 }
@@ -302,7 +302,7 @@ void hd_identify(int drive)
         hd_cmd_out(&cmd);
         interrupt_wait();
         _port_read(REG_DATA, hdbuf, SECTOR_SIZE);
-        print_identify_info((u16*)hdbuf);
+        //print_identify_info((u16*)hdbuf);
 }
 
 
