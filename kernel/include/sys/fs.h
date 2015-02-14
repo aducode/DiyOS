@@ -119,7 +119,7 @@ struct inode {
  * @def MAX_INODE_COUNT
  * @brief 系统支持的的最大inode数量
  */
-#define MAX_INODE_COUNT
+#define MAX_INODE_COUNT	64
 
 /**
  * @def MAX_FILENAME_LEN
@@ -184,6 +184,9 @@ extern int rw_sector(int io_type, int dev, u64 pos, int bytes, int pid, void*buf
 /**
  * @struct  file_desc
  * @brief 文件描述符
+ * 系统文件描述符表作为全局变量统一维护，每个进程中保存着一个文件描述符表的指针数组，
+ * process中文件的fd就是进程中文件描述符指针表的下标，fd找到file_desc指针，这个指针指向全局文件描述符表的某一项。
+ * 文件描述符中保存着inode指针，系统全局中有一个inode table，这个指针就指向inode table的某一项
  */
 struct file_desc {
 	int		fd_mode;	//R or W

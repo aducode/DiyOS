@@ -6,7 +6,7 @@
 #define _DIYOS_PROC_H
 //#define MAX_PROCESS_COUNT	32	//最多32个进程
 #define TASKS_COUNT		4	//系统进程个数
-#define PROCS_COUNT		1	//用户进程数量
+#define PROCS_COUNT		4	//用户进程数量
 //进程栈
 //stacks of tasks
 #define STACK_SIZE_TASK_TTY	0x8000
@@ -97,7 +97,7 @@ struct process{
 	struct process *next_sending;	//队列头
 	int tty_idx;	//tty表索引
 	//fs
-	struct file_desc *filp[MAX_FILE_COUNT];
+	struct file_desc *filp[MAX_FILE_COUNT];   //这里保存的是struct file_desc 指针类型，真正的struct file_desc作为全局变量单独保存在global.c中的f_desc_table中
 };
 
 typedef void (*proc_entry_point)();

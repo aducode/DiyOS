@@ -31,6 +31,17 @@ void* memcpy(void* p_dst,const void* p_src, int size)
 	}
 	return ret;
 }
+
+/**
+ * @function memset
+ * @brief 设置一段数据的值
+ *
+ * @param p_dst 目标
+ * @param ch 要填充的内容
+ * @param size 填充的长度
+ *
+ * @return oid
+ */
 void memset(void* p_dst, char ch, int size)
 {
 	int i;
@@ -39,6 +50,34 @@ void memset(void* p_dst, char ch, int size)
 		*(char*)p_dst = ch;
 		p_dst = (char*)p_dst + 1;
 	}
+}
+
+/**
+ * @function memcmp
+ * @brief 比较段数据大小
+ *
+ * @param s1 the 1st area.
+ * @param s2 the 2nd area.
+ * @param n the first n bytes will be compared.
+ *
+ * @return 0  eqaul
+ *        >0 1st larger
+ *        <0 2nd larger
+ */
+int memcmp(const void* s1, const void* s2, int n)
+{
+	if((s1==0)||(s2==0)){
+		return (s1-s2);
+	}
+	const char*p1=(const char*)s1;
+	const char*p2=(const char*)s2;
+	int i;
+	for(i=0;i<n;i++, p1++, p2++){
+		if(*p1!=*p2){
+			return (*p1-*p2);
+		}
+	}
+	return 0;
 }
 char* strcpy(char * p_dst, char *p_src)
 {
@@ -51,11 +90,11 @@ char* strcpy(char * p_dst, char *p_src)
 //	int size = strlen(p_src)+1;
 //	_strcpy(p_dst, p_src, size);
 //}
-int strlen(char * p_str)
+int strlen(const char * p_str)
 {
 	if(!p_str) return 0;
 	int i;
-	char * p;
+	const char * p;
 	for(p=p_str,i=0;*p!='\0';p++,i++){}
 	return i;
 }
