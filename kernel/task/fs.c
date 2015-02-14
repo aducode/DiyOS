@@ -155,15 +155,16 @@ void mkfs()
 	//write the super block
 	WRITE_SECT(ROOT_DEV, 1);  //sector 0为boot sector
 				  //sector 1super block 写入1
-	//printf("devbase:0x%x00, sb:0x%x00, imap:0x%x00, smap:0x%x00 "
-	//	"inodes:0x%x00 1st_sector:0x%x00\n",	
-	//	geo.base * 2,
-	//	(geo.base + 1) * 2,
-	//	(geo.base + 1 + 1) * 2,
-	//	(geo.base + 1 + 1 + sb.imap_sects_count) * 2,
-	//	(geo.base + 1 + 1 + sb.imap_sects_count + sb.smap_sects_count) * 2,
-	//	(geo.base + sb.first_sect) * 2);
-
+	/*
+	printf("devbase:0x%x00, sb:0x%x00, imap:0x%x00, smap:0x%x00 "
+		"inodes:0x%x00 1st_sector:0x%x00\n",	
+		geo.base * 2,
+		(geo.base + 1) * 2,
+		(geo.base + 1 + 1) * 2,
+		(geo.base + 1 + 1 + sb.imap_sects_count) * 2,
+		(geo.base + 1 + 1 + sb.imap_sects_count + sb.smap_sects_count) * 2,
+		(geo.base + sb.first_sect) * 2);
+	*/
 	//inode map
 	memset(fsbuf, 0, SECTOR_SIZE);
 	for(i=0;i<(CONSOLE_COUNT + 2);i++){
