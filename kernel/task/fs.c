@@ -10,6 +10,7 @@
 #include "stdio.h"
 static void init_fs();
 static void mkfs();
+static void read_super_block(int dev);
 static struct super_block * get_super_block(int dev);
 static struct inode * get_inode(int dev, int inode_idx);
 static void put_inode(struct inode *pinode);
@@ -51,10 +52,12 @@ void task_fs()
 		int src = msg.source;
 		switch(msg.type){
 			case OPEN:
-				do_open(&msg);
+				//open 要返回FD
+				msg.FD = do_open(&msg);
 				break;
 			case CLOSE:
-				do_close(&msg);
+				//返回是否成功
+				msg.RETVAL = do_close(&msg);
 				break;
 			default:
 				panic("invalid msg type:%d\n", msg.type);
@@ -72,6 +75,21 @@ void task_fs()
  */
 void init_fs()
 {
+	int i;
+	//f_desc_table[]
+	for(i=0;i<MAX_FILE_DESC_COUNT;i++){
+		memset(&f_desc_table[i], 0, sizeof(struct file_desc));
+	}
+	//inode_table[]
+	for(i=0;i<MAX_INODE_COUNT;i++){
+		memset(&inode_table[i], 0, sizeof(struct inode));
+	}
+	//super_block[]
+	struct super_block *sb = super_block;
+	for(;sb<&super_block[MAX_SUPER_BLOCK_COUNT];sb++){
+		sb->sb_dev = NO_DEV;
+	}
+	//open the device:hard disk
 	//打开硬盘设备
 	struct message msg;
 	msg.type = DEV_OPEN;
@@ -80,6 +98,12 @@ void init_fs()
 	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
 	//打开后创建文件系统
 	mkfs();
+	//load super block of ROOT
+	read_super_block(ROOT_DEV);
+	
+	sb=get_super_block(ROOT_DEV);
+	assert(sb->magic == MAGIC_V1);
+	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
 }
 
 /**
@@ -319,8 +343,25 @@ int do_open(struct message *p_msg)
 }
 
 
+/**
+ * @function do_close
+ * @brief  关闭文件
+ * 
+ *  @param p_msg
+ *  
+ */
 int do_close(struct message *p_msg)
 {
+	int fd = p_msg->FD;
+	int src = p_msg->source;
+	struct process *pcaller = proc_table + src;
+	//释放inode 资源
+	put_inode(pcaller->filp[fd]->fd_inode);
+	//清空filp指向的f_desc_table中某一表项的fd_inode指针，归还f_desc_table的slot
+	pcaller->filp[fd]->fd_inode = 0;
+	//归还process中的filp slot
+	pcaller->filp[fd] = 0;
+	return 0;
 }
 
 
@@ -687,6 +728,42 @@ void sync_inode(struct inode *p)
 	WRITE_SECT(p->i_dev, blk_nr);
 }
 
+
+
+/**
+ * @function read_super_block
+ * @brief Read super block from the given device then write it inot a free super_block[] slot.
+ *
+ * @param dev From which device the super block comes.
+ *
+ * @return void
+ */
+void read_super_block(int dev)
+{
+	int i;
+	struct message msg;
+	msg.type	= DEV_READ;
+	msg.DEVICE	= MINOR(dev);
+	msg.POSITION	= SECTOR_SIZE * 1; //sector 0 为boot sector 所以super block在sector 1
+	msg.BUF		= fsbuf;
+	msg.CNT		= SECTOR_SIZE;
+	msg.PID		= TASK_FS;
+	assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
+	send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &msg);
+	//find a free slot in super_block[]
+	for(i=0;i<MAX_SUPER_BLOCK_COUNT;i++){
+		if(super_block[i].sb_dev == NO_DEV){
+			break;
+		}	
+	}
+	if(i==MAX_SUPER_BLOCK_COUNT){
+		panic("super block slots used up");
+	}
+	assert(i==0);//currently we use only the 1st slot
+	struct super_block *psb=(struct super_block*)fsbuf;
+	super_block[i] = *psb;
+	super_block[i].sb_dev = dev;
+}
 
 /**
  * @function get_super_block

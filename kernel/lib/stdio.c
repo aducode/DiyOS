@@ -93,3 +93,20 @@ int open(const char *pathname, int flags)
 	assert(msg.type == SYSCALL_RET);
 	return msg.FD;
 }
+
+/**
+ * @function close
+ * @brief 关闭文件
+ * 
+ * @param fd 要关闭的文件句柄
+ *
+ * @return zero if successful, otherwise -1.
+ */
+int close(int fd)
+{
+	struct message msg;
+	msg.type	= CLOSE;
+	msg.FD		= fd;
+	send_recv(BOTH, TASK_FS, &msg);
+	return msg.RETVAL;
+}

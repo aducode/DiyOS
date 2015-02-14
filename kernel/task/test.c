@@ -22,6 +22,8 @@ void testA()
 //	printf("%d\n",get_ticks());
        // static char msg[20];
 	printf("testA running .... %d\n", (int)get_ticks());
+	int fd = open("\\",O_RDWT);
+	printf("\"\\\" fd:%d\n", fd);
         while(1){
 //		printf("%d,",(int)get_ticks());
 //		printf("%d\n", get_ticks());
