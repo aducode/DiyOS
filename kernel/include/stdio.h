@@ -16,6 +16,8 @@
 
 extern int open(const char * pathname, int flags);
 extern int close(int fd);
+extern int read(int fd, void *buf, int count);
+extern int write(int fd, const void * buf, int count);
 extern int vsprintf(char *buffer, const char *fmt, va_list args);
 extern int sprintf(char *buffer, const char* fmt, ...);
 extern int printf(const char *fmt, ...);

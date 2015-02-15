@@ -17,6 +17,7 @@ static void put_inode(struct inode *pinode);
 static void sync_inode(struct inode *p);
 static int do_open(struct message *p_msg);
 static int do_close(struct message *p_msg);
+static int do_rdwt(struct message *p_msg);
 static struct inode * create_file(char *path, int flags);
 static int alloc_imap_bit(int dev);
 static int alloc_smap_bit(int dev, int sects_count_to_alloc);
@@ -58,6 +59,10 @@ void task_fs()
 			case CLOSE:
 				//返回是否成功
 				msg.RETVAL = do_close(&msg);
+				break;
+			case READ:
+			case WRITE:
+				msg.CNT = do_rdwt(&msg);
 				break;
 			default:
 				panic("invalid msg type:%d\n", msg.type);
@@ -237,6 +242,7 @@ void mkfs()
  * @param io_type	DEV_READ or DEV_WRITE
  * @param dev		device number
  * @param pos		Byte offset from/to where to r/w
+ * @param size		How many bytes
  * @param pid		To whom the buffer belongs.
  * @param buf		r/w buffer.
  *
@@ -365,7 +371,85 @@ int do_close(struct message *p_msg)
 	return 0;
 }
 
+/**
+ * @function do_rdwt
+ * @brief 读写文件
+ * 
+ * @param p_msg 消息指针
+ *
+ * @return 返回读写的字节数
+ */
+int do_rdwt(struct message *p_msg)
+{
+	int fd = p_msg->FD; //file descriptor
+	void *buf = p_msg->BUF; //r/w buffer user's level
+	int len = p_msg->CNT;//r/w bytes
+	int src = p_msg->source;
+	struct process *pcaller = proc_table + src;
+	assert((pcaller->filp[fd]>=f_desc_table) & (pcaller->filp[fd] < f_desc_table + MAX_FILE_DESC_COUNT));
+	if(!(pcaller->filp[fd]->fd_mode & O_RDWT)){
+		return -1;
+	}
+	int pos = pcaller->filp[fd]->fd_pos;
+	struct inode * pin = pcaller->filp[fd]->fd_inode;
+	assert(pin>= inode_table && pin<inode_table + MAX_INODE_COUNT);
+	int imode = pin->i_mode & I_TYPE_MASK;
+	if(imode == I_CHAR_SPECIAL){
+		int t = p_msg->type ==READ?DEV_READ:DEV_WRITE;
+		p_msg->type = t;
+		int dev = pin->i_start_sect;
+		assert(MAJOR(dev) == 4);
+		p_msg->DEVICE =  MINOR(dev);
+		p_msg->BUF = buf;
+		p_msg->CNT = len;
+		p_msg->PID = src;
+		assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
+		send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, p_msg);
+		assert(p_msg->CNT == len);
+		assert(p_msg->type == SYSCALL_RET);
+		return p_msg->CNT;
+	} else {
+		assert(pin->i_mode == I_REGULAR || pin->i_mode == I_DIRECTORY);
+		assert((p_msg->type == READ)||(p_msg->type == WRITE));
+		int pos_end;
+		if(p_msg->type == READ){
+			pos_end = min(pos+len, pin->i_size);
+		} else {
+			pos_end = min(pos+len, pin->i_sects_count * SECTOR_SIZE);
+		}
+		int off = pos % SECTOR_SIZE;
+		int rw_sect_min = pin->i_start_sect + (pos>>SECTOR_SIZE_SHIFT);
+		int rw_sect_max = pin->i_start_sect + (pos_end>>SECTOR_SIZE_SHIFT);
+		int chunk = min(rw_sect_max - rw_sect_min + 1, FSBUF_SIZE >> SECTOR_SIZE_SHIFT);
+		int bytes_rw = 0;
+		int bytes_left = len;
+		int i;
+		for(i=rw_sect_min;i<=rw_sect_max;i+=chunk){
+			//read/write this amount of bytes every time
+			int bytes = min(bytes_left, chunk * SECTOR_SIZE - off);
+			rw_sector(DEV_READ, pin->i_dev, i*SECTOR_SIZE, chunk*SECTOR_SIZE, TASK_FS, fsbuf);
+			if(p_msg->type == READ){
+				memcpy((void*)va2la(src, buf+bytes_rw), (void*)va2la(TASK_FS, fsbuf+off), bytes);
+			} else {
+				//write
+				memcpy((void*)va2la(TASK_FS, fsbuf+off), (void*)va2la(src, buf+bytes_rw), bytes);
+				rw_sector(DEV_WRITE,pin->i_dev, i*SECTOR_SIZE, chunk*SECTOR_SIZE, TASK_FS, fsbuf);
+			}
+			off = 0;
+			bytes_rw += bytes;
+			pcaller->filp[fd]->fd_pos += bytes;
+			bytes_left -= bytes;
+		}
 
+		if(pcaller->filp[fd]->fd_pos > pin->i_size){
+			//update inode::size
+			pin->i_size = pcaller->filp[fd]->fd_pos;
+			//write the updated inode back to disk
+			sync_inode(pin);
+		}
+		return bytes_rw;
+	}
+}
 /**
  * @function create_file
  * @brief 创建新的inode，并设置磁盘上的数据

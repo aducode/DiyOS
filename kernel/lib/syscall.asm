@@ -10,7 +10,7 @@ SYS_CALL_WRITE		equ	2
 
 global sendrec
 global printk
-global write
+global write0
 bits 32
 [section .text]
 sendrec:
@@ -25,7 +25,7 @@ printk:
 	mov edx, [esp + 4]	;printk(char * buffer);
 	int INT_VECTOR_SYS_CALL
 	ret	
-write:
+write0:
 	mov eax, SYS_CALL_WRITE
 	mov ecx, [esp + 4]
 	mov edx, [esp + 8]

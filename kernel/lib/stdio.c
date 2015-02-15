@@ -16,7 +16,7 @@ int printf(const char *fmt, ...)
 	//或者下面这种写法
 	//va_list arg = (va_list)((char*)(&fmt+1));
 	i = vsprintf(buf,fmt, arg);
-	write(buf, i);
+	write0(buf, i);
 	return i;
 }
 /**
@@ -109,4 +109,49 @@ int close(int fd)
 	msg.FD		= fd;
 	send_recv(BOTH, TASK_FS, &msg);
 	return msg.RETVAL;
+}
+
+
+/**
+ * @function read
+ * @brief 读文件
+ * 
+ * @param fd 文件句柄
+ * @param buf 缓冲
+ * @param count
+ *
+ * @return 读的byte数
+ */
+int read(int fd, void *buf, int count)
+{
+	struct message msg;
+	msg.type = READ;
+	msg.FD = fd;
+	msg.BUF = buf;
+	msg.CNT = count;
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type==SYSCALL_RET);
+	return msg.CNT;
+}
+
+/**
+ * @function write
+ * @brief  写文件
+ * 
+ * @param fd 文件句柄
+ * @param buf 数据
+ * @param count
+ *
+ * @return  写入的字节数
+ */
+int write(int fd, const void * buf, int count)
+{
+	struct message msg;
+	msg.type = WRITE;
+	msg.FD = fd;
+	msg.BUF = (void*)buf;
+	msg.CNT = count;
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.CNT;
 }
