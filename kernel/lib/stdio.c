@@ -155,3 +155,21 @@ int write(int fd, const void * buf, int count)
 	assert(msg.type == SYSCALL_RET);
 	return msg.CNT;
 }
+
+/**
+ * @function unlink
+ * @brief 删除文件
+ * @param pathanem  文件名
+ * 
+ * @return 0 successful -1 error
+ */
+int unlink(const char * pathname)
+{
+	struct message msg;
+	msg.type = UNLINK;
+	msg.PATHNAME = (void*)pathname;
+	msg.NAME_LEN = strlen(pathname);
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.RETVAL;
+}

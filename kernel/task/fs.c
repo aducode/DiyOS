@@ -18,6 +18,7 @@ static void sync_inode(struct inode *p);
 static int do_open(struct message *p_msg);
 static int do_close(struct message *p_msg);
 static int do_rdwt(struct message *p_msg);
+static int do_unlink(struct message *p_msg);
 static struct inode * create_file(char *path, int flags);
 static int alloc_imap_bit(int dev);
 static int alloc_smap_bit(int dev, int sects_count_to_alloc);
@@ -63,6 +64,9 @@ void task_fs()
 			case READ:
 			case WRITE:
 				msg.CNT = do_rdwt(&msg);
+				break;
+			case UNLINK:
+				msg.RETVAL = do_unlink(&msg);
 				break;
 			default:
 				panic("invalid msg type:%d\n", msg.type);
@@ -449,6 +453,148 @@ int do_rdwt(struct message *p_msg)
 		}
 		return bytes_rw;
 	}
+}
+
+
+
+
+/**
+ * @function do_unlink
+ * @brief  释放inode slot
+ *
+ * @param p_msg
+ *
+ * @return 0 successful, -1 error
+ */
+int do_unlink(struct message *p_msg)
+{
+	char pathname[MAX_PATH];
+	//get parameters from the message;
+	int name_len = p_msg->NAME_LEN;
+	int src = p_msg->source;
+	assert(name_len<MAX_PATH);
+	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
+	pathname[name_len]=0;
+	
+	if(strcmp(pathname, "/") == 0){
+		printf("FS:do_unlink():: cannot unlink the root\n");
+		return -1;
+	}
+	int inode_nr = search_file(pathname);
+	if(inode_nr == INVALID_INODE){
+		//file not found
+		printf("FS::do_unlink():: search_file() return invalid inode: %s\n", pathname);
+		return -1;
+	}
+	char filename[MAX_PATH];
+	struct inode* dir_inode;
+	if(strip_path(filename, pathname, &dir_inode)!=0){
+		return -1;
+	}
+	struct inode *pin = get_inode(dir_inode->i_dev, inode_nr);
+	if(pin->i_mode != I_REGULAR){
+		//can only remove regular files
+		printf("cannot remove file %s, because it is not a regular file.\n", pathname);
+		return -1;
+	}
+	if(pin->i_cnt>1){
+		//thie file was opened
+		printf("cannot remove file %s, because pin->i_cnt is %d.\n", pathname, pin->i_cnt);
+		return -1;
+	}
+
+	struct super_block *sb = get_super_block(pin->i_dev);
+	//free the bit in imap
+	int byte_idx = inode_nr/8;
+	int bit_idx = inode_nr % 8;
+	assert(byte_idx<SECTOR_SIZE);//we have only one imap sector
+	//read sector 2 (skip bootsect and superblk):
+	READ_SECT(pin->i_dev, 2);
+	assert(fsbuf[byte_idx%SECTOR_SIZE]&(1<<bit_idx));
+	fsbuf[byte_idx % SECTOR_SIZE] &= ~(1<<bit_idx);
+	WRITE_SECT(pin->i_dev, 2);
+	//free the bits in smap
+	bit_idx = pin->i_start_sect - sb->first_sect + 1;
+	byte_idx = bit_idx/8;
+	int bits_left = pin->i_sects_count;
+	int byte_cnt = (bits_left - (8-(bit_idx % 8)))/8; 
+	
+	//current sector nr
+	int s= 2 + sb->imap_sects_count + byte_idx/SECTOR_SIZE;//2:bootsect + superblk
+	READ_SECT(pin->i_dev, s);
+	int i;
+	//clear the first byte
+	for(i=bit_idx % 8;(i<8)&&bits_left;i++,bits_left--){
+		assert((fsbuf[byte_idx % SECTOR_SIZE]>>i&1)==1);
+		fsbuf[byte_idx%SECTOR_SIZE] &= ~(1<<i);
+	}
+	//clear bytes from the second byte to the second to last
+	int k;
+	i=(byte_idx % SECTOR_SIZE) + 1;
+	for(k=0;k<byte_cnt;k++,i++,bits_left-=8){
+		if(i==SECTOR_SIZE){
+			i=0;
+			WRITE_SECT(pin->i_dev, s);
+			READ_SECT(pin->i_dev, ++s);
+		}
+		assert(fsbuf[i]==0xFF);
+		fsbuf[i] = 0;
+	}
+
+	//clear the last byte
+	if(i==SECTOR_SIZE){
+		i=0;
+		WRITE_SECT(pin->i_dev, s);
+		READ_SECT(pin->i_dev, ++s);
+	}
+	unsigned char mask = ~((unsigned char)(~0)<<bits_left);
+	assert((fsbuf[i]&mask)==mask);
+	fsbuf[i] &= (~0)<<bits_left;
+	WRITE_SECT(pin->i_dev, s);
+
+	//clear the inode itself
+	pin->i_mode = 0;
+	pin->i_size = 0;
+	pin->i_start_sect = 0;
+	pin->i_sects_count = 0;
+	sync_inode(pin);
+	//release slot in inode_table[]
+	put_inode(pin);
+	//set the inode-nr to 0 in the directory entry
+	int dir_blk0_nr = dir_inode->i_start_sect;
+	int nr_dir_blks = (dir_inode->i_size + SECTOR_SIZE)/SECTOR_SIZE;
+	int nr_dir_entries = dir_inode->i_size /DIR_ENTRY_SIZE;
+	int m = 0;
+	struct dir_entry *pde = 0;
+	int flag = 0;
+	int dir_size = 0;
+	for(i=0;i<nr_dir_blks;i++){
+		READ_SECT(dir_inode->i_dev, dir_blk0_nr + i);
+		pde=(struct dir_entry*)fsbuf;
+		int j;	
+		for(j=0;j<SECTOR_SIZE/DIR_ENTRY_SIZE;j++,pde++){
+			if(++m>nr_dir_entries) break;
+			if(pde->inode_idx == inode_nr){
+				memset(pde, 0, DIR_ENTRY_SIZE);
+				WRITE_SECT(dir_inode->i_dev, dir_blk0_nr+i);
+				flag = 1;
+				break;
+			}
+			if(pde->inode_idx != INVALID_INODE){
+				dir_size += DIR_ENTRY_SIZE;
+			}
+		}
+		if(m>nr_dir_entries||flag){
+			break;
+		}
+	}
+	assert(flag);
+	if(m==nr_dir_entries){
+		//the file is the last one in the dir
+		dir_inode->i_size = dir_size;
+		sync_inode(dir_inode);
+	}
+	return 0;
 }
 /**
  * @function create_file

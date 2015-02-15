@@ -98,6 +98,42 @@ int strlen(const char * p_str)
 	for(p=p_str,i=0;*p!='\0';p++,i++){}
 	return i;
 }
+
+
+/**
+ * @function strcmp
+ * @brief  比较字符串
+ *
+ * @param s1 字符串1
+ * @param s2 字符串2
+ *
+ * @return 0相等  >0 s1大  <0 s2大
+ */
+int strcmp(const char * s1, const char *s2)
+{
+	if((s1==0)||(s2==0)){
+		return (s1-s2);
+	}
+	const char* p1=s1;
+	const char* p2=s2;
+	for(;*p1 && *p2;p1++,p2++){
+		if(*p1 != *p2){
+			break;
+		}
+	}
+	return (*p1 - *p2);
+}
+
+/**
+ * @function itoa
+ * @brief 整形转字符串
+ *
+ * @param value 整数
+ * @param string 字符串位置
+ * @param radix  进制 2 8 16 10
+ *
+ * @return void
+ */
 void itoa(int value, char * string, int radix)
 {
 	int len=0,i,t;

@@ -22,23 +22,30 @@ void testA()
 //	printf("%d\n",get_ticks());
        // static char msg[20];
 	printf("testA running .... %d\n", (int)get_ticks());
-	int fd = open("/blah",O_CREATE|O_RDWT);
-	printf("/blah fd:%d\n", fd);
-	char *data="hello world\n";
-	int cnt = write(fd, data, strlen(data));
-	char *data1 = "fuck you~~~~~~~~~~~~~~\n";
-	cnt+=write(fd, data1, strlen(data1));
-	printf("write %d bytes\n", cnt);
-	close(fd);
-	fd = open("/blah",O_RDWT);
-	char data2[200];
-	read(fd, data2, cnt);
-	if(cnt>199){
-		cnt = 199;
-	}
-	data2[cnt]='\0';
-	printf("read data from /blah:\n%s\n", data2);
-	close(fd);
+//	int fd = open("/blah",O_CREATE|O_RDWT);
+//	printf("/blah fd:%d\n", fd);
+//	char *data="hello world\n";
+//	int cnt = write(fd, data, strlen(data));
+//	char *data1 = "fuck you~~~~~~~~~~~~~~\n";
+//	cnt+=write(fd, data1, strlen(data1));
+//	printf("write %d bytes\n", cnt);
+//	close(fd);
+//	fd = open("/blah",O_RDWT);
+//	char data2[200];
+//	read(fd, data2, cnt);
+//	if(cnt>199){
+//		cnt = 199;
+//	}
+//	data2[cnt]='\0';
+//	printf("read data from /blah:\n%s\n", data2);
+//	close(fd);
+//	int ret = unlink("/blah");
+//	printf("unlink /blah, result:%d\n",ret);
+//	fd = open("/blah",O_RDWT);
+//	printf("open /blah fd:%d\n",fd);
+//	read(fd, data2, cnt);
+//	printf("%s\n",data2);
+//	close(fd);
         while(1){
 //		printf("%d,",(int)get_ticks());
 //		printf("%d\n", get_ticks());

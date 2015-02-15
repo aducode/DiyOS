@@ -102,9 +102,11 @@ struct inode {
  */
 #define DEFAULT_FILE_SECTS_COUNT	2048
 /**
- * @def	ROOT_INODE
- * @brief The root inode
+ * @def	INODE MACROs
+ * @brief invalid inode
+ *	  the root inode
  */
+#define INVALID_INODE	0
 #define ROOT_INODE	1
 /**
  * @def INODE_SIZE
