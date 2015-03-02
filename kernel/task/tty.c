@@ -81,6 +81,7 @@ void task_tty()
 		struct tty *ptty = &tty_table[msg.DEVICE];
 		switch(msg.type){
 			case DEV_OPEN:
+				select_console(msg.DEVICE);
 				reset_msg(&msg);
 				msg.type = SYSCALL_RET;		//
 				send_recv(SEND, src, &msg);
@@ -217,6 +218,12 @@ void tty_do_write(struct tty *p_tty, struct message * p_msg)
 	p_msg->type = SYSCALL_RET;
 	send_recv(SEND, p_msg->source, p_msg);
 }
+/**
+ * @function init_tty
+ * @brief 初始化tty
+ * @param p_tty tty指针
+ *
+ */
 void init_tty(struct tty *p_tty)
 {
 	p_tty->inbuf_count = 0;
@@ -224,6 +231,13 @@ void init_tty(struct tty *p_tty)
 	init_screen(p_tty);
 }
 
+/**
+ * @function put_key
+ * @brief 将扫描码放入tty的输入缓冲区
+ * @param p_tty tty指针
+ * @param key  编码后的按键
+ *
+ */
 void put_key(struct tty *p_tty, u32 key){
 	if(p_tty->inbuf_count < TTY_IN_BYTES){
 		*(p_tty->p_inbuf_head) = key;

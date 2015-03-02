@@ -88,7 +88,10 @@ void set_cursor(unsigned int position)
 }
 
 /**
- *初始化屏幕
+ * @function init_screen
+ * @brief 初始化屏幕
+ * @param p_tty tty指针
+ *
  */
 void init_screen(struct tty *p_tty)
 {
@@ -153,6 +156,13 @@ void set_video_start_addr(u32 addr)
 	_enable_int();
 }
 
+
+/**
+ * @function flush
+ * @brief 刷新console 设置指针位置，当前显存指针地址
+ * @param p_console  console指针
+ *
+ */
 void flush(struct console *p_console){
 	set_cursor(p_console->cursor);
 	set_video_start_addr(p_console->current_start_addr);

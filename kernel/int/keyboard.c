@@ -299,7 +299,10 @@ u8 get_code_from_buffer()
 
 //////////////////////////////////
 /**
- * 供task/tty.c中使用，用于显示keyboard input字符串
+ * @function keyboard_read
+ * @brief  供task/tty.c中使用，用于显示keyboard input字符串
+ *         将键盘扫描码缓冲区中的扫描码编码后分发到不同的tty
+ * @param p_tty tty指针
  */
 void keyboard_read(struct tty * p_tty){
 	u8 scan_code;

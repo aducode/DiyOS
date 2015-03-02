@@ -59,7 +59,7 @@ void testA()
 }
 void testB()
 {
-	char tty_name[] = "/dev_tty0";
+	char tty_name[] = "/dev_tty2";
 	int fd_stdin = open(tty_name, O_RDWT);
 	assert(fd_stdin == 0);
 	int fd_stdout = open(tty_name, O_RDWT);
@@ -79,6 +79,7 @@ void testB()
 			}
 		}
 	}
+	close(fd_stdout);
 	assert(0);
 	/*
 	printf("testB running...%d\n",(int)get_ticks());

@@ -340,6 +340,7 @@ int do_open(struct message *p_msg)
 		f_desc_table[i].fd_pos = 0;
 		int imode = pin->i_mode & I_TYPE_MASK;
 		if(imode == I_CHAR_SPECIAL) {
+			//设备文件  如tty
 			struct message driver_msg;
 			driver_msg.type = DEV_OPEN;
 			int dev = pin->i_start_sect;
