@@ -70,12 +70,12 @@ void testB()
 		int r = read(fd_stdin, rdbuf, 70);
 		rdbuf[r] = 0;
 		if(strcmp(rdbuf, "hello") == 0){
-			write(fd_stdout, "hello world!\n", 13);
+			write(fd_stdout, "$hello world!\n", 14);
 		} else {
 			if(rdbuf[0]){
-				write(fd_stdout, "{", 1);
+				write(fd_stdout, "$", 1);
 				write(fd_stdout, rdbuf, r);
-				write(fd_stdout, "}\n", 2);
+				write(fd_stdout, "\n", 1);
 			}
 		}
 	}
