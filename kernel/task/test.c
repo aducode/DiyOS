@@ -59,6 +59,28 @@ void testA()
 }
 void testB()
 {
+	char tty_name[] = "/dev_tty0";
+	int fd_stdin = open(tty_name, O_RDWT);
+	assert(fd_stdin == 0);
+	int fd_stdout = open(tty_name, O_RDWT);
+	assert(fd_stdout == 1);
+	char rdbuf[128];
+	while(1){
+		write(fd_stdout, "$", 1);
+		int r = read(fd_stdin, rdbuf, 70);
+		rdbuf[r] = 0;
+		if(strcmp(rdbuf, "hello") == 0){
+			write(fd_stdout, "hello world!\n", 13);
+		} else {
+			if(rdbuf[0]){
+				write(fd_stdout, "{", 1);
+				write(fd_stdout, rdbuf, r);
+				write(fd_stdout, "}\n", 2);
+			}
+		}
+	}
+	assert(0);
+	/*
 	printf("testB running...%d\n",(int)get_ticks());
 //	int t=(int)get_ticks();
 //	printf("after get_ticks()\t%d\n",(int)get_ticks());//如果有多个用户线程，这里就会阻塞
@@ -72,6 +94,7 @@ void testB()
 //              _hlt();
 //                get_ticks();
         }
+	*/
 }
 void testC()
 {

@@ -12,8 +12,13 @@ void clock_handler(int irq_no)
 {	
 	//static char msg[20];
 	//_disp_str("IN RING0 CLOCKINT...  ticks now is:",22,0,COLOR_RED);
-	ticks+=1;
-	if(ticks>MAX_TICKS)ticks=0;
+	if(++ticks>MAX_TICKS)ticks=0;
+	if(p_proc_ready->ticks){
+		p_proc_ready->ticks --;
+	}
+	if(key_pressed){
+		inform_int(TASK_TTY);
+	}
 //	_clean(0,0,25,80);
 	//itoa((int)ticks,msg, 10);
 	schedule();

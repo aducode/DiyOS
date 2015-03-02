@@ -183,6 +183,7 @@ void keyboard_handler(int irq_no)
 {
 	//u8 scan_code = _in_byte(IO_8042_PORT);	//清空8042缓冲才能下一次中断
 	put_code_into_buffer();
+	key_pressed = 1;
 	/*
 	_clean(10,0,25,80);
 	int i=0;

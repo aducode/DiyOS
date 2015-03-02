@@ -68,13 +68,18 @@ void task_fs()
 			case UNLINK:
 				msg.RETVAL = do_unlink(&msg);
 				break;
+			case RESUME_PROC:
+				src = msg.PID; //恢复进程,此时将src变成TTY进程发来的消息中的PID
+				break;
 			default:
 				panic("invalid msg type:%d\n", msg.type);
 				break;
 		}
 		//返回
-		msg.type = SYSCALL_RET;
-		send_recv(SEND, src, &msg);
+		if(msg.type != SUSPEND_PROC){
+			msg.type = SYSCALL_RET;
+			send_recv(SEND, src, &msg);
+		} //如果是SUSPEND_PROC 类型的消息，那么不处里，开始下一个循环
 	}
 }
 
@@ -410,7 +415,9 @@ int do_rdwt(struct message *p_msg)
 		assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
 		send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, p_msg);
 		assert(p_msg->CNT == len);
-		assert(p_msg->type == SYSCALL_RET);
+//		assert(p_msg->type == SYSCALL_RET);
+		//FS进程向TTY进程发送消息，接收消息后消息的类型可能会被tty设置成SUSPEND_PROC（发送DEV_READ or DEV_WRITE消息时），或者SYSCALL_RET(发送DEV_OPEN类型消息)
+		assert(p_msg->type == SYSCALL_RET || p_msg->type == SUSPEND_PROC);
 		return p_msg->CNT;
 	} else {
 		assert(pin->i_mode == I_REGULAR || pin->i_mode == I_DIRECTORY);

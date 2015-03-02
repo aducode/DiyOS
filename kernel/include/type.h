@@ -67,6 +67,8 @@ enum msgtype {
 	GET_TICKS, GET_PID,
 	//FS
 	OPEN, CLOSE, READ, WRITE,LSEEK,STAT, UNLINK,
+	//FS & TTY
+	SUSPEND_PROC, RESUME_PROC,
 	//TTY, SYS, FS, MM, etc
 	SYSCALL_RET,
 	//message type for drivers
