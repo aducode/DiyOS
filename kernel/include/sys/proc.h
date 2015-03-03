@@ -6,7 +6,7 @@
 #define _DIYOS_PROC_H
 //#define MAX_PROCESS_COUNT	32	//最多32个进程
 #define TASKS_COUNT		4	//系统进程个数
-#define PROCS_COUNT		4	//用户进程数量
+#define PROCS_COUNT		1	//用户进程数量
 //进程
 #define INVALID_DRIVER  -20
 #define TASK_TTY        0
@@ -21,18 +21,19 @@
 #define STACK_SIZE_TASK_FS	0x8000
 //stacks of process
 #define STACK_SIZE_PROC_TESTA	0x8000
-#define STACK_SIZE_PROC_TESTB	0x8000
-#define STACK_SIZE_PROC_TESTC	0x8000
-#define STACK_SIZE_PROC_TESTD	0x8000
+//#define STACK_SIZE_PROC_TESTB	0x8000
+//#define STACK_SIZE_PROC_TESTC	0x8000
+//#define STACK_SIZE_PROC_TESTD	0x8000
 //stacks size
 #define STACK_SIZE_TOTAL        (STACK_SIZE_TASK_TTY + \
 				 STACK_SIZE_TASK_HD + \
 				 STACK_SIZE_TASK_TICKS + \
 				 STACK_SIZE_TASK_FS + \
-				 STACK_SIZE_PROC_TESTA + \
-				 STACK_SIZE_PROC_TESTB + \
-				 STACK_SIZE_PROC_TESTC + \
-				 STACK_SIZE_PROC_TESTD)
+				 STACK_SIZE_PROC_TESTA)
+// + \
+//				 STACK_SIZE_PROC_TESTB + \
+//				 STACK_SIZE_PROC_TESTC + \
+//				 STACK_SIZE_PROC_TESTD)
 
 //消息广播
 #define ANY	(TASKS_COUNT + PROCS_COUNT + 10)

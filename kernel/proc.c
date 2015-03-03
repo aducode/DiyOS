@@ -206,7 +206,6 @@ int msg_send(struct process *current, int dest, struct message *m)
 }
 
 
-
 int msg_receive(struct process *current, int src, struct message *m)
 {
 	struct process *receiver = current;
@@ -214,6 +213,7 @@ int msg_receive(struct process *current, int src, struct message *m)
 	struct process *prev = 0;
 	int copyok = 0;
 	int dest = proc2pid(receiver);
+	//printk("sender:%d,receiver:%d\n",src, dest);
 	//printk("[msg_receive]\t[%d] receive message from [%d]\n", dest,src);
 	assert(dest != src);
 	if((receiver->has_int_msg) && ((src==ANY)||(src==INTERRUPT))){
@@ -330,7 +330,6 @@ int msg_receive(struct process *current, int src, struct message *m)
 	}
 	return 0;
 }
-
 //ring0
 int sys_sendrec(int function, int dest_src, struct message *msg , struct process *p_proc)
 {

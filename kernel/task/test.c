@@ -86,9 +86,9 @@ void testA()
         close(fd_stdout);
         assert(0);
 }
-void testB()
-{
-	while(1){}
+//void testB()
+//{
+//	while(1){}
 /*
 	char tty_name[] = "/dev_tty1";
 	int fd_stdin = open(tty_name, O_RDWT);
@@ -128,9 +128,9 @@ void testB()
 //                get_ticks();
         }
 	*/
-}
-void testC()
-{
+//}
+//void testC()
+//{
 /*
 	int fd_stdin = open("/dev_tty0",O_RDWT);
 	assert(fd_stdin == 0);
@@ -141,16 +141,16 @@ void testC()
 */
 //	printk("testC running...\n");
         //static char msg[20];
-        while(1)
-        {
+//        while(1)
+//        {
 	//	printf("testC %x\n",17);
      //           _disp_str("IN RING1 PROC C...    ticks now is:",4,0,COLOR_YELLOW);
       //          itoa(ticks, msg, 10);
        //         _disp_str(msg, 5,0,COLOR_YELLOW);
-        }
-}
+//        }
+//}
 
-void testD(){
+//void testD(){
 	/*
 	int fd_stdin = open("/dev_tty0",O_RDWT);
 	assert(fd_stdin == 0);
@@ -159,7 +159,7 @@ void testD(){
 	printf("testD running ...\n");
 	//printk("testD running...\n");
 	*/
-	while(1){
+//	while(1){
 	//	printf("testD, \n%s\n","hehehehe");
-	}
-}             
+//	}
+//}             
