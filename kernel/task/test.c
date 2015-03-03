@@ -8,14 +8,12 @@
 void testA()
 {
 //	printk("testA running...\n");
-/*
 	int fd_stdin = open("/dev_tty0",O_RDWT);
 	assert(fd_stdin == 0);
 	int fd_stdout = open("/dev_tty0", O_RDWT);
 	assert(fd_stdout==1);
 	printf("0x%x\n",111);
 	printf("testA running....%d\n",(int)get_ticks());
-*/
 //	assert(0);
 //	printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
 //	printf("ticks:%d", get_ticks());	

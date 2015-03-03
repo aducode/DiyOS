@@ -2,6 +2,17 @@
 #ifndef _DIYOS_TYPE_H
 #define _DIYOS_TYPE_H
 
+/**
+ * @define _PANIC_
+ * @brief 定义_PANIC_时，那么内核级的assert或者系统panic会输出错误信息
+ */
+#define _PANIC_	
+/**
+ * @define _SHOW_ENTRY_
+ * @brief 定义这个宏，那么不会执行进程，只是会显示进程入口地址
+ */
+//#define _SHOW_ENTRY_
+
 //macro utils
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))

@@ -348,7 +348,9 @@ int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
 	}
 	//通过字符串第一个字符判断错误级别
 	if((*p == MAG_CH_PANIC)||(*p== MAG_CH_ASSERT && p_proc_ready < &proc_table[TASKS_COUNT])){
+		//如果是panic 或者内核级别的assert，那么执行这里
 		_disable_int();
+	#ifdef _PANIC_
 		char *v = (char*)V_MEM_BASE;
 		const char * q = p+1;	//skip
 		while(v<(char*)(V_MEM_BASE+V_MEM_SIZE)){
@@ -362,6 +364,7 @@ int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
 				q = p+1;
 			}
 		}
+	#endif
 		__asm__ __volatile__("hlt");
 	}
 	while((ch=*p++)!=0){

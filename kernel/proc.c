@@ -98,7 +98,7 @@ void reset_msg(struct message *p_msg)
 void block(struct process *p_proc)
 {
 	assert(p_proc->p_flags);
-	schedule();
+	schedule();//进行调度，让出p_proc的cpu时间
 }
 
 /**
@@ -304,8 +304,16 @@ int msg_receive(struct process *current, int src, struct message *m)
 		} else {
 			receiver->p_recvfrom = proc2pid(sender);
 		}
+		//有时候block函数中，receiver->p_flags也会被改变，触发block中的assert
 		block(receiver);
 		//当用户线程大于三个的时候，这里会出问题，发下block之前的receiver->p_flags会变成被变成0  src也会由ANY变成1
+		
+		/////下面的理解有误///
+		//上面block时，cpu时间会被让出，进入阻塞状态，下次恢复时继续执行
+		//如果紧接着另一个进程发送给刚才阻塞的进程消息，那么阻塞进程会p_flags会被置0，此时恢复进程后，会引发下面assert的错误
+		//所以这里不要assert了
+		///这个是proc里面的系统调用，系统调用不会被阻塞，会按顺序执行完毕，直至返回///
+		//通过输出，可以看出receiver的值并没有被改变，只是receiver里面的值被改变
 		assert(receiver->p_flags == RECEIVING);
 		assert(receiver->p_msg !=0 );
 		assert(receiver->p_recvfrom != NO_TASK);
