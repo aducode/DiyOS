@@ -8,12 +8,13 @@
 void testA()
 {
 //	printk("testA running...\n");
+/*
 	int fd_stdin = open("/dev_tty0",O_RDWT);
 	assert(fd_stdin == 0);
 	int fd_stdout = open("/dev_tty0", O_RDWT);
 	assert(fd_stdout==1);
-	printf("0x%x\n",111);
 	printf("testA running....%d\n",(int)get_ticks());
+*/
 //	assert(0);
 //	printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
 //	printf("ticks:%d", get_ticks());	
@@ -52,7 +53,7 @@ void testA()
 //	read(fd, data2, cnt);
 //	printf("%s\n",data2);
 //	close(fd);
-        while(1){
+//        while(1){
 //		printf("%d,",(int)get_ticks());
 //		printf("%d\n", get_ticks());
 //		printf("hello in testA\n");	
@@ -61,12 +62,34 @@ void testA()
 //                itoa(ticks,msg,10);
 //                _disp_str(msg,1,0, COLOR_GREEN);
 //              _hlt();                 //将运行在ring1 ，ring1执行hlt会报异常
+//       }
+	char tty_name[] = "/dev_tty0";
+        int fd_stdin = open(tty_name, O_RDWT);
+        assert(fd_stdin == 0);
+        int fd_stdout = open(tty_name, O_RDWT);
+        assert(fd_stdout == 1);
+        char rdbuf[128];
+        while(1){
+                //write(fd_stdout, "$", 1);
+                printf("$");
+                int r = read(fd_stdin, rdbuf, 70);
+                rdbuf[r] = 0;
+                if(strcmp(rdbuf, "hello") == 0){
+                        //write(fd_stdout, "$hello world!\n", 14);
+                        printf("$hello world!\n");
+                } else {
+                        if(rdbuf[0]){
+                                printf("$%s\n",rdbuf);
+                        }
+                }
         }
+        close(fd_stdout);
+        assert(0);
 }
 void testB()
 {
-//	printk("testB running...\n");
-//	while(1){}
+	while(1){}
+/*
 	char tty_name[] = "/dev_tty1";
 	int fd_stdin = open(tty_name, O_RDWT);
 	assert(fd_stdin == 0);
@@ -89,6 +112,7 @@ void testB()
 	}
 	close(fd_stdout);
 	assert(0);
+*/
 	/*
 	printf("testB running...%d\n",(int)get_ticks());
 //	int t=(int)get_ticks();
@@ -107,12 +131,14 @@ void testB()
 }
 void testC()
 {
+/*
 	int fd_stdin = open("/dev_tty0",O_RDWT);
 	assert(fd_stdin == 0);
 	int fd_stdout = open("/dev_tty0", O_RDWT);
 	assert(fd_stdout==1);
 
 	printf("testC running ...%d\n",(int)get_ticks());
+*/
 //	printk("testC running...\n");
         //static char msg[20];
         while(1)
