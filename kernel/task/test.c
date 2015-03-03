@@ -125,12 +125,14 @@ void testC()
 }
 
 void testD(){
+	/*
 	int fd_stdin = open("/dev_tty0",O_RDWT);
 	assert(fd_stdin == 0);
         int fd_stdout = open("/dev_tty0", O_RDWT);
         assert(fd_stdout==1);
 	printf("testD running ...\n");
 	//printk("testD running...\n");
+	*/
 	while(1){
 	//	printf("testD, \n%s\n","hehehehe");
 	}
