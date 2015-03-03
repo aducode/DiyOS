@@ -101,7 +101,7 @@ struct process{
 	int has_int_msg;	//如果非0，说明正在处理中断
 	struct process *q_sending;	//向该进程发送消息的队列
 	struct process *next_sending;	//队列头
-	int tty_idx;	//tty表索引
+	//int tty_idx;	//tty表索引
 	//fs
 	struct file_desc *filp[MAX_FILE_COUNT];   //这里保存的是struct file_desc 指针类型，真正的struct file_desc作为全局变量单独保存在global.c中的f_desc_table中
 };

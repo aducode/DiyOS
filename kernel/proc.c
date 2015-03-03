@@ -44,7 +44,6 @@ void schedule()
                         }
                 }
         }
-
 	*/
 	static int i=0;
 	struct process *p;
@@ -306,6 +305,7 @@ int msg_receive(struct process *current, int src, struct message *m)
 			receiver->p_recvfrom = proc2pid(sender);
 		}
 		block(receiver);
+		//当用户线程大于三个的时候，这里会出问题，发下block之前的receiver->p_flags会变成被变成0  src也会由ANY变成1
 		assert(receiver->p_flags == RECEIVING);
 		assert(receiver->p_msg !=0 );
 		assert(receiver->p_recvfrom != NO_TASK);

@@ -7,6 +7,7 @@
 /********************* testA  testB 是ring1级别的 ***************************/
 void testA()
 {
+//	printk("testA running...\n");
 /*
 	int fd_stdin = open("/dev_tty0",O_RDWT);
 	assert(fd_stdin == 0);
@@ -66,6 +67,8 @@ void testA()
 }
 void testB()
 {
+//	printk("testB running...\n");
+//	while(1){}
 	char tty_name[] = "/dev_tty1";
 	int fd_stdin = open(tty_name, O_RDWT);
 	assert(fd_stdin == 0);
@@ -82,11 +85,6 @@ void testB()
 			printf("$hello world!\n");
 		} else {
 			if(rdbuf[0]){
-				/*
-				write(fd_stdout, "$", 1);
-				write(fd_stdout, rdbuf, r);
-				write(fd_stdout, "\n", 1);
-				*/
 				printf("$%s\n",rdbuf);
 			}
 		}
@@ -117,6 +115,7 @@ void testC()
 	assert(fd_stdout==1);
 
 	printf("testC running ...%d\n",(int)get_ticks());
+//	printk("testC running...\n");
         //static char msg[20];
         while(1)
         {
@@ -133,6 +132,7 @@ void testD(){
         int fd_stdout = open("/dev_tty0", O_RDWT);
         assert(fd_stdout==1);
 	printf("testD running ...\n");
+	//printk("testD running...\n");
 	while(1){
 	//	printf("testD, \n%s\n","hehehehe");
 	}

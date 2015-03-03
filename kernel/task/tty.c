@@ -319,11 +319,13 @@ void tty_write(struct tty *p_tty, char *buffer, int size){
  * 现在系统调用使用了4个参数，这个地方_unsed1存储ebx的值，但是write没有使用ebx，这里
  * 忽略
  */
+/*
 int sys_write(int _unsed1, char *buffer,int size, struct process *p_proc)
 {
 	tty_write(&tty_table[p_proc->tty_idx], buffer, size);
 	return 0;
 }
+*/
 /**
  *系统调用，内核级打印
  */
@@ -364,7 +366,8 @@ int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
 	}
 	while((ch=*p++)!=0){
 		if(ch==MAG_CH_PANIC ||ch==MAG_CH_ASSERT) continue;
-		out_char(tty_table[p_proc->tty_idx].p_console, ch);
+		//out_char(tty_table[p_proc->tty_idx].p_console, ch);
+		out_char(tty_table[0].p_console, ch); //默认使用tty0
 	}
 	return 0;
 }
