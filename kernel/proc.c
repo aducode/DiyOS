@@ -98,7 +98,7 @@ void reset_msg(struct message *p_msg)
 void block(struct process *p_proc)
 {
 	assert(p_proc->p_flags);
-	schedule();//进行调度，让出p_proc的cpu时间
+	schedule();//进行调度，让出p_proc的cpu时间,这里只是选择下个时间片要执行的进程，并不是开始执行进程
 }
 
 /**
@@ -305,7 +305,15 @@ int msg_receive(struct process *current, int src, struct message *m)
 			receiver->p_recvfrom = proc2pid(sender);
 		}
 		//有时候block函数中，receiver->p_flags也会被改变，触发block中的assert
+		//比如下面的printk
+		//printk("#0 receiver pid:%d, flags:%d\n",receiver-proc_table, receiver->p_flags);
+		//但是下面的printk就不会触发block中的assert
+		//下面的再多一个字符，那么就会触发block中的assert
+		//现在猜测这种异常，是由内存规划不合理造成的
+		//printk("#0             pid:%d, flags:%d\n", receiver-proc_table, receiver->p_flags);	
 		block(receiver);
+		//printk("#1 receiver pid:%d, flags:%d\n",receiver- proc_table, receiver->p_flags);
+		//printk("#1pid:%d, flags:%d\n", receiver-proc_table, receiver->p_flags);
 		//当用户线程大于三个的时候，这里会出问题，发下block之前的receiver->p_flags会变成被变成0  src也会由ANY变成1
 		
 		/////下面的理解有误///

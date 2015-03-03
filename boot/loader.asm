@@ -166,6 +166,15 @@ LABEL_GOON_LOADING_FILE:
 	add ax, dx
 	add ax, DeltaSectorNo
 	add bx, [BPB_BytsPerSec]
+	jc .1	;如果bx重新变成0，说明内核大于64KB
+	jmp .2
+.1:
+	push ax
+	mov ax, es
+	add ax, 0x1000		;es指向下一个段
+	mov es, ax
+	pop ax
+.2:
 	jmp LABEL_GOON_LOADING_FILE
 
 LABEL_FILE_LOADED:
