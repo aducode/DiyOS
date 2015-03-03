@@ -54,7 +54,7 @@ int k_reenter = -1;	//由于最开始执行中断时，会先减1 ，所以这�
 
 
 //这里定义Task
-//task/hd.c
+//task/hddriver.c
 extern void task_hd();
 //task/ticks.c
 extern void  task_ticks();
@@ -102,11 +102,11 @@ long long ticks;
 //proc.c
 extern int sys_sendrec(int function, int dest_src, struct message *msg);
 //in task/tty.c
-extern int sys_write(char *buf, int len, struct process *p_proc);
+//extern int sys_write(char *buf, int len, struct process *p_proc);
 extern int sys_printk(int _unused1, int _unused2, char * s, struct process *p_proc);
 //系统调用
 system_call sys_call_table[MAX_SYSCALL_COUNT] =
-{sys_sendrec,sys_printk, sys_write};
+{sys_sendrec,sys_printk/*, sys_write*/};
 
 //
 #define CONSOLE_COUNT	3

@@ -49,7 +49,7 @@ void schedule()
 	static int i=0;
 	struct process *p;
 	i++;
-	//这里能使用printf是因为我们0号进程设置成task_tty了，printf会用到tty的write,所以当时钟中断发生时write已经可以被调用了
+	//这里能使用printk是因为我们0号进程设置成task_tty了，printk会用到tty的write,所以当时钟中断发生时write已经可以被调用了
 	if(i>=TASKS_COUNT + PROCS_COUNT) i=0;
 	p=proc_table + i;
 	while(p->p_flags>0){
@@ -125,13 +125,13 @@ int deadlock(int src, int dest)
 			if(p_proc->p_sendto == src){
 				//表示目标进程也在给源进程发消息
 				p_proc = proc_table + dest;
-				printf("=_=%s", p_proc->name);
+				printk("=_=%s", p_proc->name);
 				do{
 					assert(p_proc->p_msg);
 					p_proc = proc_table + p_proc->p_sendto;
-					printf("->%s", p_proc->name);
+					printk("->%s", p_proc->name);
 				}while(p_proc != proc_table + src);
-				printf("=_=");
+				printk("=_=");
 				return 1;
 			}
 			p_proc = proc_table + p_proc->p_sendto;
@@ -158,7 +158,7 @@ int msg_send(struct process *current, int dest, struct message *m)
 	if(deadlock(src,dest)){
 		panic(">>DEADLOCK<< %s->%s", sender->name, receiver->name);
 	}
-	//printf("[msg_send]\t[%d] send message to [%d]\n",src, dest);
+	//printk("[msg_send]\t[%d] send message to [%d]\n",src, dest);
 	if((receiver->p_flags & RECEIVING) && //dest is waiting for the msg
 		(receiver->p_recvfrom == src || receiver->p_recvfrom == ANY)){
 		//目标进程在等待消息，并且发送的目标接收者被设置成本进程，或接收广播
@@ -215,7 +215,7 @@ int msg_receive(struct process *current, int src, struct message *m)
 	struct process *prev = 0;
 	int copyok = 0;
 	int dest = proc2pid(receiver);
-	//printf("[msg_receive]\t[%d] receive message from [%d]\n", dest,src);
+	//printk("[msg_receive]\t[%d] receive message from [%d]\n", dest,src);
 	assert(dest != src);
 	if((receiver->has_int_msg) && ((src==ANY)||(src==INTERRUPT))){
 		//处理中断
@@ -346,8 +346,8 @@ int sys_sendrec(int function, int dest_src, struct message *msg , struct process
 void dump_msg(const char * title, struct message *msg)
 {
 	int packed = 0;
-	//这里能使用printf，是在tty进程已经被启动起来的情况下，所以dump_msg要在tty之后的进程中使用
-	printf("{%s}<0x%x>{%ssrc:%s(%d),%stype:%d,%s(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x)%s}%s\n",
+	//这里能使用printk，是在tty进程已经被启动起来的情况下，所以dump_msg要在tty之后的进程中使用
+	printk("{%s}<0x%x>{%ssrc:%s(%d),%stype:%d,%s(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x)%s}%s\n",
 	title,
 	(int)msg,
 	packed?"":"\n	",
@@ -368,7 +368,12 @@ void dump_msg(const char * title, struct message *msg)
 }
 
 
-
+/**
+ * @function infrom_int
+ * @brief 通知一个进程一个中断已经发生
+ * @praram task_idx 进程id  pid
+ *
+ */
 void inform_int(int task_idx)
 {
 	struct process *p = proc_table + task_idx;
@@ -377,7 +382,7 @@ void inform_int(int task_idx)
 		p->p_msg->type = HARD_INT;
 		p->p_msg = 0;
 		p->has_int_msg = 0;
-		p->p_flags &= ~RECEIVING;
+		p->p_flags &= ~RECEIVING; //dest has received the msg
 		p->p_recvfrom = NO_TASK;
 		assert(p->p_flags == 0);
 		unblock(p);

@@ -93,6 +93,7 @@ void task_tty()
 				tty_do_write(ptty, &msg);
 				break;
 			case HARD_INT:
+				//printk("\n\n\nsrc:%d\n", src);
 				//wake up by clock_handler -- a key was just pressed
 				//@see clock_handler() inform_int()
 				key_pressed = 0;

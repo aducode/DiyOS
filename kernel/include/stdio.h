@@ -14,6 +14,9 @@
 #define O_CREATE	1
 #define O_RDWT		2
 
+
+#define STDIN		0
+#define STDOUT		1
 extern int open(const char * pathname, int flags);
 extern int close(int fd);
 extern int read(int fd, void *buf, int count);

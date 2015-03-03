@@ -32,7 +32,7 @@ static int search_file(char *path);
  */
 void task_fs()
 {
-	//printf("Task FS begins.\n");
+	//printk("Task FS begins.\n");
 /*
 	struct message msg;
 	msg.type = DEV_OPEN;
@@ -41,7 +41,7 @@ void task_fs()
 	//次设备号就是msg中的DEVICE
 	assert(dd_map[MAJOR(ROOT_DEV)].driver_pid != INVALID_DRIVER);
 	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
-	printf("close dev\n");
+	printk("close dev\n");
 	msg.type=DEV_CLOSE;
 	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
 	spin("FS");
@@ -145,7 +145,7 @@ void mkfs()
 	msg.PID		= TASK_FS;
 	assert(dd_map[MAJOR(ROOT_DEV)].driver_pid != INVALID_DRIVER);
 	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
-	//printf("dev size: 0x%x sectors\n", geo.size);
+	//printk("dev size: 0x%x sectors\n", geo.size);
 	//super block
 	struct super_block sb;
 	sb.magic		= MAGIC_V1;
@@ -170,7 +170,7 @@ void mkfs()
 	WRITE_SECT(ROOT_DEV, 1);  //sector 0为boot sector
 				  //sector 1super block 写入1
 	/*
-	printf("devbase:0x%x00, sb:0x%x00, imap:0x%x00, smap:0x%x00 "
+	printk("devbase:0x%x00, sb:0x%x00, imap:0x%x00, smap:0x%x00 "
 		"inodes:0x%x00 1st_sector:0x%x00\n",	
 		geo.base * 2,
 		(geo.base + 1) * 2,
@@ -317,7 +317,7 @@ int do_open(struct message *p_msg)
 	if(flags & O_CREATE){
 		//创建文件
 		if(inode_nr){
-			printf("file exists.\n");
+			printk("file exists.\n");
 			return -1;
 		} else {
 			pin = create_file(pathname, flags);
@@ -485,13 +485,13 @@ int do_unlink(struct message *p_msg)
 	pathname[name_len]=0;
 	
 	if(strcmp(pathname, "/") == 0){
-		printf("FS:do_unlink():: cannot unlink the root\n");
+		printk("FS:do_unlink():: cannot unlink the root\n");
 		return -1;
 	}
 	int inode_nr = search_file(pathname);
 	if(inode_nr == INVALID_INODE){
 		//file not found
-		printf("FS::do_unlink():: search_file() return invalid inode: %s\n", pathname);
+		printk("FS::do_unlink():: search_file() return invalid inode: %s\n", pathname);
 		return -1;
 	}
 	char filename[MAX_PATH];
@@ -502,12 +502,12 @@ int do_unlink(struct message *p_msg)
 	struct inode *pin = get_inode(dir_inode->i_dev, inode_nr);
 	if(pin->i_mode != I_REGULAR){
 		//can only remove regular files
-		printf("cannot remove file %s, because it is not a regular file.\n", pathname);
+		printk("cannot remove file %s, because it is not a regular file.\n", pathname);
 		return -1;
 	}
 	if(pin->i_cnt>1){
 		//thie file was opened
-		printf("cannot remove file %s, because pin->i_cnt is %d.\n", pathname, pin->i_cnt);
+		printk("cannot remove file %s, because pin->i_cnt is %d.\n", pathname, pin->i_cnt);
 		return -1;
 	}
 

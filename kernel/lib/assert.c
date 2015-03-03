@@ -2,6 +2,17 @@
 #include "syscall.h"
 #include "stdio.h"
 #include "string.h"
+
+int printk(const char*fmt, ...)
+{
+	int i;
+        char buf[256];
+        va_list arg = (va_list)((char*)(&fmt)+4);
+        i = vsprintf(buf,fmt, arg);
+        printk0(buf);
+        return i;
+
+}
 void spin(const char *func_name)
 {
 	printf("\nspinning in %s ...\n",func_name);

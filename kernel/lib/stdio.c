@@ -1,4 +1,5 @@
 #include "type.h"
+#include "stdio.h"
 #include "string.h"
 #include "syscall.h"
 #include "assert.h"
@@ -16,7 +17,8 @@ int printf(const char *fmt, ...)
 	//或者下面这种写法
 	//va_list arg = (va_list)((char*)(&fmt+1));
 	i = vsprintf(buf,fmt, arg);
-	write0(buf, i);
+	int c = write(STDOUT,buf, i);
+	assert(c==i);
 	return i;
 }
 /**
