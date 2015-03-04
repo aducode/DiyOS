@@ -197,7 +197,7 @@ void print_hdinfo(struct hd_info * hdi)
 {
 	int i;
 	for (i = 0; i < PART_PER_DRIVE + 1; i++) {
-		printf("%sPART_%d: base %d(0x%x), size %d(0x%x) (in sector)\n",
+		printk("%sPART_%d: base %d(0x%x), size %d(0x%x) (in sector)\n",
 		       i == 0 ? " " : "     ",
 		       i,
 		       hdi->primary[i].base,
@@ -208,7 +208,7 @@ void print_hdinfo(struct hd_info * hdi)
 	for (i = 0; i < SUB_PER_DRIVE; i++) {
 		if (hdi->logical[i].size == 0)
 			continue;
-		printf("         "
+		printk("         "
 		       "%d: base %d(0x%x), size %d(0x%x) (in sector)\n",
 		       i,
 		       hdi->logical[i].base,
@@ -322,14 +322,14 @@ void print_identify_info(u16 *hdinfo)
                         s[i*2] = *p++;
                 }
                 s[i*2]=0;
-                printf("%s: %s\n", iinfo[k].desc, s);
+                printk("%s: %s\n", iinfo[k].desc, s);
         }
         int capabilities = hdinfo[49];
-        printf("LBA supported: %s\n", (capabilities & 0x0200)?"Yes":"No");
+        printk("LBA supported: %s\n", (capabilities & 0x0200)?"Yes":"No");
         int cmd_set_supported = hdinfo[83];
-        printf("LBA48 supported: %s\n",(cmd_set_supported & 0x0400)?"Yes":"No");
+        printk("LBA48 supported: %s\n",(cmd_set_supported & 0x0400)?"Yes":"No");
         int sectors = ((int)hdinfo[61]<<16) + hdinfo[60];
-        printf("HD size: %dMB\n", sectors * 512 / 1000000);
+        printk("HD size: %dMB\n", sectors * 512 / 1000000);
 }
 
 

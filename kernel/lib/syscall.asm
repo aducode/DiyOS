@@ -6,11 +6,11 @@ INT_VECTOR_SYS_CALL	equ	0x80	;与linux保持一致
 ;系统调用函数表
 SYS_CALL_SENDREC	equ	0	;系统作成微内核，未来只保留一个系统调用，用于进程间通信
 SYS_CALL_PRINTK		equ	1
-SYS_CALL_WRITE		equ	2
+;SYS_CALL_WRITE		equ	2
 
 global sendrec
 global printk0
-global write0
+;global write0
 bits 32
 [section .text]
 sendrec:
@@ -25,9 +25,9 @@ printk0:
 	mov edx, [esp + 4]	;printk(char * buffer);
 	int INT_VECTOR_SYS_CALL
 	ret	
-write0:
-	mov eax, SYS_CALL_WRITE
-	mov ecx, [esp + 4]
-	mov edx, [esp + 8]
-	int INT_VECTOR_SYS_CALL
-	ret
+;write0:
+;	mov eax, SYS_CALL_WRITE
+;	mov ecx, [esp + 4]
+;	mov edx, [esp + 8]
+;	int INT_VECTOR_SYS_CALL
+;	ret

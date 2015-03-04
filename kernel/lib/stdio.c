@@ -16,7 +16,8 @@ int printf(const char *fmt, ...)
 	//或者下面这种写法
 	//va_list arg = (va_list)((char*)(&fmt+1));
 	i = vsprintf(buf,fmt, arg);
-	write0(buf, i);
+	//write0(buf, i);
+	printk(buf);
 	return i;
 }
 /**
