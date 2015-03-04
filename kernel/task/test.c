@@ -23,12 +23,12 @@ void testA()
        // static char msg[20];
 	printf("testA running .... %d\n", (int)get_ticks());
 	printf("-1=%d\n",-1);
-	int fd = open("/test",O_CREATE|O_RDWT);
+	int fd = open("/dev_tty0",O_RDWT);
 	char *str = "hello world\nYooooooooooooooooooo~~~~~~~~~~~~~~\n";
 	int cnt = write(fd, str, strlen(str));
 	char data[256];
 	close(fd);
-	fd = open("/test", O_RDWT);
+	fd = open("/dev_tty0", O_RDWT);
 	read(fd,data, cnt);
 	printf(data);
 	close(fd);

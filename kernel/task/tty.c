@@ -1,4 +1,5 @@
 #include "type.h"
+#include "syscall.h"
 #include "proc.h"
 #include "tty.h"
 #include "console.h"
@@ -39,22 +40,22 @@ static void tty_write(struct tty *p_tty, char *buffer, int size);
  */
 void task_tty()
 {
-//	panic("test");
-//	assert(0);
 	//进程开始时先初始化键盘
 	init_keyboard();
 	struct tty *p_tty;
 	for(p_tty = tty_table+CONSOLE_COUNT-1;p_tty>=tty_table;p_tty--){
 		init_tty(p_tty);
 	}
-	current_console = 0;
-//	select_console(current_console);
+//	current_console = 0;
+	select_console(0);
 	while(1)
 	{
 		for(p_tty = tty_table; p_tty < tty_table + CONSOLE_COUNT;p_tty++){
 			tty_do_read(p_tty);
 			tty_do_write(p_tty);
 		}
+//		struct message msg;
+//		send_recv(RECEIVE, ANY, &msg);
 	}
 }
 
@@ -192,6 +193,7 @@ int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
 	//通过字符串第一个字符判断错误级别
 	if((*p == MAG_CH_PANIC)||(*p== MAG_CH_ASSERT && p_proc_ready < &proc_table[TASKS_COUNT])){
 		_disable_int();
+//	#ifdef _SHOW_PANIC_
 		char *v = (char*)V_MEM_BASE;
 		const char * q = p+1;	//skip
 		while(v<(char*)(V_MEM_BASE+V_MEM_SIZE)){
@@ -205,6 +207,7 @@ int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
 				q = p+1;
 			}
 		}
+//	#endif
 		__asm__ __volatile__("hlt");
 	}
 	/*

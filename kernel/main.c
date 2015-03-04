@@ -1,4 +1,3 @@
-//#define _DEBUG_
 #include "kernel.h"
 /**
  * 初始化全局描述符表
@@ -59,7 +58,7 @@ void kmain(){
 		p_proc->regs.ss = ((8*1)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|rpl;
 		p_proc->regs.gs = (SELECTOR_KERNEL_GS & SA_RPL_MASK)|rpl;
 		p_proc->regs.eip = (u32)p_task->entry;
-#ifdef	_DEBUG_
+#ifdef	_SHOW_PROC_ENTRY_
 		char msg[10];
 		static int row = 10;
 		itoa(p_proc->regs.eip, msg, 16);
@@ -85,7 +84,7 @@ void kmain(){
 		//p_task++;
 		selector_ldt+=1<<3;
 	}
-#ifdef _DEBUG_
+#ifdef _SHOW_PROC_ENTRY_
 	while(1);
 #endif
 	k_reenter = 0;

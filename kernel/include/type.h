@@ -1,6 +1,19 @@
 //定义一些全局类型
 #ifndef _DIYOS_TYPE_H
 #define _DIYOS_TYPE_H
+/**
+ * @define _SHOW_PROC_ENTRY_
+ * @brief 用于调试，输出进程入口地址，不运行进程
+ * @default off
+ */
+//#define _SHOW_PROC_ENTRY_
+/**
+ * @define _SHOW_PANIC_
+ * @brief 用来判断是否打印系统级别panic信息
+ * @default on
+ */
+#define _SHOW_PANIC_
+
 
 //macro utils
 #define min(a,b) ((a)<(b)?(a):(b))
