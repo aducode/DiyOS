@@ -21,6 +21,7 @@ void testA()
 //	printk(msg2);
 //	printk("%d\n",get_ticks());
        // static char msg[20];
+/*
 	printf("testA running .... %d\n", (int)get_ticks());
 	printf("-1=%d\n",-1);
 	int fd = open("/dev_tty0",O_RDWT);
@@ -32,6 +33,7 @@ void testA()
 	read(fd,data, cnt);
 	printf(data);
 	close(fd);
+*/
 //	int fd = open("/blah",O_CREATE|O_RDWT);
 //	printk("/blah fd:%d\n", fd);
 //	char *data="hello world\n";
