@@ -7,7 +7,7 @@ BaseOfLoader		equ	0x9000
 OffsetOfLoader		equ	0x0100
 BaseOfLoaderPhyAddr	equ	BaseOfLoader * 0x0010
 ;kernel.bin被加载到的基址和偏移地址
-BaseOfKernelFile	equ	0x8000		;最开始将kernel.bin加载到内存的基址
+BaseOfKernelFile	equ	0x7000		;最开始将kernel.bin加载到内存的基址
 OffsetOfKernelFile	equ	0x0000		;最开始将kernel.bin加载到内存的偏移地址
 BaseOfKernelFilePhyAddr	equ	BaseOfKernelFile * 0x10	;loader中使用的物理地址
 ;32保护模式下
