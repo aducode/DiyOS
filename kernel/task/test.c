@@ -67,6 +67,7 @@ void testA()
 //              _hlt();                 //将运行在ring1 ，ring1执行hlt会报异常
         }
 }
+/*
 void testB()
 {
 	printf("testB running...%d\n",(int)get_ticks());
@@ -101,4 +102,5 @@ void testD(){
 	while(1){
 	//	printf("testD, \n%s\n","hehehehe");
 	}
-}             
+}
+*/             

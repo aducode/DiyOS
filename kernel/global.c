@@ -83,9 +83,11 @@ struct task user_proc_table[PROCS_COUNT] = {
 	/*entry		stack size	task name8*/
 	/*----		----------	----------*/
 	{testA,		STACK_SIZE_PROC_TESTA,		"TestA"},
+/*
 	{testB,		STACK_SIZE_PROC_TESTB,		"TestB"},
 	{testC,		STACK_SIZE_PROC_TESTC,		"TestC"},
 	{testD,		STACK_SIZE_PROC_TESTD,		"TestD"},
+*/
 };
 //定义任务栈空间
 char task_stack[STACK_SIZE_TOTAL];
