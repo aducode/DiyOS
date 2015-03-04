@@ -12,7 +12,7 @@
  * @brief 用来判断是否打印系统级别panic信息
  * @default on
  */
-#define _SHOW_PANIC_
+//#define _SHOW_PANIC_
 
 /**
  * @define _SHOW_MSG_SEND_
@@ -23,7 +23,7 @@
  * @define _SHOW_MSG_RECEIVE_
  * @brief 显示进程接收到的消息
  */
-//#define _SHOW_MSG_RECEIVE_
+#define _SHOW_MSG_RECEIVE_
 
 
 //macro utils

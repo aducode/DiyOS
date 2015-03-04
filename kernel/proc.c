@@ -7,6 +7,10 @@
 #include "assert.h"
 #include "clock.h"
 #include "hd.h"
+
+
+#include "klib.h"
+
 static int ldt_seg_linear(struct process *p_proc, int idx);
 //判断消息发送是否有环
 static int deadlock(int src, int dest);
@@ -218,12 +222,6 @@ int msg_receive(struct process *current, int src, struct message *m)
 	struct process *prev = 0;
 	int copyok = 0;
 	int dest = proc2pid(receiver);
-	if(dest==0){
-		printk("tty received from any\n");
-		printk("tty has_int_msg:%d\n", receiver->has_int_msg);
-		printk("tty p_flags:%d\n", receiver->p_flags);
-		printk("tty receive from %d\n", src);
-	}
 	//printk("[msg_receive]\t[%d] receive message from [%d]\n", dest,src);
 	assert(dest != src);
 	#ifdef _SHOW_MSG_RECEIVE_
@@ -247,10 +245,6 @@ int msg_receive(struct process *current, int src, struct message *m)
 	//一般消息
 	if(src==ANY){
 		//接收广播消息
-		if(dest == 0){
-			printk("tty receive from any\n");
-			printk("tty q_sending:%d\n", receiver->q_sending);
-		}
 		if(receiver->q_sending){
 			sender = receiver->q_sending;
 			copyok = 1;
@@ -294,9 +288,6 @@ int msg_receive(struct process *current, int src, struct message *m)
 			assert(sender->p_sendto == dest);
 		}
 	}
-	if(dest==0){
-		printk("copyok:%d\n", copyok);
-	}
 	if(copyok){
 		if(sender == receiver->q_sending){
 			//从接收队列中删除
@@ -324,18 +315,12 @@ int msg_receive(struct process *current, int src, struct message *m)
 		} else {
 			receiver->p_recvfrom = proc2pid(sender);
 		}
-		if(dest==0){
-			printk("block\n");
-		}
 		block(receiver);
 		assert(receiver->p_flags == RECEIVING);
 		assert(receiver->p_msg !=0 );
 		assert(receiver->p_recvfrom != NO_TASK);
 		assert(receiver->p_sendto == NO_TASK);
 		assert(receiver->has_int_msg == 0);
-	}
-	if(dest==0){
-		printk("\n\n it will be blocked\n");
 	}
 	return 0;
 }
@@ -442,6 +427,15 @@ int waitfor(int reg_port, int mask, int val, int timeout)
  */
 void interrupt_wait()
 {
+	//这里输出12345678的时候，就不会在次阻塞
+//	_disp_str("1234567",20,0,COLOR_YELLOW);
+	//跟时间有关吗
+	int i=100;
+	while(i-->0){
+	};
+//	printk("in interrupt wait\n");
+	//以上测试i=17时不会在此阻塞 i=16就会阻塞在此
+	//这里应该是跟时间有关，上面i=100就不会阻塞 i=10就会阻塞在这里
         struct message msg;
         send_recv(RECEIVE, INTERRUPT, &msg);
 }
