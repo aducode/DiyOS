@@ -154,6 +154,9 @@ int msg_send(struct process *current, int dest, struct message *m)
 	struct process *receiver = proc_table + dest;//接收者
 	int src = proc2pid(sender);
 	assert(src!=dest);	//不能给自己发
+	#ifdef _SHOW_MSG_SEND_
+	printk("[msg_send]\t(%s)[%d] send message to (%s)[%d]\n",src>0?(src<TASKS_COUNT+PROCS_COUNT?(proc_table+src)->name:"ANY"):"INTERRUPT",src, dest>0?(dest<TASKS_COUNT+PROCS_COUNT?(proc_table+dest)->name:"ANY"):"INTERRUPT", dest);
+	#endif
 	//检查死锁
 	if(deadlock(src,dest)){
 		panic(">>DEADLOCK<< %s->%s", sender->name, receiver->name);
@@ -217,6 +220,9 @@ int msg_receive(struct process *current, int src, struct message *m)
 	int dest = proc2pid(receiver);
 	//printk("[msg_receive]\t[%d] receive message from [%d]\n", dest,src);
 	assert(dest != src);
+	#ifdef _SHOW_MSG_RECEIVE_
+	printk("[msg_receive]\t(%s)[%d] receive message from (%s)[%d]\n", dest>0?(dest<TASKS_COUNT+PROCS_COUNT?(dest+proc_table)->name:"ANY"):"INTERRUPT", dest,src>0?(src<TASKS_COUNT+PROCS_COUNT?(src+proc_table)->name:"ANY"):"INTERRUPT",src);
+	#endif
 	if((receiver->has_int_msg) && ((src==ANY)||(src==INTERRUPT))){
 		//处理中断
 		struct message msg;

@@ -14,6 +14,17 @@
  */
 #define _SHOW_PANIC_
 
+/**
+ * @define _SHOW_MSG_SEND_
+ * @brief 显示进程间发送的消息
+ */
+//#define _SHOW_MSG_SEND_
+/**
+ * @define _SHOW_MSG_RECEIVE_
+ * @brief 显示进程接收到的消息
+ */
+//#define _SHOW_MSG_RECEIVE_
+
 
 //macro utils
 #define min(a,b) ((a)<(b)?(a):(b))
