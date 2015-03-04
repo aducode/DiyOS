@@ -73,6 +73,7 @@ int vsprintf(char *buf, const char * fmt, va_list args)
 				break;
 		}
 	}
+	*p=0;
 	return (p-buf);
 }
 

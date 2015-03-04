@@ -6,7 +6,7 @@
  */
 int send_recv(int function, int src_dest, struct message *msg)
 {
-//	printf("function:%d,src_dest:%d\n", function, src_dest);
+//	printk("function:%d,src_dest:%d\n", function, src_dest);
         int ret = 0;
         if(function == RECEIVE){
                 memset(msg, 0, sizeof(struct message));

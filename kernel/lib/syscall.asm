@@ -9,7 +9,7 @@ SYS_CALL_PRINTK		equ	1
 SYS_CALL_WRITE		equ	2
 
 global sendrec
-global printk
+global printk0
 global write0
 bits 32
 [section .text]
@@ -20,7 +20,7 @@ sendrec:
 	mov edx, [esp +12]	;消息体地址
 	int INT_VECTOR_SYS_CALL
 	ret
-printk:
+printk0:
 	mov eax, SYS_CALL_PRINTK
 	mov edx, [esp + 4]	;printk(char * buffer);
 	int INT_VECTOR_SYS_CALL

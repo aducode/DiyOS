@@ -207,9 +207,13 @@ int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
 		}
 		__asm__ __volatile__("hlt");
 	}
+	/*
 	while((ch=*p++)!=0){
 		if(ch==MAG_CH_PANIC ||ch==MAG_CH_ASSERT) continue;
 		out_char(tty_table[p_proc->tty_idx].p_console, ch);
 	}
+	*/
+	if(*p==MAG_CH_PANIC || *p == MAG_CH_ASSERT) p++;
+        tty_write(&tty_table[0],p,strlen(p));
 	return 0;
 }

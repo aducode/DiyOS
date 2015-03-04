@@ -6,7 +6,7 @@
 #include "systicks.h"
 /********************* testA  testB 是ring1级别的 ***************************/
 void testA()
-{	
+{
 //	printf("0x%x\n",111);
 //	assert(0);
 //	printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
@@ -22,6 +22,16 @@ void testA()
 //	printf("%d\n",get_ticks());
        // static char msg[20];
 	printf("testA running .... %d\n", (int)get_ticks());
+	printf("-1=%d\n",-1);
+	int fd = open("/test",O_CREATE|O_RDWT);
+	char *str = "hello world\nYooooooooooooooooooo~~~~~~~~~~~~~~\n";
+	int cnt = write(fd, str, strlen(str));
+	char data[256];
+	close(fd);
+	fd = open("/test", O_RDWT);
+	read(fd,data, cnt);
+	printf(data);
+	close(fd);
 //	int fd = open("/blah",O_CREATE|O_RDWT);
 //	printf("/blah fd:%d\n", fd);
 //	char *data="hello world\n";
