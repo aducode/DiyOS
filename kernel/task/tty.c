@@ -40,6 +40,7 @@ static void tty_write(struct tty *p_tty, char *buffer, int size);
  */
 void task_tty()
 {
+	struct message msg;
 	//进程开始时先初始化键盘
 	init_keyboard();
 	struct tty *p_tty;
@@ -54,8 +55,9 @@ void task_tty()
 			tty_do_read(p_tty);
 			tty_do_write(p_tty);
 		}
-//		struct message msg;
-//		send_recv(RECEIVE, ANY, &msg);
+		//这里接收其广播的消息
+		//如果没有其他进程发送，则会阻塞在此
+		send_recv(RECEIVE, ANY, &msg);
 	}
 }
 
@@ -193,7 +195,7 @@ int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
 	//通过字符串第一个字符判断错误级别
 	if((*p == MAG_CH_PANIC)||(*p== MAG_CH_ASSERT && p_proc_ready < &proc_table[TASKS_COUNT])){
 		_disable_int();
-//	#ifdef _SHOW_PANIC_
+	#ifdef _SHOW_PANIC_
 		char *v = (char*)V_MEM_BASE;
 		const char * q = p+1;	//skip
 		while(v<(char*)(V_MEM_BASE+V_MEM_SIZE)){
@@ -207,7 +209,7 @@ int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
 				q = p+1;
 			}
 		}
-//	#endif
+	#endif
 		__asm__ __volatile__("hlt");
 	}
 	/*

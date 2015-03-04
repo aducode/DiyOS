@@ -6,7 +6,8 @@
 #include "systicks.h"
 /********************* testA  testB 是ring1级别的 ***************************/
 void testA()
-{
+{	
+	open("/dev_tty0",O_RDWT);
 //	printk("0x%x\n",111);
 //	assert(0);
 //	printk("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
