@@ -5,17 +5,18 @@
 #ifndef _DIYOS_PROC_H
 #define _DIYOS_PROC_H
 //#define MAX_PROCESS_COUNT	32	//最多32个进程
-#define TASKS_COUNT		4	//系统进程个数
+#define TASKS_COUNT		5	//系统进程个数
 #define PROCS_COUNT		1	//用户进程数量
 //
 /**
  * @define TASKS
  * @brief define system task pid
  */
-#define TASK_TTY        0
-#define TASK_HD         1
-#define TASK_TICKS      2
-#define TASK_FS         3
+#define INIT		0
+#define TASK_TTY        1
+#define TASK_HD         2
+#define TASK_TICKS      3
+#define TASK_FS         4
 
 /**
  * @define INVALID_DRIVER
@@ -24,6 +25,7 @@
 #define INVALID_DRIVER  -20
 //进程栈
 //stacks of tasks
+#define STACK_SIZE_INIT		0x8000
 #define STACK_SIZE_TASK_TTY	0x8000
 #define STACK_SIZE_TASK_HD	0x8000
 #define STACK_SIZE_TASK_TICKS	0x8000
@@ -36,7 +38,8 @@
 #define STACK_SIZE_PROC_TESTD	0x8000
 */
 //stacks size
-#define STACK_SIZE_TOTAL        (STACK_SIZE_TASK_TTY + \
+#define STACK_SIZE_TOTAL        (STACK_SIZE_INIT + \
+				 STACK_SIZE_TASK_TTY + \
 				 STACK_SIZE_TASK_HD + \
 				 STACK_SIZE_TASK_TICKS + \
 				 STACK_SIZE_TASK_FS + \

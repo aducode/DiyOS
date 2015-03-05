@@ -90,7 +90,7 @@ char* strcpy(char * p_dst, char *p_src)
 //	int size = strlen(p_src)+1;
 //	_strcpy(p_dst, p_src, size);
 //}
-int strlen(const char * p_str)
+int strlen(const char * p_str)   //0x1793
 {
 	if(!p_str) return 0;
 	int i;

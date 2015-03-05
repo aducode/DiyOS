@@ -44,7 +44,7 @@ csinit:	;这个跳转指令强制使用刚刚初始化的结构
 	ret
 
 ;save 在中断发生时，保存当前进程寄存器的值
-_save:
+_save:		;0x442
 	;中断发生时，是从ring1以上跳到ring0，首先cpu会自动从TSS中的esp0中取出esp的值（已经在进程第一次启动调用restart时，被设置成该进程的进程表栈顶），然后中断时cpu会将cs eip等值入栈。
 	;call save时，会将save的返回地址也压栈，（保存在进程表中的retaddr里面）
 	;保存原寄存器的值
@@ -79,7 +79,7 @@ _save:
 
 
 ;从内核中恢复用户线程上下
-_restart:
+_restart:			;0x47c
 ;	sti
 ;	ret	;当kmain中调用_restart时，如果这里直接开中断，返回，那么硬件中断（比如时钟中断）是没问题的，但是当切换到进程时，中断没有响应
 ;	原因是，由于涉及到iret从ring0跳到ring1执行，所以需要提前使用ltr SELECTOR_TSS  设置tss结构，之前没有设置，所以不能进行中断
@@ -98,9 +98,9 @@ _restart_reenter:
 	iretd				;中断返回，cs eip esp等寄存器会从进程表栈中恢复，继续之前的进程执行
 
 ;_sys_call
-_sys_call:
-	call _save
-	sti
+_sys_call:		
+	call _save	
+	sti	;0x4a6
 	push esi
 	;下面4个push是系统调用的参数
 	push dword[p_proc_ready]	;当前进程压栈
@@ -225,6 +225,7 @@ global  _hwint15
 	;然后原进程的cs eip esp等入栈
 	;然后call save，会把save返回地址入栈
 	call _save		;save保存进程上下文，并把esp从进程表转到内核栈中，并将restart或restart_reenter入栈
+	;0x555
 	in al, INT_M_CTLMASK
 	or al, (1<<%1)
 	out INT_M_CTLMASK, al	;屏蔽同种类的中断

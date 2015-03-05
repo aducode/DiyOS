@@ -62,13 +62,17 @@ extern void  task_ticks();
 extern void task_tty();
 //task/fs.c
 extern void task_fs();
+
+//main.c
+extern void init();
 struct task task_table[TASKS_COUNT] = {
 	/* entry        stack size        task name */
 	/* -----        ----------        --------- */
-	{task_tty,	STACK_SIZE_TASK_TTY,		"TTY"  	},//0
-	{task_hd,	STACK_SIZE_TASK_HD,		"HD"   	},//1
-	{task_ticks,	STACK_SIZE_TASK_TICKS,		"TICKS"	},//2
-	{task_fs,	STACK_SIZE_TASK_FS,		"FS"	},//3
+	{init,		STACK_SIZE_TASK_TTY,		"INIT"	},//0
+	{task_tty,	STACK_SIZE_TASK_TTY,		"TTY"  	},//1
+	{task_hd,	STACK_SIZE_TASK_HD,		"HD"   	},//2
+	{task_ticks,	STACK_SIZE_TASK_TICKS,		"TICKS"	},//3
+	{task_fs,	STACK_SIZE_TASK_FS,		"FS"	},//4
 };
 
 

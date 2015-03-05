@@ -25,6 +25,9 @@ static void unblock(struct process *p_proc);
 
 /**
  * 进程调度
+ * 现在这个进程调度有些问题，比如现在有4个进程TTY HD TICKS FS，如果这四个进程的
+ * p_flags都为RECEIVING,那么下面的就会进入无限循环，使得时钟中断中调用的这个调度
+ * 函数空转，使时钟中断阻塞
  */
 void schedule()
 {
@@ -153,7 +156,7 @@ int deadlock(int src, int dest)
  * @param dest    目标进程id
  * @param msg     消息
  */
-int msg_send(struct process *current, int dest, struct message *m)
+int msg_send(struct process *current, int dest, struct message *m)   //0x3b1a
 {
 	struct process *sender = current; //发送者
 	struct process *receiver = proc_table + dest;//接收者
@@ -327,6 +330,7 @@ int msg_receive(struct process *current, int src, struct message *m)
 }
 
 //ring0
+//address 0x48ed
 int sys_sendrec(int function, int dest_src, struct message *msg , struct process *p_proc)
 {
 	assert(k_reenter == 0); //make sure we are not in ring0

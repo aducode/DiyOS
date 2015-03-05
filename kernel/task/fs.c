@@ -8,6 +8,8 @@
 #include "hd.h"
 #include "fs.h"
 #include "stdio.h"
+
+#include "klib.h"
 static void init_fs();
 static void mkfs();
 static void read_super_block(int dev);
@@ -32,6 +34,7 @@ static int search_file(char *path);
  */
 void task_fs()
 {
+	_disp_str("fs...",23,0,COLOR_GREEN);
 	//printk("Task FS begins.\n");
 /*
 	struct message msg;

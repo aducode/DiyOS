@@ -9,7 +9,7 @@ static void clock_handler(int irq_no);
  * 时钟中断处理函数
  */
 void clock_handler(int irq_no)
-{	
+{
 	//static char msg[20];
 	//_disp_str("IN RING0 CLOCKINT...  ticks now is:",22,0,COLOR_RED);
 	if(++ticks>MAX_TICKS) ticks = 0;

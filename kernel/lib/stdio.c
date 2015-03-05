@@ -84,7 +84,7 @@ int vsprintf(char *buf, const char * fmt, va_list args)
  * @param pathname 文件名
  * @param flags 读写标志
  */
-int open(const char *pathname, int flags)
+int open(const char *pathname, int flags)   //0x1b7c
 {
 	struct message msg;
 	msg.type = OPEN;

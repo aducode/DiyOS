@@ -4,11 +4,14 @@
 #include "string.h"
 #include "proc.h"
 #include "systicks.h"
+#include "klib.h"
 /********************* testA  testB 是ring1级别的 ***************************/
 void testA()
 {	
+	_disp_str("testA...", 24, 0, COLOR_WHITE);
+	//0x7e96
 	int fd = open("/hehe",O_CREATE|O_RDWT);
-	int cnt = write(fd,"FUCK#Y0u\n",10);
+	int cnt = write(fd,"*****!!!FUCK#Y0u\n",10);
 	close(fd);
 	fd = open("/hehe",O_RDWT);
 	char data[200];

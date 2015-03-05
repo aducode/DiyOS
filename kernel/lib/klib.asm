@@ -147,7 +147,7 @@ _hlt:
 
 ;函数：void disp_str(char * str, int row, int column, u8 color)
 ;loader.bin中已经将显存基址设置在gs寄存器中
-_disp_str:
+_disp_str:		;0x1570
 	push ebp
 	mov ebp, esp
 	push ebx
