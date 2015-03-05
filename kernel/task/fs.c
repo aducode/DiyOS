@@ -49,7 +49,7 @@ void task_fs()
 	init_fs();
 	struct message msg;
 	while(1){
-		printk("fs running...\n");
+//		printk("fs running...\n");
 		//wait for other process
 		send_recv(RECEIVE, ANY, &msg);
 		int src = msg.source;
@@ -279,7 +279,6 @@ int rw_sector(int io_type, int dev, u64 pos, int bytes, int pid, void*buf)
  */
 int do_open(struct message *p_msg)
 {
-	printk("FS do_open\n");
 	int fd = -1;
 	char pathname[MAX_PATH];
 	int flags = p_msg->FLAGS;

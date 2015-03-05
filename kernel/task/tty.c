@@ -57,7 +57,8 @@ void task_tty()
 		}
 		//这里接收其广播的消息
 		//如果没有其他进程发送，则会阻塞在此
-		send_recv(RECEIVE, ANY, &msg);
+//		send_recv(RECEIVE, ANY, &msg);
+	//	printk("tty receive...\n");
 	}
 }
 

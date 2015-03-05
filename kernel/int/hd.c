@@ -289,9 +289,7 @@ void get_part_table(int drive, int sect_nr, struct part_ent * entry)
 			(sect_nr>>24)& 0xF);
 	cmd.command = ATA_READ;
 	hd_cmd_out(&cmd);
-	printk("before interrupt wait...\n");
 	interrupt_wait();
-	printk("after interrupt wait...\n");
 	_port_read(REG_DATA, hdbuf, SECTOR_SIZE);
 	memcpy(entry,hdbuf + PARTITION_TABLE_OFFSET, sizeof(struct part_ent) * PART_PER_DRIVE);
 }

@@ -28,11 +28,11 @@ static void unblock(struct process *p_proc);
  */
 void schedule()
 {
-	/*
+	//有优先级的简单进程调度
 	struct process *p;
         int greatest_ticks = 0;
         while(!greatest_ticks){
-                for(p=proc_table;p<=proc_table+TASKS_COUNT+PROCS_COUNT-1;p++){
+                for(p=proc_table;p<proc_table+TASKS_COUNT+PROCS_COUNT;p++){
                         if(p->p_flags == 0){
                                 if(p->ticks > greatest_ticks){
                                         greatest_ticks = p->ticks;
@@ -40,16 +40,16 @@ void schedule()
                                 }
                         }
                 }
-        }
-        if(!greatest_ticks){
-                for(p=proc_table;p<=proc_table+TASKS_COUNT+PROCS_COUNT+1;p++){
-                        if(p->p_flags == 0){
-                                p->ticks = p->priority;
-                        }
-                }
-        }
+		if(!greatest_ticks){
+                	for(p=proc_table;p<=proc_table+TASKS_COUNT+PROCS_COUNT+1;p++){
+                        	if(p->p_flags == 0){
+                                	p->ticks = p->priority;
+                        	}
+                	}
+        	}
 
-	*/
+        }
+	/*
 	static int i=0;
 	struct process *p;
 	i++;
@@ -63,6 +63,7 @@ void schedule()
 		p=proc_table + i;
 	}
 	p_proc_ready = p;
+	*/
 }
 /**
  * 计算线程ldt中idx索引的线性地址
@@ -430,9 +431,9 @@ void interrupt_wait()
 	//这里输出12345678的时候，就不会在次阻塞
 //	_disp_str("1234567",20,0,COLOR_YELLOW);
 	//跟时间有关吗
-	int i=100;
-	while(i-->0){
-	};
+//	int i=100;
+//	while(i-->0){
+//	};
 //	printk("in interrupt wait\n");
 	//以上测试i=17时不会在此阻塞 i=16就会阻塞在此
 	//这里应该是跟时间有关，上面i=100就不会阻塞 i=10就会阻塞在这里

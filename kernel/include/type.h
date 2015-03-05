@@ -23,7 +23,7 @@
  * @define _SHOW_MSG_RECEIVE_
  * @brief 显示进程接收到的消息
  */
-#define _SHOW_MSG_RECEIVE_
+//#define _SHOW_MSG_RECEIVE_
 
 
 //macro utils
