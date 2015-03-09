@@ -7,6 +7,10 @@
 #include "assert.h"
 #include "clock.h"
 #include "hd.h"
+
+
+#include "klib.h"
+
 static int ldt_seg_linear(struct process *p_proc, int idx);
 //判断消息发送是否有环
 static int deadlock(int src, int dest);
@@ -21,14 +25,17 @@ static void unblock(struct process *p_proc);
 
 /**
  * 进程调度
+ * 现在这个进程调度有些问题，比如现在有4个进程TTY HD TICKS FS，如果这四个进程的
+ * p_flags都为RECEIVING,那么下面的就会进入无限循环，使得时钟中断中调用的这个调度
+ * 函数空转，使时钟中断阻塞
  */
 void schedule()
 {
-	/*
+	//有优先级的简单进程调度
 	struct process *p;
         int greatest_ticks = 0;
         while(!greatest_ticks){
-                for(p=proc_table;p<=proc_table+TASKS_COUNT+PROCS_COUNT-1;p++){
+                for(p=proc_table;p<proc_table+TASKS_COUNT+PROCS_COUNT;p++){
                         if(p->p_flags == 0){
                                 if(p->ticks > greatest_ticks){
                                         greatest_ticks = p->ticks;
@@ -36,15 +43,16 @@ void schedule()
                                 }
                         }
                 }
+		if(!greatest_ticks){
+                	for(p=proc_table;p<=proc_table+TASKS_COUNT+PROCS_COUNT+1;p++){
+                        	if(p->p_flags == 0){
+                                	p->ticks = p->priority;
+                        	}
+                	}
+        	}
+
         }
-        if(!greatest_ticks){
-                for(p=proc_table;p<=proc_table+TASKS_COUNT+PROCS_COUNT+1;p++){
-                        if(p->p_flags == 0){
-                                p->ticks = p->priority;
-                        }
-                }
-        }
-	*/
+	/*
 	static int i=0;
 	struct process *p;
 	i++;
@@ -58,6 +66,7 @@ void schedule()
 		p=proc_table + i;
 	}
 	p_proc_ready = p;
+	*/
 }
 /**
  * 计算线程ldt中idx索引的线性地址
@@ -147,12 +156,15 @@ int deadlock(int src, int dest)
  * @param dest    目标进程id
  * @param msg     消息
  */
-int msg_send(struct process *current, int dest, struct message *m)
+int msg_send(struct process *current, int dest, struct message *m)   //0x3b1a
 {
 	struct process *sender = current; //发送者
 	struct process *receiver = proc_table + dest;//接收者
 	int src = proc2pid(sender);
 	assert(src!=dest);	//不能给自己发
+	#ifdef _SHOW_MSG_SEND_
+	printk("[msg_send]\t(%s)[%d] send message to (%s)[%d]\n",src>=0?(src<TASKS_COUNT+PROCS_COUNT?(proc_table+src)->name:"ANY"):"INTERRUPT",src, dest>=0?(dest<TASKS_COUNT+PROCS_COUNT?(proc_table+dest)->name:"ANY"):"INTERRUPT", dest);
+	#endif
 	//检查死锁
 	if(deadlock(src,dest)){
 		panic(">>DEADLOCK<< %s->%s", sender->name, receiver->name);
@@ -213,9 +225,11 @@ int msg_receive(struct process *current, int src, struct message *m)
 	struct process *prev = 0;
 	int copyok = 0;
 	int dest = proc2pid(receiver);
-	//printk("sender:%d,receiver:%d\n",src, dest);
 	//printk("[msg_receive]\t[%d] receive message from [%d]\n", dest,src);
 	assert(dest != src);
+	#ifdef _SHOW_MSG_RECEIVE_
+	printk("[msg_receive]\t(%s)[%d] receive message from (%s)[%d]\n", dest>=0?(dest<TASKS_COUNT+PROCS_COUNT?(dest+proc_table)->name:"ANY"):"INTERRUPT", dest,src>=0?(src<TASKS_COUNT+PROCS_COUNT?(src+proc_table)->name:"ANY"):"INTERRUPT",src);
+	#endif
 	if((receiver->has_int_msg) && ((src==ANY)||(src==INTERRUPT))){
 		//处理中断
 		struct message msg;
@@ -331,6 +345,7 @@ int msg_receive(struct process *current, int src, struct message *m)
 	return 0;
 }
 //ring0
+//address 0x48ed
 int sys_sendrec(int function, int dest_src, struct message *msg , struct process *p_proc)
 {
 	assert(k_reenter == 0); //make sure we are not in ring0
@@ -437,6 +452,15 @@ int waitfor(int reg_port, int mask, int val, int timeout)
  */
 void interrupt_wait()
 {
+	//这里输出12345678的时候，就不会在次阻塞
+//	_disp_str("1234567",20,0,COLOR_YELLOW);
+	//跟时间有关吗
+//	int i=100;
+//	while(i-->0){
+//	};
+//	printk("in interrupt wait\n");
+	//以上测试i=17时不会在此阻塞 i=16就会阻塞在此
+	//这里应该是跟时间有关，上面i=100就不会阻塞 i=10就会阻塞在这里
         struct message msg;
         send_recv(RECEIVE, INTERRUPT, &msg);
 }

@@ -8,6 +8,8 @@
 #include "hd.h"
 #include "fs.h"
 #include "stdio.h"
+
+//#include "klib.h"
 static void init_fs();
 static void mkfs();
 static void read_super_block(int dev);
@@ -32,6 +34,7 @@ static int search_file(char *path);
  */
 void task_fs()
 {
+	//_disp_str("fs...",23,0,COLOR_GREEN);
 	//printk("Task FS begins.\n");
 /*
 	struct message msg;
@@ -49,6 +52,7 @@ void task_fs()
 	init_fs();
 	struct message msg;
 	while(1){
+//		printk("fs running...\n");
 		//wait for other process
 		send_recv(RECEIVE, ANY, &msg);
 		int src = msg.source;
@@ -79,7 +83,8 @@ void task_fs()
 		if(msg.type != SUSPEND_PROC){
 			msg.type = SYSCALL_RET;
 			send_recv(SEND, src, &msg);
-		} //如果是SUSPEND_PROC 类型的消息，那么不处里，开始下一个循环
+		}
+		//如果收到的msg.type == SUSPEND_PROC那么直接继续循环
 	}
 }
 
@@ -340,13 +345,14 @@ int do_open(struct message *p_msg)
 		f_desc_table[i].fd_pos = 0;
 		int imode = pin->i_mode & I_TYPE_MASK;
 		if(imode == I_CHAR_SPECIAL) {
-			//设备文件  如tty
+			//设备文件 dev_tty0 dev_tty1 dev_tty2
 			struct message driver_msg;
 			driver_msg.type = DEV_OPEN;
 			int dev = pin->i_start_sect;
 			driver_msg.DEVICE=MINOR(dev);
 			assert(MAJOR(dev) == 4);
 			assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
+			//printk("FS send message to %d\n", dd_map[MAJOR(dev)].driver_pid);
 			send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
 		} else if (imode == I_DIRECTORY) {
 			assert(pin->i_num == ROOT_INODE);
@@ -416,9 +422,8 @@ int do_rdwt(struct message *p_msg)
 		assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
 		send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, p_msg);
 		assert(p_msg->CNT == len);
-//		assert(p_msg->type == SYSCALL_RET);
-		//FS进程向TTY进程发送消息，接收消息后消息的类型可能会被tty设置成SUSPEND_PROC（发送DEV_READ or DEV_WRITE消息时），或者SYSCALL_RET(发送DEV_OPEN类型消息)
-		assert(p_msg->type == SYSCALL_RET || p_msg->type == SUSPEND_PROC);
+		//assert(p_msg->type == SYSCALL_RET);
+		//收到的消息不是都是SYSCALL_RET类型的，TTY read返回SUSPEND_PROC
 		return p_msg->CNT;
 	} else {
 		assert(pin->i_mode == I_REGULAR || pin->i_mode == I_DIRECTORY);

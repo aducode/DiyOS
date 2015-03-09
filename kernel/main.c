@@ -58,7 +58,7 @@ void kmain(){
 		p_proc->regs.ss = ((8*1)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|rpl;
 		p_proc->regs.gs = (SELECTOR_KERNEL_GS & SA_RPL_MASK)|rpl;
 		p_proc->regs.eip = (u32)p_task->entry;
-#ifdef	_SHOW_ENTRY_
+#ifdef	_SHOW_PROC_ENTRY_
 		char msg[10];
 		static int row = 10;
 		itoa(p_proc->regs.eip, msg, 16);
@@ -84,7 +84,7 @@ void kmain(){
 		//p_task++;
 		selector_ldt+=1<<3;
 	}
-#ifdef _SHOW_ENTRY_
+#ifdef _SHOW_PROC_ENTRY_
 	while(1);
 #endif
 	k_reenter = 0;
@@ -100,7 +100,7 @@ void kmain(){
 	//启动进程
 	_disp_str("start new process now ...",17,0, COLOR_GREEN);
 	_clean(0,0,25,80);
-	_restart();
+	_restart();	//0x1364
 	//上面restart之后就会进入到进程里，下面不会被执行
 	while(1){
 		_disp_str("yoooooooo!",0,0,COLOR_GREEN);
@@ -108,3 +108,8 @@ void kmain(){
 	}
 }
 
+
+void init(){
+	while(1){
+	}
+}

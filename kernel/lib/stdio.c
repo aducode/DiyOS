@@ -3,10 +3,22 @@
 #include "string.h"
 #include "syscall.h"
 #include "assert.h"
+int printf(const char *fmt, ...)
+{
+	int i;
+	char buf[256];
+	va_list arg = (va_list)((char*)(&fmt)+4);
+        i = vsprintf(buf,fmt, arg);
+        int c = write(1, buf, i);  //调用之前必须保证进程打开stdout
+        assert(c==i);
+        return i;
+
+	
+}
 /**
  *printf
  */
-int printf(const char *fmt, ...)
+int fprintf(int fd, const char *fmt, ...)
 {
 	int i;
 	char buf[256];
@@ -17,7 +29,7 @@ int printf(const char *fmt, ...)
 	//或者下面这种写法
 	//va_list arg = (va_list)((char*)(&fmt+1));
 	i = vsprintf(buf,fmt, arg);
-	int c = write(STDOUT,buf, i);
+	int c = write(fd, buf, i);
 	assert(c==i);
 	return i;
 }
@@ -61,6 +73,11 @@ int vsprintf(char *buf, const char * fmt, va_list args)
 				p_next_arg += 4;
 				p+=strlen(tmp);
 				break;
+			case 'b':
+				itoa(*((int*)p_next_arg), tmp, 2);
+				strcpy(p, tmp);
+				p_next_arg += 4;
+				p+=strlen(tmp);
 			case 'c':
 				*p++ = *((char*)p_next_arg);
 				p_next_arg += 4;
@@ -75,6 +92,7 @@ int vsprintf(char *buf, const char * fmt, va_list args)
 				break;
 		}
 	}
+	*p=0;
 	return (p-buf);
 }
 
@@ -84,7 +102,7 @@ int vsprintf(char *buf, const char * fmt, va_list args)
  * @param pathname 文件名
  * @param flags 读写标志
  */
-int open(const char *pathname, int flags)
+int open(const char *pathname, int flags)   //0x1b7c
 {
 	struct message msg;
 	msg.type = OPEN;

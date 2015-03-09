@@ -13,7 +13,7 @@ global printk0
 ;global write0
 bits 32
 [section .text]
-sendrec:
+sendrec:;0x4e90
 	mov eax, SYS_CALL_SENDREC
 	mov ebx, [esp + 4]	;function 区分是send还是receive
 	mov ecx, [esp + 8]	;消息地址

@@ -24,5 +24,6 @@ extern int write(int fd, const void * buf, int count);
 extern int unlink(const char * pathname);
 extern int vsprintf(char *buffer, const char *fmt, va_list args);
 extern int sprintf(char *buffer, const char* fmt, ...);
+extern int fprintf(int fd, const char *fmt, ...);
 extern int printf(const char *fmt, ...);
 #endif

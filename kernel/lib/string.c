@@ -90,7 +90,7 @@ char* strcpy(char * p_dst, char *p_src)
 //	int size = strlen(p_src)+1;
 //	_strcpy(p_dst, p_src, size);
 //}
-int strlen(const char * p_str)
+int strlen(const char * p_str)   //0x1793
 {
 	if(!p_str) return 0;
 	int i;
@@ -136,6 +136,12 @@ int strcmp(const char * s1, const char *s2)
  */
 void itoa(int value, char * string, int radix)
 {
+	int flag = 0; //是否小于0
+        if(value<0){
+		value = 0-value;
+                flag = 1;
+        }
+
 	int len=0,i,t;
 	char *s=string, tmp;
 	while(value>0)
@@ -151,6 +157,11 @@ void itoa(int value, char * string, int radix)
 		len++;
 		s++;
 	}
+	if(flag){
+               *s++='-';
+               len++;
+        }
+
 	s=string;
 	for(i=0;i<len/2;i++)
 	{

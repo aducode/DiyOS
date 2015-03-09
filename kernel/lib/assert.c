@@ -2,10 +2,13 @@
 #include "syscall.h"
 #include "stdio.h"
 #include "string.h"
-
+/**
+ * @function prink
+ * @brief 对系统调用printk0的封装，供内核使用
+ */
 int printk(const char*fmt, ...)
 {
-	int i;
+       int i;
         char buf[256];
         va_list arg = (va_list)((char*)(&fmt)+4);
         i = vsprintf(buf,fmt, arg);
@@ -23,11 +26,8 @@ void spin(const char *func_name)
  */
 void assertion_failure(char *exp, char *file, char *base_file, int line)
 {
-	char buffer[256];
-	sprintf(buffer,"%c assert(%s) failed: file: %s, base_file: %s, line %d",		MAG_CH_ASSERT,
-		exp, file, base_file, line);
 	//syscall printk
-	printk0(buffer);	
+	printk("%c assert(%s) failed: file:%s, base_file:%s, line %d",	MAG_CH_ASSERT, exp, file, base_file, line);	
 	//如果没有返回，说明已经在内核级hlt
 	//如果返回了，则停止线程
 	spin("assertion_failure()");
@@ -41,11 +41,9 @@ void assertion_failure(char *exp, char *file, char *base_file, int line)
 void panic(const char *fmt,...)
 {
 	char buf[256];
-	char buf2[256];
 	va_list arg = (va_list)((char*)&fmt+4);
 	vsprintf(buf, fmt, arg);
-	sprintf(buf2,"%c !! panic!! %s",MAG_CH_PANIC, buf);
-	printk0(buf2);
+	printk("%c !! panic!! %s", MAG_CH_PANIC, buf);
 	//should never arrive here
 	__asm__ __volatile__("ud2");
 }

@@ -4,17 +4,34 @@
 #include "string.h"
 #include "proc.h"
 #include "systicks.h"
+//#include "klib.h"
 /********************* testA  testB 是ring1级别的 ***************************/
 void testA()
-{
-//	printk("testA running...\n");
-/*
+{	
+	//_disp_str("testA...", 24, 0, COLOR_WHITE);
+	//0x7e96
 	int fd_stdin = open("/dev_tty0",O_RDWT);
 	assert(fd_stdin == 0);
 	int fd_stdout = open("/dev_tty0", O_RDWT);
 	assert(fd_stdout==1);
-	printf("testA running....%d\n",(int)get_ticks());
-*/
+	char rdbuf[128];
+	while(1){
+		printf("$");
+		int r = read(fd_stdin, rdbuf, 70);
+		rdbuf[r]=0;
+		if(rdbuf[0]){
+			printf(">%s\n", rdbuf);
+		}
+	}
+	//write(fd, "hell", 10);
+	//int cnt = write(fd,"*****!!!FUCK#Y0u\n",10);
+	//close(fd);
+	//fd = open("/hehe",O_RDWT);
+	//char data[200];
+	//read(fd, data, cnt);
+	//printf(data);
+	//close(fd);
+//	printf("0x%x\n",111);
 //	assert(0);
 //	printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
 //	printf("ticks:%d", get_ticks());	
@@ -28,7 +45,20 @@ void testA()
 //	printf(msg2);
 //	printf("%d\n",get_ticks());
        // static char msg[20];
+
 //	printf("testA running .... %d\n", (int)get_ticks());
+/*
+	printf("-1=%d\n",-1);
+	int fd = open("/dev_tty0",O_RDWT);
+	char *str = "hello world\nYooooooooooooooooooo~~~~~~~~~~~~~~\n";
+	int cnt = write(fd, str, strlen(str));
+	char data[256];
+	close(fd);
+	fd = open("/dev_tty0", O_RDWT);
+	read(fd,data, cnt);
+	printf(data);
+	close(fd);
+*/
 //	int fd = open("/blah",O_CREATE|O_RDWT);
 //	printf("/blah fd:%d\n", fd);
 //	char *data="hello world\n";
@@ -53,7 +83,7 @@ void testA()
 //	read(fd, data2, cnt);
 //	printf("%s\n",data2);
 //	close(fd);
-//        while(1){
+        //while(1){
 //		printf("%d,",(int)get_ticks());
 //		printf("%d\n", get_ticks());
 //		printf("hello in testA\n");	
@@ -63,28 +93,6 @@ void testA()
 //                _disp_str(msg,1,0, COLOR_GREEN);
 //              _hlt();                 //将运行在ring1 ，ring1执行hlt会报异常
 //       }
-	char tty_name[] = "/dev_tty0";
-        int fd_stdin = open(tty_name, O_RDWT);
-        assert(fd_stdin == 0);
-        int fd_stdout = open(tty_name, O_RDWT);
-        assert(fd_stdout == 1);
-        char rdbuf[128];
-        while(1){
-                //write(fd_stdout, "$", 1);
-                printf("$");
-                int r = read(fd_stdin, rdbuf, 70);
-                rdbuf[r] = 0;
-                if(strcmp(rdbuf, "hello") == 0){
-                        //write(fd_stdout, "$hello world!\n", 14);
-                        printf("$hello world!\n");
-                } else {
-                        if(rdbuf[0]){
-                                printf("$%s\n",rdbuf);
-                        }
-                }
-        }
-        close(fd_stdout);
-        assert(0);
 }
 //void testB()
 //{
@@ -114,6 +122,11 @@ void testA()
 	assert(0);
 */
 	/*
+        //}
+}
+/*
+void testB()
+{
 	printf("testB running...%d\n",(int)get_ticks());
 //	int t=(int)get_ticks();
 //	printf("after get_ticks()\t%d\n",(int)get_ticks());//如果有多个用户线程，这里就会阻塞
@@ -162,4 +175,4 @@ void testA()
 //	while(1){
 	//	printf("testD, \n%s\n","hehehehe");
 //	}
-//}             
+//}

@@ -62,13 +62,20 @@ extern void  task_ticks();
 extern void task_tty();
 //task/fs.c
 extern void task_fs();
+
+//main.c
+extern void init();
+//init的作用
+//如果其他task都处于阻塞状态，现在的进程调度会陷入死循环，导致时钟中断阻塞
+//现在的处理方案就是加入一个什么也不做的进程init，防止时钟中断时，进程调度死循环
 struct task task_table[TASKS_COUNT] = {
 	/* entry        stack size        task name */
 	/* -----        ----------        --------- */
-	{task_tty,	STACK_SIZE_TASK_TTY,		"TTY"  	},//0
-	{task_hd,	STACK_SIZE_TASK_HD,		"HD"   	},//1
-	{task_ticks,	STACK_SIZE_TASK_TICKS,		"TICKS"	},//2
-	{task_fs,	STACK_SIZE_TASK_FS,		"FS"	},//3
+	{init,		STACK_SIZE_TASK_TTY,		"INIT"	},//0
+	{task_tty,	STACK_SIZE_TASK_TTY,		"TTY"  	},//1
+	{task_hd,	STACK_SIZE_TASK_HD,		"HD"   	},//2
+	{task_ticks,	STACK_SIZE_TASK_TICKS,		"TICKS"	},//3
+	{task_fs,	STACK_SIZE_TASK_FS,		"FS"	},//4
 };
 
 
@@ -76,16 +83,20 @@ struct task task_table[TASKS_COUNT] = {
  * 用户级线程
  */
 extern void testA();
-//extern void testB();
-//extern void testC();
-//extern void testD();
+/*
+extern void testB();
+extern void testC();
+extern void testD();
+*/
 struct task user_proc_table[PROCS_COUNT] = {
 	/*entry		stack size	task name8*/
 	/*----		----------	----------*/
 	{testA,		STACK_SIZE_PROC_TESTA,		"TestA"},
-//	{testB,		STACK_SIZE_PROC_TESTB,		"TestB"},
-//	{testC,		STACK_SIZE_PROC_TESTC,		"TestC"},
-//	{testD,		STACK_SIZE_PROC_TESTD,		"TestD"},
+/*
+	{testB,		STACK_SIZE_PROC_TESTB,		"TestB"},
+	{testC,		STACK_SIZE_PROC_TESTC,		"TestC"},
+	{testD,		STACK_SIZE_PROC_TESTD,		"TestD"},
+*/
 };
 //定义任务栈空间
 char task_stack[STACK_SIZE_TOTAL];
