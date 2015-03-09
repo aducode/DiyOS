@@ -16,13 +16,11 @@ void testA()
 	assert(fd_stdout==1);
 	char rdbuf[128];
 	while(1){
-		write(fd_stdout,"$",1);
+		printf("$");
 		int r = read(fd_stdin, rdbuf, 70);
 		rdbuf[r]=0;
 		if(rdbuf[0]){
-			write(fd_stdout, ">", 1);
-			write(fd_stdout,rdbuf, r);
-			write(fd_stdout, "\n", 1);
+			printf(">%s\n", rdbuf);
 		}
 	}
 	//write(fd, "hell", 10);
