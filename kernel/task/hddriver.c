@@ -7,13 +7,13 @@
 #include "assert.h"
 #include "hd.h"
 
-#include "klib.h"
+//#include "klib.h"
 /**
  * Main Loop of HD driver
  */
 void task_hd()
 {
-	_disp_str("hd...",21,0,COLOR_RED);
+	//_disp_str("hd...",21,0,COLOR_RED);
 	struct message msg; //用于进程间通信，存储消息体
 	//初始化硬盘设备
 	init_hd();

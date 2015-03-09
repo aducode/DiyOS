@@ -7,7 +7,7 @@
 #include "global.h"
 #include "assert.h"
 
-#include "klib.h"
+//#include "klib.h"
 //全局变量
 /**
  *tty和console表
@@ -18,15 +18,31 @@ struct console console_table[CONSOLE_COUNT];
 /**
  * 读字符串
  */
-static void tty_do_read(struct tty * p_tty);
+static void tty_dev_read(struct tty * p_tty);
 /**
  * 输出字符到console
  */
-static void tty_do_write(struct tty *p_tty);
+static void tty_dev_write(struct tty *p_tty);
+
+/**
+ * @function tty_do_read
+ * @brief tty进程收到读数据消息后调用
+ * @param tty  tty指针
+ * @param message msg指针
+ */
+void tty_do_read(struct tty * tty, struct message * msg);
+/**
+ * @function tty_do_write
+ * @brief tty进程收到写消息后调用
+ * @param tty tty指针
+ * @param message msg指针
+ */
+void tty_do_write(struct tty *tty, struct message *msg);
 /**
  * 初始化tty
  */
 static void init_tty(struct tty *p_tty);
+
 
 /**
  * 放入tty的缓冲区
@@ -42,7 +58,7 @@ static void tty_write(struct tty *p_tty, char *buffer, int size);
  */
 void task_tty()
 {
-	_disp_str("tty.",20,0,COLOR_WHITE);
+//	_disp_str("tty.",20,0,COLOR_WHITE);
 	struct message msg;
 	//进程开始时先初始化键盘
 	init_keyboard();
@@ -55,24 +71,47 @@ void task_tty()
 	while(1)
 	{
 		for(p_tty = tty_table; p_tty < tty_table + CONSOLE_COUNT;p_tty++){
-			tty_do_read(p_tty);
-			tty_do_write(p_tty);
+			tty_dev_read(p_tty);
+			tty_dev_write(p_tty);
 		}
 		//这里接收其广播的消息
 		//如果没有其他进程发送，则会阻塞在此
 		send_recv(RECEIVE, ANY, &msg);
+		int src = msg.source;
+		assert(src != TASK_TTY);
+		struct tty *p_tty = &tty_table[msg.DEVICE];
+		switch(msg.type){
+			case DEV_OPEN:
+				reset_msg(&msg);
+				msg.type = SYSCALL_RET;
+				send_recv(SEND, src, &msg);
+				break;
+			case DEV_READ:
+				tty_do_read(p_tty, &msg);
+				break;
+			case DEV_WRITE:
+				tty_do_write(p_tty, &msg);
+				break;
+			case HARD_INT:
+				//waked up by clock_handler
+				key_pressed = 0;
+				continue;
+			defualt:
+				dump_msg("TTY:unknown msg", &msg);
+				break;
+		}
 	//	printk("tty receive...\n");
 	}
 }
 
-void tty_do_read(struct tty * p_tty)
+void tty_dev_read(struct tty * p_tty)
 {
 	if(is_current_console(p_tty->p_console)){
 		keyboard_read(p_tty);
 	}
 }
 
-void tty_do_write(struct tty *p_tty)
+void tty_dev_write(struct tty *p_tty)
 {
 	if(p_tty->inbuf_count){
 		char ch = *(p_tty->p_inbuf_tail);
@@ -81,8 +120,64 @@ void tty_do_write(struct tty *p_tty)
 			p_tty->p_inbuf_tail = p_tty->in_buf;
 		}
 		p_tty->inbuf_count -- ;
-		out_char(p_tty->p_console, ch);
+		if(p_tty->tty_left_count){
+			if(ch>=' ' && ch<= '~'){
+				//printable
+				out_char(p_tty->p_console, ch);
+				//除了输出到屏幕以外，还需要复制到用户进程的内存中
+				void *p = p_tty->tty_req_buf + p_tty->tty_trans_count;
+				memcpy(p, (void*)va2la(TASK_TTY, &ch), 1);
+				p_tty->tty_trans_count++;
+				p_tty->tty_left_count--;
+			} else if(ch=='\b' && p_tty->tty_trans_count){
+				//退格
+				out_char(p_tty->p_console, ch);
+				p_tty->tty_trans_count--;
+				p_tty->tty_trans_count++;
+			}
+			if(ch=='\n' || p_tty->tty_left_count==0){
+				//回车，不光要换行，还要唤醒用户进程，告诉用户进程他希望从tty读取的数据已经准备好了，放在用户进程的缓冲区里了
+				out_char(p_tty->p_console, '\n');
+				struct message msg;
+				msg.type = RESUME_PROC;
+				msg.PID = p_tty->tty_req_pid;
+				msg.CNT = p_tty->tty_trans_count;
+				send_recv(SEND, p_tty->tty_caller, &msg);
+				p_tty->tty_left_count = 0;
+			}
+		}
 	}
+}
+//用户进程读取从键盘输入的数据后调用这个函数
+void tty_do_read(struct tty * tty, struct message *msg)
+{
+	tty->tty_caller = msg->source; //谁调用tty的read ，一般是TASK_FS进程
+	tty->tty_req_pid =  msg->PID;  //真正请求数据的用户进程
+	tty->tty_req_buf = va2la(tty->tty_req_pid, msg->BUF); //用户进程缓冲区
+	tty->tty_left_count = msg->CNT; //请求数据大小
+	tty->tty_trans_count = 0;	//已经传输了多少
+	msg->type = SUSPEND_PROC;	//挂起TASK_FS进程
+	msg->CNT = tty->tty_left_count;	
+	send_recv(SEND, tty->tty_caller, msg); //向TASK_FS发送消息
+}
+//tty_do_write作用是将字符write到dev_tty文件，最终显示在屏幕上
+void tty_do_write(struct tty * tty, struct message *msg)
+{
+	char buf[TTY_OUT_BUF_LEN];
+	char *p = (char*)va2la(msg->PID, msg->BUF);
+	int i = msg->CNT;
+	int j;
+	while(i){
+		int bytes = min(TTY_OUT_BUF_LEN, i);
+		memcpy(va2la(TASK_TTY, buf), (void*)p, bytes);
+		for(j=0;j<bytes;j++){
+			out_char(tty->p_console, buf[j]);
+		}
+		i-=bytes;
+		p+=bytes;
+	}
+	msg->type = SYSCALL_RET;
+	send_recv(SEND, msg->source, msg);
 }
 void init_tty(struct tty *p_tty)
 {

@@ -4,20 +4,35 @@
 #include "string.h"
 #include "proc.h"
 #include "systicks.h"
-#include "klib.h"
+//#include "klib.h"
 /********************* testA  testB 是ring1级别的 ***************************/
 void testA()
 {	
-	_disp_str("testA...", 24, 0, COLOR_WHITE);
+	//_disp_str("testA...", 24, 0, COLOR_WHITE);
 	//0x7e96
-	int fd = open("/hehe",O_CREATE|O_RDWT);
-	int cnt = write(fd,"*****!!!FUCK#Y0u\n",10);
-	close(fd);
-	fd = open("/hehe",O_RDWT);
-	char data[200];
-	read(fd, data, cnt);
-	printf(data);
-	close(fd);
+	int fd_stdin = open("/dev_tty0",O_RDWT);
+	assert(fd_stdin == 0);
+	int fd_stdout = open("/dev_tty0", O_RDWT);
+	assert(fd_stdout==1);
+	char rdbuf[128];
+	while(1){
+		write(fd_stdout,"$",1);
+		int r = read(fd_stdin, rdbuf, 70);
+		rdbuf[r]=0;
+		if(rdbuf[0]){
+			write(fd_stdout, ">", 1);
+			write(fd_stdout,rdbuf, r);
+			write(fd_stdout, "\n", 1);
+		}
+	}
+	//write(fd, "hell", 10);
+	//int cnt = write(fd,"*****!!!FUCK#Y0u\n",10);
+	//close(fd);
+	//fd = open("/hehe",O_RDWT);
+	//char data[200];
+	//read(fd, data, cnt);
+	//printf(data);
+	//close(fd);
 //	printf("0x%x\n",111);
 //	assert(0);
 //	printf("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789\t");
@@ -33,7 +48,7 @@ void testA()
 //	printf("%d\n",get_ticks());
        // static char msg[20];
 
-	printf("testA running .... %d\n", (int)get_ticks());
+//	printf("testA running .... %d\n", (int)get_ticks());
 /*
 	printf("-1=%d\n",-1);
 	int fd = open("/dev_tty0",O_RDWT);
@@ -70,7 +85,7 @@ void testA()
 //	read(fd, data2, cnt);
 //	printf("%s\n",data2);
 //	close(fd);
-        while(1){
+        //while(1){
 //		printf("%d,",(int)get_ticks());
 //		printf("%d\n", get_ticks());
 //		printf("hello in testA\n");	
@@ -79,7 +94,7 @@ void testA()
 //                itoa(ticks,msg,10);
 //                _disp_str(msg,1,0, COLOR_GREEN);
 //              _hlt();                 //将运行在ring1 ，ring1执行hlt会报异常
-        }
+        //}
 }
 /*
 void testB()

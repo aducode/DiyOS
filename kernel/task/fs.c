@@ -9,7 +9,7 @@
 #include "fs.h"
 #include "stdio.h"
 
-#include "klib.h"
+//#include "klib.h"
 static void init_fs();
 static void mkfs();
 static void read_super_block(int dev);
@@ -34,7 +34,7 @@ static int search_file(char *path);
  */
 void task_fs()
 {
-	_disp_str("fs...",23,0,COLOR_GREEN);
+	//_disp_str("fs...",23,0,COLOR_GREEN);
 	//printk("Task FS begins.\n");
 /*
 	struct message msg;
@@ -72,13 +72,19 @@ void task_fs()
 			case UNLINK:
 				msg.RETVAL = do_unlink(&msg);
 				break;
+			case RESUME_PROC:
+				src = msg.PID;
+				break;
 			default:
 				panic("invalid msg type:%d\n", msg.type);
 				break;
 		}
 		//返回
-		msg.type = SYSCALL_RET;
-		send_recv(SEND, src, &msg);
+		if(msg.type != SUSPEND_PROC){
+			msg.type = SYSCALL_RET;
+			send_recv(SEND, src, &msg);
+		}
+		//如果收到的msg.type == SUSPEND_PROC那么直接继续循环
 	}
 }
 
@@ -346,7 +352,7 @@ int do_open(struct message *p_msg)
 			driver_msg.DEVICE=MINOR(dev);
 			assert(MAJOR(dev) == 4);
 			assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
-			printk("FS send message to %d\n", dd_map[MAJOR(dev)].driver_pid);
+			//printk("FS send message to %d\n", dd_map[MAJOR(dev)].driver_pid);
 			send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
 		} else if (imode == I_DIRECTORY) {
 			assert(pin->i_num == ROOT_INODE);
@@ -416,7 +422,8 @@ int do_rdwt(struct message *p_msg)
 		assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
 		send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, p_msg);
 		assert(p_msg->CNT == len);
-		assert(p_msg->type == SYSCALL_RET);
+		//assert(p_msg->type == SYSCALL_RET);
+		//收到的消息不是都是SYSCALL_RET类型的，TTY read返回SUSPEND_PROC
 		return p_msg->CNT;
 	} else {
 		assert(pin->i_mode == I_REGULAR || pin->i_mode == I_DIRECTORY);

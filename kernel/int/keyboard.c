@@ -181,6 +181,7 @@ static u32 keymap[SCAN_CODES_COUNT * MAP_COLS] = {
  */
 void keyboard_handler(int irq_no)
 {
+	key_pressed = 1;
 	//u8 scan_code = _in_byte(IO_8042_PORT);	//清空8042缓冲才能下一次中断
 	put_code_into_buffer();
 	/*

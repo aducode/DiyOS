@@ -147,4 +147,7 @@ struct inode * root_inode;
 struct file_desc f_desc_table[MAX_FILE_DESC_COUNT]; //文件描述符表
 struct inode inode_table[MAX_INODE_COUNT];
 struct super_block super_block[MAX_SUPER_BLOCK_COUNT];
+
+//
+int key_pressed = 0;
 #endif

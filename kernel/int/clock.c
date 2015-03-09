@@ -16,6 +16,9 @@ void clock_handler(int irq_no)
 	if(p_proc_ready->ticks) p_proc_ready->ticks--;
 //	_clean(0,0,25,80);
 	//itoa((int)ticks,msg, 10);
+	if(key_pressed){
+		inform_int(TASK_TTY);
+	}
 	schedule();
 }
 void init_clock()
