@@ -67,7 +67,7 @@ void kmain(){
 		p_proc->regs.esp = (u32)p_task_stack;
 		p_proc->regs.eflags = eflags;	//IF=0 IOPL=1
 		//指定tty索引，默认都是0
-		p_proc->tty_idx = 0;	
+		//p_proc->tty_idx = 0;	
 		//设置进程状态
 		p_proc->p_flags = 0;
 		p_proc->p_msg = 0;

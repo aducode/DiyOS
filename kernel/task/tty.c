@@ -268,7 +268,9 @@ void tty_write(struct tty *p_tty, char *buffer, int size){
  */
 int sys_write(int _unsed1, char *buffer,int size, struct process *p_proc)
 {
-	tty_write(&tty_table[p_proc->tty_idx], buffer, size);
+	//tty_write(&tty_table[p_proc->tty_idx], buffer, size);
+	//printk直接输出到tty0
+	tty_write(tty_table, buffer, size);
 	return 0;
 }
 /**
