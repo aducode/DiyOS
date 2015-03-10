@@ -13,7 +13,7 @@ static void setup_ldt_selector();
 
 static void init_8259A();
 
-static void init_desc(struct descriptor * p_desc, u32 base, u32 limit, u16 attribute);
+//static void init_desc(struct descriptor * p_desc, u32 base, u32 limit, u16 attribute);
 
 static void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege);
 

@@ -15,4 +15,7 @@
 #define _DIYOS_KERNEL_H
 extern void _restart();
 extern void _sys_call();
+
+//head.c
+extern void init_desc(struct descriptor * p_desc, u32 base, u32 limit, u16 attribute);
 #endif

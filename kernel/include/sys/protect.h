@@ -141,6 +141,8 @@ struct boot_params
 	unsigned char* kernel_file;
 	u8  hd_num;
 };
+
+#define LIMIT_4K_SHIFT		12
 /* GDT */
 /* 描述符索引 */
 #define	INDEX_DUMMY		0	// ┓

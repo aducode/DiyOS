@@ -47,9 +47,9 @@ void kmain(){
 		p_proc->p_parent = NO_TASK;
 		//设置进程id
 		p_proc->pid = i;
+		//设置进程的ldt选择子
+                p_proc->ldt_sel = selector_ldt;
 		if(strcmp(p_proc->name, "INIT") != 0){
-			//设置进程的ldt选择子
-			p_proc->ldt_sel = selector_ldt;
 			//设置进程的local descriptor table
 			//设置ldt第一项为gdt的代码段
 			_memcpy(&p_proc->ldts[0], &gdt[SELECTOR_KERNEL_CS>>3], sizeof(struct descriptor));
@@ -62,17 +62,15 @@ void kmain(){
 		} else {
 			//init process
 			//设置进程的ldt选择子
-                        p_proc->ldt_sel = selector_ldt;
-                        //设置进程的local descriptor table
-                        //设置ldt第一项为gdt的代码段
-                        _memcpy(&p_proc->ldts[0], &gdt[SELECTOR_KERNEL_CS>>3], sizeof(struct descriptor));
-                        //重新设置代码段属性值
-                        p_proc->ldts[0].attr1 = DA_C | privilege <<5;
-                        //设置ldt第二项为gdt的数据段
-                        _memcpy(&p_proc->ldts[1], &gdt[SELECTOR_KERNEL_DS>>3],sizeof(struct descriptor));
-                        //重新设置数据段属性
-                        p_proc->ldts[1].attr1 = DA_DRW| privilege<<5;
-
+			unsigned int k_base;
+			unsigned int k_limit;
+			int ret = get_kernel_map(&k_base, &k_limit);
+			assert(ret==0);
+			init_desc(&p_proc->ldts[0],
+				0,//bytes before the entry point are useless (wasted) for the INIT process, doesn't matter
+				(k_base + k_limit) >> LIMIT_4K_SHIFT,
+				DA_32|DA_LIMIT_4K|DA_C|privilege<<5);
+			init_desc(&p_proc->ldts[1],0,(k_base+k_limit)>>LIMIT_4K_SHIFT, DA_32|DA_LIMIT_4K|DA_DRW|privilege<<5);
 		}
 		//设置寄存器的值
 		p_proc->regs.cs = ((8*0)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|rpl;
