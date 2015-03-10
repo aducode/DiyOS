@@ -72,7 +72,7 @@ static void hd_cmd_out(struct hd_cmd * cmd);
 void init_hd()
 {
 	int i;
-	assert(bda.hd_num>0);
+	assert(boot_params.hd_num>0);
         _disable_irq(AT_WINI_IRQ);
         irq_handler_table[AT_WINI_IRQ] = hd_handler;
         _enable_irq(CASCADE_IRQ);

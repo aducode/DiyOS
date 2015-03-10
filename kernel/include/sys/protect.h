@@ -131,9 +131,15 @@ struct tss{
 	u16	iobase;	//I/O位图基址大于或等于TSS段界限，就表示没有I/O许可位
 	//u8	iomap[2];
 };
-struct bios_data_area
+/**
+ * @struct boot_params
+ * @brief boot params
+ */
+struct boot_params
 {
-	u8	hd_num;	//硬件数目
+	int mem_size;
+	unsigned char* kernel_file;
+	u8  hd_num;
 };
 /* GDT */
 /* 描述符索引 */

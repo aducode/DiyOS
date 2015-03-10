@@ -18,7 +18,8 @@ extern irq_handler_table	;全局硬件中断处理函数
 
 extern sys_call_table		;系统调用表
 
-extern bda		;硬件信息
+;extern bda		;硬件信息
+extern  boot_params	;硬件启动信息
 MAX_GDT_ITEMS	equ	128
 LIMIT_OF_GDT	equ	(MAX_GDT_ITEMS - 1) * 8
 
@@ -86,4 +87,4 @@ P_LDT		equ	P_LDT_SEL	+	4
 TSS3_S_SP0	equ	4
 
 ;Old Kernel File Address
-OLD_KERNEL_FILE_ADR	equ 0x8000
+OLD_KERNEL_FILE_ADR	equ 0x7000

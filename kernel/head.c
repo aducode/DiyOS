@@ -19,6 +19,8 @@ static void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handle
 
 static void put_irq_handler(int irq_no, irq_handler handler);
 
+static void get_boot_params();
+
 void head()
 {
 	//调用之前gdt_ptr中已经加载进gdt寄存器的值了
@@ -37,6 +39,8 @@ void head()
 	//循环最大进程数次
 	setup_ldt_selector();	//设置gdt中ldt选择子
 	//_disp_str("[OK]",7,40,COLOR_GREEN);
+	//将boot params放入内核内存中
+	get_boot_params();
 }
 
 void reset_gdt()
@@ -178,4 +182,10 @@ void init_8259A()
 	_out_byte(INT_M_CTLMASK,	0xFF);	//0xFD 二进制11111101	表示1号硬件中断被打开（keyboard)
 	/* Slave  8259, OCW1.  */
 	_out_byte(INT_S_CTLMASK,	0xFF);
+}
+
+void get_boot_params()
+{
+	//int *p =(int*)0x200000; //boot params 放在内存2M处
+	_memcpy((void*)&boot_params,(void*)0x200000,sizeof(boot_params));
 }

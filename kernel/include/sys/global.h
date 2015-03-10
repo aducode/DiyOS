@@ -20,7 +20,8 @@ extern struct process  proc_table[];
 
 extern struct tss g_tss;
 
-extern struct bios_data_area bda;
+//extern struct bios_data_area bda;
+extern struct boot_params boot_params;
 
 extern int k_reenter;
 

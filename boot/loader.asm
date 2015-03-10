@@ -81,7 +81,7 @@ LABEL_SEARCH_IN_ROOT_DIR_BEGIN:
 	dec word[wRootDirSizeForLoop]
 
 	mov ax, BaseOfLoaded
-	mov es, ax			; es <-BaseOfLoaded 0x8000
+	mov es, ax			; es <-BaseOfLoaded 0x7000
 	mov bx, OffsetOfLoaded		; bx <-OffsetOfLoaded
 	mov ax, [wSectorNo]		; ax <-Root Directory中某sector号
 	mov cl, 1			; cl <-1
@@ -348,9 +348,16 @@ LABEL_PM_START:
 	add esi, 0x20
 	dec ecx
 	jnz .BEGIN
-	;之前BaseOfKernelFile位置已经被废弃了，暂时用来保存一下硬件信息
+	;之前BaseOfKernelFile位置已经被废弃了，暂时用来保存一下硬件信息BootParam
+        ;mov dword [BootParamAddr], BOOT_PARAM_MAGIC
+        mov eax, [dwMemSize]
+        mov [BootParamAddr], eax
+        mov eax, BaseOfKernelFile
+        shl eax, 4
+        add eax, OffsetOfKernelFile
+        mov [BootParamAddr + 4], eax;phy-addr of kernel.bin file
 	mov al, byte[hdNum]
-	mov byte[BaseOfLoaded], al
+	mov byte[BootParamAddr + 8], al
 	;跳到内核	
 	jmp SelectorFlatC:KernelEntryPointPhyAddr
 

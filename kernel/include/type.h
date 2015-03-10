@@ -12,7 +12,7 @@
  * @brief 用来判断是否打印系统级别panic信息
  * @default on
  */
-//#define _SHOW_PANIC_
+#define _SHOW_PANIC_
 
 /**
  * @define _SHOW_MSG_SEND_
@@ -24,18 +24,6 @@
  * @brief 显示进程接收到的消息
  */
 //#define _SHOW_MSG_RECEIVE_
-
-
-/**
- * @define _PANIC_
- * @brief 定义_PANIC_时，那么内核级的assert或者系统panic会输出错误信息
- */
-#define _PANIC_	
-/**
- * @define _SHOW_ENTRY_
- * @brief 定义这个宏，那么不会执行进程，只是会显示进程入口地址
- */
-//#define _SHOW_ENTRY_
 
 //macro utils
 #define min(a,b) ((a)<(b)?(a):(b))
@@ -104,6 +92,8 @@ enum msgtype {
 	OPEN, CLOSE, READ, WRITE,LSEEK,STAT, UNLINK,
 	//FS & TTY
 	SUSPEND_PROC,	RESUME_PROC,
+	//MM
+	FORK,
 	//TTY, SYS, FS, MM, etc
 	SYSCALL_RET,
 	//message type for drivers

@@ -21,6 +21,9 @@ KernelEntryPointPhyAddr		equ	0x0400	;必须于ld -Ttext值相等
 ;分页表项位置
 PageDirBase			equ	0x100000	;1MB位置
 PageTblBase			equ	0x101000	;1M+4K位置
+
+;
+BootParamAddr			equ	0x200000	;2M空间处未来作为用户进程地址空间，在kernel开始时，先保存以下boot参数
 ;在kernel.bin开始将重新设置中断
 
 ;int 0x15中断得到的内存信息
