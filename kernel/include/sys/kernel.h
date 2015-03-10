@@ -3,6 +3,8 @@
 #include "proc.h"
 #include "global.h"	//定义了全局变量
 #include "clock.h"
+#include "string.h"
+#include "assert.h"
 //#include "keyboard.h"
 
 //#include "string.h"

@@ -127,6 +127,8 @@ struct process{
 	struct process *next_sending;	//队列头
 	//int tty_idx;	//tty表索引
 	//fs
+	int p_parent;			//pid of parent process
+	int exit_status;		//for parent
 	struct file_desc *filp[MAX_FILE_COUNT];   //这里保存的是struct file_desc 指针类型，真正的struct file_desc作为全局变量单独保存在global.c中的f_desc_table中
 };
 

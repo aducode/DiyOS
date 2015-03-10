@@ -1,4 +1,7 @@
+#include <elf.h>
 #include "kernel.h"
+
+static int get_kernel_map(unsigned int *b, unsigned int *l);
 /**
  * 初始化全局描述符表
  */
@@ -17,7 +20,7 @@ void kmain(){
 	u8 privilege;
 	u8 rpl;
 	int eflags;
-	int i;
+	int i,j;
 	int prio;
 	for(i=0;i<TASKS_COUNT + PROCS_COUNT;i++)
 	{
@@ -41,19 +44,36 @@ void kmain(){
 		}
 		//把task中的名称复制到进程表项中
 		_strcpy(p_proc->name, p_task->name);
+		p_proc->p_parent = NO_TASK;
 		//设置进程id
 		p_proc->pid = i;
-		//设置进程的ldt选择子
-		p_proc->ldt_sel = selector_ldt;
-		//设置进程的local descriptor table
-		//设置ldt第一项为gdt的代码段
-		_memcpy(&p_proc->ldts[0], &gdt[SELECTOR_KERNEL_CS>>3], sizeof(struct descriptor));
-		//重新设置代码段属性值
-		p_proc->ldts[0].attr1 = DA_C | privilege <<5;
-		//设置ldt第二项为gdt的数据段
-		_memcpy(&p_proc->ldts[1], &gdt[SELECTOR_KERNEL_DS>>3],sizeof(struct descriptor));
-		//重新设置数据段属性
-		p_proc->ldts[1].attr1 = DA_DRW| privilege<<5;
+		if(strcmp(p_proc->name, "INIT") != 0){
+			//设置进程的ldt选择子
+			p_proc->ldt_sel = selector_ldt;
+			//设置进程的local descriptor table
+			//设置ldt第一项为gdt的代码段
+			_memcpy(&p_proc->ldts[0], &gdt[SELECTOR_KERNEL_CS>>3], sizeof(struct descriptor));
+			//重新设置代码段属性值
+			p_proc->ldts[0].attr1 = DA_C | privilege <<5;
+			//设置ldt第二项为gdt的数据段
+			_memcpy(&p_proc->ldts[1], &gdt[SELECTOR_KERNEL_DS>>3],sizeof(struct descriptor));
+			//重新设置数据段属性
+			p_proc->ldts[1].attr1 = DA_DRW| privilege<<5;
+		} else {
+			//init process
+			//设置进程的ldt选择子
+                        p_proc->ldt_sel = selector_ldt;
+                        //设置进程的local descriptor table
+                        //设置ldt第一项为gdt的代码段
+                        _memcpy(&p_proc->ldts[0], &gdt[SELECTOR_KERNEL_CS>>3], sizeof(struct descriptor));
+                        //重新设置代码段属性值
+                        p_proc->ldts[0].attr1 = DA_C | privilege <<5;
+                        //设置ldt第二项为gdt的数据段
+                        _memcpy(&p_proc->ldts[1], &gdt[SELECTOR_KERNEL_DS>>3],sizeof(struct descriptor));
+                        //重新设置数据段属性
+                        p_proc->ldts[1].attr1 = DA_DRW| privilege<<5;
+
+		}
 		//设置寄存器的值
 		p_proc->regs.cs = ((8*0)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|rpl;
 		p_proc->regs.ds = ((8*1)&SA_RPL_MASK & SA_TI_MASK)|SA_TIL|rpl;
@@ -82,6 +102,10 @@ void kmain(){
 		p_proc->next_sending = 0;
 		//优先级 时间片
 		p_proc->ticks = p_proc->priority = prio;
+		//
+		for(j=0;j<MAX_FILE_COUNT;j++){
+			p_proc->filp[j]=0;
+		}	
 		//下一个进程ldt的值	
 		p_task_stack -= p_task->stacksize;
 		p_proc++;
@@ -118,4 +142,38 @@ void kmain(){
  */
 void empty_proc(){
 	while(1);
+}
+
+
+
+/**
+ * @function get_kernel_map
+ * @brief 获取内核
+ */
+int get_kernel_map(unsigned int *b, unsigned int *l)
+{
+	Elf32_Ehdr *elf_header = (Elf32_Ehdr*)(boot_params.kernel_file);
+	//the kernel file should be in ELF format
+	if(memcmp(elf_header->e_ident, ELFMAG, SELFMAG) != 0){
+		return -1;
+	}
+	*b = ~0;
+	unsigned int t = 0;
+	int i;
+	for(i=0;i<elf_header->e_shnum;i++){
+		Elf32_Shdr * section_header = (Elf32_Shdr*)(boot_params.kernel_file + elf_header->e_shoff + i*elf_header->e_shentsize);
+		if(section_header->sh_flags & SHF_ALLOC){
+			int bottom = section_header->sh_addr;
+			int top = section_header->sh_addr + section_header->sh_size;
+			if(*b>bottom){
+				*b = bottom;
+			}
+			if(t<top){
+				t=top;
+			}
+		}
+	}
+	assert(*b<t);
+	*l = t-*b-1;
+	return 0;
 }
