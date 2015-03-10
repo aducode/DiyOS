@@ -7,7 +7,7 @@
 #include "stdio.h"
 
 //#include "klib.h"
-void task_ticks()
+void task_sys()
 {
 	//_disp_str("ticks...",22,0,COLOR_YELLOW);
 	struct message msg;
@@ -18,6 +18,11 @@ void task_ticks()
 			case GET_TICKS:
 				msg.RETVAL = ticks;
 				msg.type = SYSCALL_RET;
+				send_recv(SEND, src, &msg);
+				break;
+			case GET_PID:
+				msg.type = SYSCALL_RET;
+				msg.PID = src;
 				send_recv(SEND, src, &msg);
 				break;
 			default:

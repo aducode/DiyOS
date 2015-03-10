@@ -21,7 +21,7 @@
 //#define INIT		0
 #define TASK_TTY        0
 #define TASK_HD         1
-#define TASK_TICKS      2
+#define TASK_SYS      2
 #define TASK_FS         3
 #define TASK_MM		4
 //#define TASK_EMPTY	5
@@ -34,7 +34,7 @@
 //stacks of tasks
 #define STACK_SIZE_TASK_TTY	0x8000
 #define STACK_SIZE_TASK_HD	0x8000
-#define STACK_SIZE_TASK_TICKS	0x8000
+#define STACK_SIZE_TASK_SYS	0x8000
 #define STACK_SIZE_TASK_FS	0x8000
 #define STACK_SIZE_TASK_MM	0x8000
 //由于empty_proc只是一个空进程体，所以不需要使用栈
@@ -50,7 +50,7 @@
 //stacks size
 #define STACK_SIZE_TOTAL        (STACK_SIZE_TASK_TTY + \
 				 STACK_SIZE_TASK_HD + \
-				 STACK_SIZE_TASK_TICKS + \
+				 STACK_SIZE_TASK_SYS + \
 				 STACK_SIZE_TASK_FS + \
 				 STACK_SIZE_TASK_MM + \
 				 STACK_SIZE_TASK_EMPTY + \

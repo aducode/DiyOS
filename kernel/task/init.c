@@ -2,6 +2,7 @@
 #include "stdio.h"
 #include "assert.h"
 #include "fork.h"
+#include "getpid.h"
 void init()
 {
 	int stdin = open("/dev_tty0", O_RDWT);
@@ -14,7 +15,7 @@ void init()
 		printf("parent is running, child pid:%d\n", pid);
 		spin("parent");
 	} else {
-		printf("child is running\n");
+		printf("child is running, pid:%d\n", getpid());
 		char rdbuf[128];
 		while(1){
 			printf("$");

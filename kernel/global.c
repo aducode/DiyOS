@@ -58,7 +58,7 @@ int k_reenter = -1;	//由于最开始执行中断时，会先减1 ，所以这�
 //task/hddriver.c
 extern void task_hd();
 //task/ticks.c
-extern void  task_ticks();
+extern void  task_sys();
 //task/tty.c
 extern void task_tty();
 //task/fs.c
@@ -76,7 +76,7 @@ struct task task_table[TASKS_COUNT] = {
 //	{init,		STACK_SIZE_TASK_TTY,		"INIT"	},//0
 	{task_tty,	STACK_SIZE_TASK_TTY,		"TTY"  	},//0
 	{task_hd,	STACK_SIZE_TASK_HD,		"HD"   	},//1
-	{task_ticks,	STACK_SIZE_TASK_TICKS,		"TICKS"	},//2
+	{task_sys,	STACK_SIZE_TASK_SYS,		"SYS"	},//2
 	{task_fs,	STACK_SIZE_TASK_FS,		"FS"	},//3
 	{task_mm,	STACK_SIZE_TASK_MM,		"MM"	},//4
 	{empty_proc,	STACK_SIZE_TASK_EMPTY,		"EMPTY"	},

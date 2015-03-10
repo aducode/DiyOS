@@ -32,7 +32,7 @@ DASM=ndisasm
 DASMFLAGS=-u -o $(KERNEL_ENTRY_POINT) -e $(KERNEL_ENTRY_OFFSET)
 DASMOUTPUT=$(KERNEL).bin.asm
 
-OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o systicks.o fork.o assert.o clock.o keyboard.o hd.o console.o proc.o ipc.o syscall.o tty.o hddriver.o ticks.o fs.o mm.o init.o
+OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o systicks.o getpid.o fork.o assert.o clock.o keyboard.o hd.o console.o proc.o ipc.o syscall.o tty.o hddriver.o sys.o fs.o mm.o init.o
 #OBJECTS=$(KERNEL).o main.o global.o head.o klib.o  interrupt.o string.o stdio.o clock.o keyboard.o console.o proc.o  syscall.o tty.o test.o
 
 all:$(KERNEL).bin
@@ -66,6 +66,8 @@ assert.o:lib/assert.c
 	$(CC) $(CFLAGS) lib/assert.c -o assert.o
 systicks.o:lib/systicks.c
 	$(CC) $(CFLAGS) lib/systicks.c -o systicks.o
+getpid.o:lib/getpid.c
+	$(CC) $(CFLAGS) lib/getpid.c -o getpid.o
 fork.o:lib/fork.c
 	$(CC) $(CFLAGS) lib/fork.c -o fork.o
 ipc.o:lib/ipc.c
@@ -89,8 +91,8 @@ tty.o:task/tty.c
 	$(CC) $(CFLAGS) task/tty.c -o tty.o
 hddriver.o:task/hddriver.c
 	$(CC) $(CFLAGS) task/hddriver.c -o hddriver.o
-ticks.o:task/ticks.c
-	$(CC) $(CFLAGS) task/ticks.c -o ticks.o
+sys.o:task/sys.c
+	$(CC) $(CFLAGS) task/sys.c -o sys.o
 fs.o:task/fs.c
 	$(CC) $(CFLAGS) task/fs.c -o fs.o
 mm.o:task/mm.c
