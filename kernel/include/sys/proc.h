@@ -19,7 +19,7 @@
 #define TASK_TICKS      2
 #define TASK_FS         3
 #define TASK_MM		4
-#define TASK_EMPTY	5
+//#define TASK_EMPTY	5
 /**
  * @define INVALID_DRIVER
  * @brief define the invalid driver pid
@@ -32,7 +32,8 @@
 #define STACK_SIZE_TASK_TICKS	0x8000
 #define STACK_SIZE_TASK_FS	0x8000
 #define STACK_SIZE_TASK_MM	0x8000
-#define STACK_SIZE_TASK_EMPTY	0x8000
+//由于empty_proc只是一个空进程体，所以不需要使用栈
+#define STACK_SIZE_TASK_EMPTY	0x0
 //stacks of process
 #define STACK_SIZE_INIT	0x8000
 //#define STACK_SIZE_PROC_TESTA	0x8000

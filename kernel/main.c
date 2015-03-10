@@ -112,7 +112,10 @@ void kmain(){
 	}
 }
 
-
+/**
+ * @function empty_proc
+ * @brief 这是一个空进程体，什么都不操作，只是为了在所有进程都阻塞的时候，进程调度不限入死循环，导致时钟中断不会返回
+ */
 void empty_proc(){
 	while(1);
 }
