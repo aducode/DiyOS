@@ -9,7 +9,7 @@
 #include "hd.h"
 
 
-#include "klib.h"
+//#include "klib.h"
 
 static int ldt_seg_linear(struct process *p_proc, int idx);
 //判断消息发送是否有环
@@ -86,9 +86,11 @@ void* va2la(int pid, void *va)
 	u32 seg_base = ldt_seg_linear(p_proc, INDEX_LDT_RW);
 	u32 la = seg_base + (u32)va;
 	
-	if(pid < TASKS_COUNT + PROCS_COUNT )
+	if(pid < TASKS_COUNT + NATIVE_PROCS_COUNT )
 	{
 		assert(la==(u32)va);
+	} else {
+		//系统启动后fork出来的进程线性地址和物理地址并不相同
 	}
 	return (void*)la;
 }
@@ -179,7 +181,7 @@ int msg_send(struct process *current, int dest, struct message *m)   //0x3b1a
 		//msg_receive中会把消息地址设置成receiver->p_msg,所以上面的memcpy会把消息体复制到那个地址，复制完后，下面把p_msg归零
 		receiver->p_msg = 0; 
 		receiver->p_flags &= ~RECEIVING;	//表示已经接收了 这里解除阻塞
-		receiver->p_recvfrom = NO_TASK;		//将receiver->p_recvfrom重置成NO_TASK	
+		receiver->p_recvfrom = NO_TASK;		//将receiver->p_recvfrom重置成NO_TASK
 		unblock(receiver);
 		assert(receiver->p_flags == 0);
 		assert(receiver->p_msg == 0);

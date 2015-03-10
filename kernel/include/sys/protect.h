@@ -4,6 +4,15 @@
 #ifndef _DIYOS_PROTECT_H
 #define _DIYOS_PROTECT_H
 
+
+/**
+ * @define reassembly
+ */
+#define reassembly(high, high_shift, mid, mid_shift, low)\
+	(((high)<<(high_shift))+\
+	 ((mid)<<(mid_shift))+\
+	 (low))
+
 //GDT个数
 #define MAX_GDT_ITEMS	128	//最多有128个全局描述符 可用的有127个 0作为base
 #define MAX_IDT_ITEMS	256	//做多有256个中断描述符表

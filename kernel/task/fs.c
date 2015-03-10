@@ -21,6 +21,7 @@ static int do_open(struct message *p_msg);
 static int do_close(struct message *p_msg);
 static int do_rdwt(struct message *p_msg);
 static int do_unlink(struct message *p_msg);
+static int fs_fork(struct message *msg);
 static struct inode * create_file(char *path, int flags);
 static int alloc_imap_bit(int dev);
 static int alloc_smap_bit(int dev, int sects_count_to_alloc);
@@ -74,6 +75,9 @@ void task_fs()
 				break;
 			case RESUME_PROC:
 				src = msg.PID; //恢复进程,此时将src变成TTY进程发来的消息中的PID
+				break;
+			case FORK:
+				msg.RETVAL = fs_fork(&msg);
 				break;
 			default:
 				panic("invalid msg type:%d\n", msg.type);
@@ -343,6 +347,7 @@ int do_open(struct message *p_msg)
 		f_desc_table[i].fd_inode = pin;
 		f_desc_table[i].fd_mode = flags;
 		f_desc_table[i].fd_pos = 0;
+		f_desc_table[i].fd_cnt = 1;
 		int imode = pin->i_mode & I_TYPE_MASK;
 		if(imode == I_CHAR_SPECIAL) {
 			//设备文件 dev_tty0 dev_tty1 dev_tty2
@@ -380,6 +385,9 @@ int do_close(struct message *p_msg)
 	struct process *pcaller = proc_table + src;
 	//释放inode 资源
 	put_inode(pcaller->filp[fd]->fd_inode);
+	if(--pcaller->filp[fd]->fd_cnt == 0){
+		pcaller->filp[fd]->fd_inode = 0;
+	}
 	//清空filp指向的f_desc_table中某一表项的fd_inode指针，归还f_desc_table的slot
 	pcaller->filp[fd]->fd_inode = 0;
 	//归还process中的filp slot
@@ -606,6 +614,26 @@ int do_unlink(struct message *p_msg)
 		//the file is the last one in the dir
 		dir_inode->i_size = dir_size;
 		sync_inode(dir_inode);
+	}
+	return 0;
+}
+
+
+/**
+ * @function fs_fork
+ * @brief Perform the aspects of fork() that relate to files
+ * @param msg message ptr
+ * @return Zero if success, otherwise a negative integer.
+ */
+int fs_fork(struct message *msg)
+{
+	int i;
+	struct process *child = &proc_table[msg->PID];
+	for(i=0;i<MAX_FILE_COUNT;i++){
+		if(child->filp[i]){
+			child->filp[i]->fd_cnt++;
+			child->filp[i]->fd_inode->i_cnt++;
+		}
 	}
 	return 0;
 }
