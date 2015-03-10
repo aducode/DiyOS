@@ -6,18 +6,20 @@
 #define _DIYOS_PROC_H
 //#define MAX_PROCESS_COUNT	32	//最多32个进程
 #define TASKS_COUNT		6	//系统进程个数
-#define PROCS_COUNT		1	//用户进程数量
+#define PROCS_COUNT		32	//系统支持最大进程数32
+#define NATIVE_PROCS_COUNT	1	//用户进程数量
 //
 /**
  * @define TASKS
  * @brief define system task pid
  */
-#define INIT		0
-#define TASK_TTY        1
-#define TASK_HD         2
-#define TASK_TICKS      3
-#define TASK_FS         4
-#define TASK_MM		5
+//#define INIT		0
+#define TASK_TTY        0
+#define TASK_HD         1
+#define TASK_TICKS      2
+#define TASK_FS         3
+#define TASK_MM		4
+#define TASK_EMPTY	5
 /**
  * @define INVALID_DRIVER
  * @brief define the invalid driver pid
@@ -25,27 +27,28 @@
 #define INVALID_DRIVER  -20
 //进程栈
 //stacks of tasks
-#define STACK_SIZE_INIT		0x8000
 #define STACK_SIZE_TASK_TTY	0x8000
 #define STACK_SIZE_TASK_HD	0x8000
 #define STACK_SIZE_TASK_TICKS	0x8000
 #define STACK_SIZE_TASK_FS	0x8000
 #define STACK_SIZE_TASK_MM	0x8000
+#define STACK_SIZE_TASK_EMPTY	0x8000
 //stacks of process
-#define STACK_SIZE_PROC_TESTA	0x8000
+#define STACK_SIZE_INIT	0x8000
+//#define STACK_SIZE_PROC_TESTA	0x8000
 /*
 #define STACK_SIZE_PROC_TESTB	0x8000
 #define STACK_SIZE_PROC_TESTC	0x8000
 #define STACK_SIZE_PROC_TESTD	0x8000
 */
 //stacks size
-#define STACK_SIZE_TOTAL        (STACK_SIZE_INIT + \
-				 STACK_SIZE_TASK_TTY + \
+#define STACK_SIZE_TOTAL        (STACK_SIZE_TASK_TTY + \
 				 STACK_SIZE_TASK_HD + \
 				 STACK_SIZE_TASK_TICKS + \
 				 STACK_SIZE_TASK_FS + \
 				 STACK_SIZE_TASK_MM + \
-				 STACK_SIZE_PROC_TESTA)
+				 STACK_SIZE_TASK_EMPTY + \
+				 STACK_SIZE_INIT)
 /* + \
 				 STACK_SIZE_PROC_TESTB + \
 				 STACK_SIZE_PROC_TESTC + \
@@ -62,6 +65,8 @@
 //任务状态
 #define SENDING			0x02
 #define RECEIVING		0x04
+
+#define FREE_SLOT		0x20
 //这里暂时将PROCS_COUNT写死，所以MAX_PROCESS_COUNT就为tasks + procs
 #define MAX_PROCESS_COUNT	(TASKS_COUNT + PROCS_COUNT)	
 

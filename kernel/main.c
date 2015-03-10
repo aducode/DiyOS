@@ -20,7 +20,11 @@ void kmain(){
 	int i;
 	int prio;
 	for(i=0;i<TASKS_COUNT + PROCS_COUNT;i++)
-	{	
+	{
+		if(i>=TASKS_COUNT + NATIVE_PROCS_COUNT){
+			p_proc->p_flags = FREE_SLOT;
+			continue;
+		}	
 		if(i<TASKS_COUNT){
 			//ring1
 			p_task = task_table + i;
@@ -109,7 +113,6 @@ void kmain(){
 }
 
 
-void init(){
-	while(1){
-	}
+void empty_proc(){
+	while(1);
 }
