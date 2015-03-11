@@ -26,6 +26,7 @@ void kmain(){
 	{
 		if(i>=TASKS_COUNT + NATIVE_PROCS_COUNT){
 			p_proc->p_flags = FREE_SLOT;
+			p_proc++;
 			continue;
 		}	
 		if(i<TASKS_COUNT){

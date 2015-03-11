@@ -8,6 +8,7 @@
 #include "hd.h"
 #include "fs.h"
 #include "stdio.h"
+#include "proc.h"
 
 //#include "klib.h"
 static void init_fs();
@@ -22,6 +23,7 @@ static int do_close(struct message *p_msg);
 static int do_rdwt(struct message *p_msg);
 static int do_unlink(struct message *p_msg);
 static int fs_fork(struct message *msg);
+static int fs_exit(struct message *msg);
 static struct inode * create_file(char *path, int flags);
 static int alloc_imap_bit(int dev);
 static int alloc_smap_bit(int dev, int sects_count_to_alloc);
@@ -78,6 +80,9 @@ void task_fs()
 				break;
 			case FORK:
 				msg.RETVAL = fs_fork(&msg);
+				break;
+			case EXIT:
+				msg.RETVAL = fs_exit(&msg);
 				break;
 			default:
 				panic("invalid msg type:%d\n", msg.type);
@@ -634,6 +639,27 @@ int fs_fork(struct message *msg)
 			child->filp[i]->fd_cnt++;
 			child->filp[i]->fd_inode->i_cnt++;
 		}
+	}
+	return 0;
+}
+
+/**
+ * @function fs_exit
+ * @brief  Perform the aspects of exit() that relate to files
+ *
+ */
+ 
+int fs_exit(struct message *msg)
+{
+	int i;
+	struct process *p = &proc_table[msg->PID];
+	for(i=0;i<MAX_FILE_COUNT;i++){
+		//release the inode
+		p->filp[i]->fd_inode->i_cnt--;
+		if(--p->filp[i]->fd_cnt == 0){
+			p->filp[i]->fd_inode = 0;
+		}
+		p->filp[i] = 0;
 	}
 	return 0;
 }

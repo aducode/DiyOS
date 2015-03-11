@@ -93,7 +93,7 @@ enum msgtype {
 	//FS & TTY
 	SUSPEND_PROC,	RESUME_PROC,
 	//MM
-	FORK,
+	FORK,EXIT,WAIT,
 	//TTY, SYS, FS, MM, etc
 	SYSCALL_RET,
 	//message type for drivers
@@ -106,6 +106,9 @@ enum msgtype {
 //macro for message
 /**common return value**/
 #define RETVAL u.m3.m3l1
+
+//exit status
+#define STATUS u.m3.m3i1
 
 /**for message type DEV_IOCTL**/
 #define REQUEST u.m3.m3i2

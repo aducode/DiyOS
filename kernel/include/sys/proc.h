@@ -21,10 +21,13 @@
 //#define INIT		0
 #define TASK_TTY        0
 #define TASK_HD         1
-#define TASK_SYS      2
+#define TASK_SYS      	2
 #define TASK_FS         3
 #define TASK_MM		4
-//#define TASK_EMPTY	5
+
+#define TASK_EMPTY	5
+
+#define INIT		6
 /**
  * @define INVALID_DRIVER
  * @brief define the invalid driver pid
@@ -69,10 +72,11 @@
 //中断类型消息
 #define INTERRUPT		-10
 //任务状态
-#define SENDING			0x02
-#define RECEIVING		0x04
-
-#define FREE_SLOT		0x20
+#define SENDING			0x02	/*set when proc trying to send*/
+#define RECEIVING		0x04	/*set when proc trying to recv*/
+#define WAITING			0x08	/*set when proc waiting for the child to terminate*/
+#define HANGING			0x10	/*set when proc exits without being waited by parent*/
+#define FREE_SLOT		0x20	/*set when proc table entry is not used*/
 //这里暂时将PROCS_COUNT写死，所以MAX_PROCESS_COUNT就为tasks + procs
 #define MAX_PROCESS_COUNT	(TASKS_COUNT + PROCS_COUNT)	
 

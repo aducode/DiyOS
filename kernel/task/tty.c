@@ -297,7 +297,7 @@ int sys_write(int _unsed1, char *buffer,int size, struct process *p_proc)
  */
 int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
 {
-	const char * p;
+	char * p;
 	char ch;
 	char reenter_err [] = "? k_reenter is incorrect for unknown reason";
 	reenter_err[0] = MAG_CH_PANIC;

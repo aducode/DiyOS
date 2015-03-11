@@ -32,7 +32,7 @@ DASM=ndisasm
 DASMFLAGS=-u -o $(KERNEL_ENTRY_POINT) -e $(KERNEL_ENTRY_OFFSET)
 DASMOUTPUT=$(KERNEL).bin.asm
 
-OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o systicks.o getpid.o fork.o assert.o clock.o keyboard.o hd.o console.o proc.o ipc.o syscall.o tty.o hddriver.o sys.o fs.o mm.o init.o
+OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o systicks.o getpid.o fork.o exit.o wait.o assert.o clock.o keyboard.o hd.o console.o proc.o ipc.o syscall.o tty.o hddriver.o sys.o fs.o mm.o init.o
 #OBJECTS=$(KERNEL).o main.o global.o head.o klib.o  interrupt.o string.o stdio.o clock.o keyboard.o console.o proc.o  syscall.o tty.o test.o
 
 all:$(KERNEL).bin
@@ -70,6 +70,10 @@ getpid.o:lib/getpid.c
 	$(CC) $(CFLAGS) lib/getpid.c -o getpid.o
 fork.o:lib/fork.c
 	$(CC) $(CFLAGS) lib/fork.c -o fork.o
+exit.o:lib/exit.c
+	$(CC) $(CFLAGS) lib/exit.c -o exit.o
+wait.o:lib/wait.c
+	$(CC) $(CFLAGS) lib/wait.c -o wait.o
 ipc.o:lib/ipc.c
 	$(CC) $(CFLAGS) lib/ipc.c -o ipc.o
 
