@@ -12,7 +12,15 @@ void init()
 	printf("init() is running ...\n");
 	int pid = fork();
 	if(pid!=0){
-		printf("parent is running, pid:%d, child pid:%d\n", getpid(), pid);
+//		printf("parent is running, pid:%d, child pid:%d\n", getpid(), pid);
+//		printf("parent is running\n");
+		int ppid = fork();
+		if(ppid!=0){
+			printf("parent is running...\n");
+		} else {
+			printf("child is running, pid:%d\n", getpid());
+                        exit(111);
+		}
 	//	int s;
 	//	int child = wait(&s);
 	//	printf("child (%d) exited with status:%d.\n", child, s);
