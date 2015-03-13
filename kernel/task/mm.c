@@ -65,6 +65,8 @@ void init_mm()
  */
 int do_fork(struct message *msg)
 {
+	int pid = msg->source;
+	while(!proc_table[pid].p_flags); //wait for the process to block
 	//find a free slot in proc_table
 	struct process *p = proc_table;
 	int i;
@@ -81,7 +83,7 @@ int do_fork(struct message *msg)
 	}
 	assert(i<TASKS_COUNT + PROCS_COUNT);
 	//duplicate the process table
-	int pid = msg->source; //pid是parent pid
+	//int pid = msg->source; //pid是parent pid
 	u16  child_ldt_sel = p->ldt_sel;
 	*p = proc_table[pid]; //这里是*p=，不是p=,所以相当于将proc_table[pid]结构体拷贝一份到p指针地址
 	p->ldt_sel = child_ldt_sel; //将子进程ldt selector还原
