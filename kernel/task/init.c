@@ -26,7 +26,7 @@ void init()
 	//	printf("child (%d) exited with status:%d.\n", child, s);
 	} else {
 		printf("child is running, pid:%d\n", getpid());
-/*		pid = fork();
+		pid = fork();
 		if(pid!=0){
 			//int ss;
 			printf("xxxxx\n");
@@ -36,7 +36,6 @@ void init()
 			printf("yyyyyy\n");
 		//	exit(333);
 		}
-*/
 		exit(123);
 	}
 	//init进程要不断的wait，因为如果一个exit的进程有子进程，那么会被转移成init的子进程，这些子进程exit时，init会wait

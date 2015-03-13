@@ -10,7 +10,8 @@
 #define NATIVE_PROCS_COUNT	1	//用户进程数量
 
 
-#define PROCS_BASE		0x200000 //2M 2M以上的空间留给用户进程使用
+#define PROCS_BASE		0x300000 //3M 3M以上的空间留给用户进程使用
+					 //2M的空间是系统文件缓冲区
 #define PROC_IMAGE_SIZE_DEFAULT	0x100000 //默认进程空间大小1M
 #define PROC_ORIGIN_STACK	0x400	 //1KB
 //
