@@ -178,6 +178,7 @@ void do_exit(struct message *msg)
 {
 	int status = msg->STATUS;
 	int pid = msg->source;
+	if(pid==INIT) return;
 	struct process *p = &proc_table[pid];
 	int parent_pid = p->p_parent;
 	int i;
