@@ -7,3 +7,4 @@
 *.bin.asm
 *.a
 app/target/*
+*.tar

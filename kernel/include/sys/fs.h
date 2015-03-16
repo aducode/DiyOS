@@ -213,4 +213,12 @@ struct file_desc {
  * 这个定义在proc.h里，因为struct process里面会保存一个struct file_desc filp[]
  */
 //#define MAX_FILE_COUNT	64
+
+/**
+ * @define INSTALL_START_SECT INSTALL_SECTS_COUNT
+ * @brief Some sector are reserved for us (the gods of the os) to copy a tar file
+ *	there, which will be extracted and used by the os.
+ */
+#define INSTALL_START_SECT	0x8000
+#define INSTALL_SECTS_COUNT	0x800
 #endif

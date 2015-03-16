@@ -3,6 +3,7 @@
 #include "assert.h"
 #include "fork.h"
 #include "getpid.h"
+#include "tar.h"
 void init()
 {
 	int stdin = open("/dev_tty0", O_RDWT);
@@ -10,6 +11,7 @@ void init()
 	int stdout = open("/dev_tty0", O_RDWT);
 	assert(stdout == 1);
 	printf("init() is running ...\n");
+	untar("/cmd.tar");	
 	int pid = fork();
 	if(pid!=0){
 //		printf("parent is running, pid:%d, child pid:%d\n", getpid(), pid);

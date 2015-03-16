@@ -195,16 +195,17 @@ void mkfs()
 	*/
 	//inode map
 	memset(fsbuf, 0, SECTOR_SIZE);
-	for(i=0;i<(CONSOLE_COUNT + 2);i++){
+	for(i=0;i<(CONSOLE_COUNT + 3);i++){
 		fsbuf[0] |= 1<<i;
 	}
-	assert(fsbuf[0] == 0x1F);/* 0001 1111
-				  *    | ||||
-				  *    | |||`----bit 0: reserved
-				  *    | ||`-----bit 1:the first inode, '/'
-				  *    | |`------bit 2:/dev_tty0
-				  *    | `-------bit 3:/dev_tty1
-				  *    `---------bit 4:/dev_tty2
+	assert(fsbuf[0] == 0x3F);/* 0011 1111
+				  *   || ||||
+				  *   || |||`----bit 0: reserved
+				  *   || ||`-----bit 1:the first inode, '/'
+				  *   || |`------bit 2:/dev_tty0
+				  *   || `-------bit 3:/dev_tty1
+				  *   |`---------bit 4:/dev_tty2
+				  *   `----------bit 5:/cmd.tar
 				  */
 	WRITE_SECT(ROOT_DEV, 2);//secotr 2为inode sector
 	//sector map
@@ -232,7 +233,7 @@ void mkfs()
 	memset(fsbuf, 0, SECTOR_SIZE);
 	struct inode * pi = (struct inode*)fsbuf;
 	pi->i_mode = I_DIRECTORY;
-	pi->i_size = DIR_ENTRY_SIZE * 4;//4files  '.',dev_tty0, dev_tty1, dev_tty2
+	pi->i_size = DIR_ENTRY_SIZE * 5;//5files  '.',dev_tty0, dev_tty1, dev_tty2 cmd.tar
 	pi->i_start_sect = sb.first_sect;
 	pi->i_sects_count = DEFAULT_FILE_SECTS_COUNT;
 	//inode for /dev_tty0~2
@@ -243,6 +244,13 @@ void mkfs()
 		pi->i_start_sect = MAKE_DEV(DEV_CHAR_TTY, i);
 		pi->i_sects_count = 0;
 	}
+	WRITE_SECT(ROOT_DEV, 2+sb.imap_sects_count + sb.smap_sects_count);
+	//for 'cmd.tar'
+	pi = (struct inode*)(fsbuf+(INODE_SIZE * (CONSOLE_COUNT+1)));
+	pi->i_mode = I_REGULAR;
+	pi->i_size = INSTALL_SECTS_COUNT * SECTOR_SIZE;
+	pi->i_start_sect = INSTALL_START_SECT;
+	pi->i_sects_count = INSTALL_SECTS_COUNT;
 	WRITE_SECT(ROOT_DEV, 2+sb.imap_sects_count + sb.smap_sects_count);
 	//'/'
 	memset(fsbuf, 0, SECTOR_SIZE);
@@ -255,6 +263,8 @@ void mkfs()
 		pde->inode_idx = i+2;
 		sprintf(pde->name, "dev_tty%d", i);
 	}
+	(++pde)->inode_idx = CONSOLE_COUNT + 2;
+	strcpy(pde->name, "cmd.tar");
 	WRITE_SECT(ROOT_DEV, sb.first_sect);
 }
 
