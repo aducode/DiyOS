@@ -1,5 +1,4 @@
 #include "type.h"
-#include "proc.h"
 #ifndef _DIYOS_SYSCALL_H
 #define _DIYOS_SYSCALL_H
 //系统调用

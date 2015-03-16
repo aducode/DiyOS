@@ -1,5 +1,5 @@
 #编译kernel
-.PHONY:clean all disasm
+.PHONY:clean lib all disasm
 KERNEL=kernel
 KERNEL_ENTRY_POINT=0x0400
 KERNEL_ENTRY_OFFSET=0x0400
@@ -13,6 +13,10 @@ ASM=nasm
 ASMFLAGS=-I include/ -I include/sys/ -f elf
 LD=ld
 LDFLAGS=-s -Ttext $(KERNEL_ENTRY_POINT)
+AR=ar
+ARFLAGS=rcs
+AROUTFILE=../app/diycrt.a
+ARINFILE=syscall.o string.o stdio.o assert.o systicks.o getpid.o fork.o exit.o wait.o ipc.o
 #LDFLAGS=-s -e $(KERNEL_ENTRY_POINT)
 # 用-e替代 -Ttext链接脚本
 # 由于在kernel.asm中显示的写上[section .s32],导致-Ttext设置后真正的Entry不相符，
@@ -105,6 +109,8 @@ init.o:task/init.c
 	$(CC) $(CFLAGS) task/init.c -o init.o
 	
 ########################### PHONY ##########################################
+lib:$(ARINFILE)
+	$(AR) $(ARFLAGS) $(AROUTFILE) $(ARINFILE)
 disasm:$(KERNEL).bin
 	$(DASM) $(DASMFLAGS) $(KERNEL).bin > $(DASMOUTPUT)
 clean:

@@ -1,4 +1,5 @@
 #include "type.h"
+#include "syscall.h"
 #ifndef _DIYOS_STDIO_H
 #define _DIYOS_STDIO_H
 /**

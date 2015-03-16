@@ -5,3 +5,5 @@
 *.swp
 *.o
 *.bin.asm
+*.a
+app/target/*

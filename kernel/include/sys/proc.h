@@ -4,31 +4,12 @@
 #include "fs.h"
 #ifndef _DIYOS_PROC_H
 #define _DIYOS_PROC_H
-//#define MAX_PROCESS_COUNT	32	//最多32个进程
-#define TASKS_COUNT		6	//系统进程个数
-#define PROCS_COUNT		32	//系统支持最大进程数32
-#define NATIVE_PROCS_COUNT	1	//用户进程数量
-
 
 #define PROCS_BASE		0x300000 //3M 3M以上的空间留给用户进程使用
 					 //2M的空间是系统文件缓冲区
 #define PROC_IMAGE_SIZE_DEFAULT	0x100000 //默认进程空间大小1M
 #define PROC_ORIGIN_STACK	0x400	 //1KB
 //
-/**
- * @define TASKS
- * @brief define system task pid
- */
-//#define INIT		0
-#define TASK_TTY        0
-#define TASK_HD         1
-#define TASK_SYS      	2
-#define TASK_FS         3
-#define TASK_MM		4
-
-#define TASK_EMPTY	5
-
-#define INIT		6
 /**
  * @define INVALID_DRIVER
  * @brief define the invalid driver pid
@@ -65,13 +46,6 @@
 				 STACK_SIZE_PROC_TESTD)
 */
 
-//消息广播
-#define ANY	(TASKS_COUNT + PROCS_COUNT + 10)
-//
-#define NO_TASK	(TASKS_COUNT + PROCS_COUNT + 20)
-#define HARD_INT		1
-//中断类型消息
-#define INTERRUPT		-10
 //任务状态
 #define SENDING			0x02	/*set when proc trying to send*/
 #define RECEIVING		0x04	/*set when proc trying to recv*/

@@ -44,13 +44,30 @@ img:
 	$(BXIMAGE) $(FDFLAG) $(FLOPPY)
 #	$(BXIMAGE) $(HDFLAG) $(DISK)
 #	fdisk $(DISK)
+#********************************************************#
+# disk命令说明：					 #
+#	- 用于创建一块硬盘，并开始分区操作		 #
+#	- 最简单的分区：				 #
+#		1.首先输入n（创建分区）			 #
+#		2.输入p创建主分区			 #
+#		3.选择分区号，默认1即可			 #
+#		4.选择开始磁道默认即可			 #
+#		5.选择最后一个磁道，全部		 #
+#		6.p打印分区表				 #
+#		7.输入t修改分区类型			 #
+#		8.选择分区号，这里选择主分区1		 #
+#		9.设置启动分区，输入a，选择主分区号1	 #
+#		10.写入分区表 输入w			 #
+#	-结束						 #
+#********************************************************#
 disk:
 	$(BXIMAGE) $(HDFLAG) $(DISK)
-#分区
+#设置分区表，需要手工输入
 	$(FDISK) -C 162 -H 16 -u=cylinders $(DISK)	
 clean:
 	make clean -C boot
 	make clean -C kernel
+	make clean -C app
 	-rm -rf $(LOGS) $(FLOPPY)
 cleanall:clean
 	-rm -rf $(DISK)
