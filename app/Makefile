@@ -12,7 +12,7 @@ start.o:start.asm
 diycrt.a:
 	make lib -C ../kernel
 clean:
-	-@rm -rf target/echo
+	-@rm -rf target/*
 	-@rm -rf *.a *.o
 
 echo.o:echo.c
