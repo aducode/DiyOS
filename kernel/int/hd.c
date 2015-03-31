@@ -99,9 +99,8 @@ void hd_open(int device)
 		//保证只执行一次
 		partition(drive * (PART_PER_DRIVE +1 ), P_PRIMARY);
 		//打印信息
-		//print_hdinfo(&hd_info[drive]);
+		print_hdinfo(&hd_info[drive]);
 	}
-	//print_hdinfo(&hd_info[drive]);
 }
 
 /**
@@ -235,13 +234,19 @@ void partition(int device, int style)
 		//获取硬盘中保存的分区表
 		get_part_table(drive, drive, part_tbl);
 		int nr_prim_parts = 0;
+		hdi->primary[0].base = -1;
+		hdi->primary[0].size = 0;
 		for(i=0;i<PART_PER_DRIVE;i++){ //0~3
 			if(part_tbl[i].sys_id == NO_PART) continue;
 			nr_prim_parts++;
 			int dev_nr = i + 1; //1~4
 			hdi->primary[dev_nr].base = part_tbl[i].start_sect;
 			hdi->primary[dev_nr].size = part_tbl[i].nr_sects;
-			
+			//count the hold hdi
+			if(hdi->primary[0].base<0 || hdi->primary[0].base > hdi->primary[dev_nr].base){
+				hdi->primary[0].base=hdi->primary[dev_nr].base;
+			}
+			hdi->primary[0].size += hdi->primary[dev_nr].size;
 			if(part_tbl[i].sys_id == EXT_PART){ //extened
 				partition(device + dev_nr, P_EXTENDED);//递归查看扩展分区信息
 			}
