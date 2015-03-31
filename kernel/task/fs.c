@@ -164,11 +164,19 @@ void mkfs()
 	//super block
 	struct super_block sb;
 	sb.magic		= MAGIC_V1;
-	sb.inodes_count		= bits_per_sect;
+	sb.inodes_count		= bits_per_sect;//一般情况下就是4096
+	//inode_sects_count inode_array占用的扇区数
+	//就是inode数*每个inode结构体大小/每个扇区的字节数
 	sb.inode_sects_count	= sb.inodes_count * INODE_SIZE/SECTOR_SIZE;
+	//全部扇区数
 	sb.sects_count		= geo.size;
+	//inode 位图占用一个扇区
 	sb.imap_sects_count	= 1;
+	//sector 位图占用的扇区数
+	//总扇区数/每扇区位数+1
 	sb.smap_sects_count	= sb.sects_count/bits_per_sect + 1;
+	//第一个数据扇区
+	//跳过boot sector, super block sector，inode bitmap sector[1], sectors bitmap sectors, inode_array sectors
 	sb.first_sect		= 1 + 1 /*boot sector & super block*/+ sb.imap_sects_count + sb.smap_sects_count + sb.inode_sects_count;
 	sb.root_inode		= ROOT_INODE;
 	sb.inode_size		= INODE_SIZE;
@@ -181,6 +189,7 @@ void mkfs()
 	sb.dir_ent_fname_off	= (int)&de.name - (int)&de;
 	memset(fsbuf, 0x90, SECTOR_SIZE);
 	memcpy(fsbuf, &sb, SUPER_BLOCK_SIZE);
+	printk("mkfs\ninodes_count:%d\nsects_count:%d\nimap_sects_count:%d\nsmap_sects_count:%d\nfirst_sect:%d\ninode_sects_count:%d\n",sb.inodes_count,sb.sects_count, sb.imap_sects_count, sb.smap_sects_count, sb.first_sect, sb.inode_sects_count);
 	//write the super block
 	WRITE_SECT(ROOT_DEV, 1);  //sector 0为boot sector
 				  //sector 1super block 写入1
@@ -211,6 +220,8 @@ void mkfs()
 	WRITE_SECT(ROOT_DEV, 2);//secotr 2为inode sector
 	//sector map
 	memset(fsbuf, 0, SECTOR_SIZE);
+	//DEFAULT_FILE_SECTS_COUNT 每个文件默认占用的扇区数
+	//目前是固定值2048
 	int nr_sects = DEFAULT_FILE_SECTS_COUNT + 1;
 	/*	       ~~~~~~~~~~~~~~~~~~~~~~~|~~~|
 	 *                                    |   `---bit 0 is reserved
@@ -222,14 +233,35 @@ void mkfs()
 	for(j=0;j<nr_sects % 8;j++){
 		fsbuf[i] |= (1<<j);
 	}
-	WRITE_SECT(ROOT_DEV, 2 + sb.imap_sects_count);
+	//sector bitmap 对应位置被设置成1
+	WRITE_SECT(ROOT_DEV, 2 + sb.imap_sects_count);//imap_sects_count==1
 	
 	memset(fsbuf, 0, SECTOR_SIZE);
+	//设置其余的sector bitmap的扇区为0
 	for(i=1;i<sb.smap_sects_count;i++){
 		WRITE_SECT(ROOT_DEV, 2 + sb.imap_sects_count + i);
 	}
-
+	//sector map for 'cmd.tar'	
+	int bit_offset = INSTALL_START_SECT - sb.first_sect + 1;
+	int bit_off_in_sect = bit_offset % (SECTOR_SIZE * 8);
+	int bit_left = INSTALL_SECTS_COUNT;
+	int cur_sect = bit_offset/(SECTOR_SIZE*8);
+	READ_SECT(ROOT_DEV,2+sb.imap_sects_count + cur_sect);
+	while(bit_left){
+		int byte_off = bit_off_in_sect/8;
+		fsbuf[byte_off] |= 1 << (bit_off_in_sect % 8);
+		bit_left --;
+		bit_off_in_sect++;
+		if(bit_off_in_sect == (SECTOR_SIZE *8)){
+			WRITE_SECT(ROOT_DEV, 2 + sb.imap_sects_count+cur_sect);
+			cur_sect++;
+			READ_SECT(ROOT_DEV, 2 + sb.imap_sects_count + cur_sect);
+			bit_off_in_sect = 0;
+		}
+	}
+	WRITE_SECT(ROOT_DEV, 2+sb.imap_sects_count + cur_sect);
 	//inodes
+	//设置inode array区域
 	//inode for '/'
 	memset(fsbuf, 0, SECTOR_SIZE);
 	struct inode * pi = (struct inode*)fsbuf;
@@ -245,7 +277,9 @@ void mkfs()
 		pi->i_start_sect = MAKE_DEV(DEV_CHAR_TTY, i);
 		pi->i_sects_count = 0;
 	}
-	WRITE_SECT(ROOT_DEV, 2+sb.imap_sects_count + sb.smap_sects_count);
+	//inode for cmd.tar
+	
+	//WRITE_SECT(ROOT_DEV, 2+sb.imap_sects_count + sb.smap_sects_count);
 	//for 'cmd.tar'
 	pi = (struct inode*)(fsbuf+(INODE_SIZE * (CONSOLE_COUNT+1)));
 	pi->i_mode = I_REGULAR;
@@ -253,6 +287,7 @@ void mkfs()
 	pi->i_start_sect = INSTALL_START_SECT;
 	pi->i_sects_count = INSTALL_SECTS_COUNT;
 	WRITE_SECT(ROOT_DEV, 2+sb.imap_sects_count + sb.smap_sects_count);
+	//设置真正的文件数据区域
 	//'/'
 	memset(fsbuf, 0, SECTOR_SIZE);
 	struct dir_entry *pde = (struct dir_entry*)fsbuf;
@@ -745,7 +780,7 @@ int alloc_smap_bit(int dev, int sects_count_to_alloc)
 	
 	struct super_block *sb = get_super_block(dev);
 	//------------dump super_block
-	printk("\ninodes_count:%d\nsects_counts:%d\nimap_sects_count:%d\nsmap_sects_count:%d\nfirst_sect:%d\ninode_sects_count:%d\n",super_block->inodes_count,super_block->sects_count, super_block->imap_sects_count, super_block->first_sect, super_block->inode_sects_count);
+	printk("\ninodes_count:%d\nsects_counts:%d\nimap_sects_count:%d\nsmap_sects_count:%d\nfirst_sect:%d\ninode_sects_count:%d\n",super_block->inodes_count,super_block->sects_count, super_block->imap_sects_count, super_block->smap_sects_count,super_block->first_sect, super_block->inode_sects_count);
 	//------------	
 	int smap_blk0_nr = 1 + 1 + sb->imap_sects_count;
 	printk("smap_blk0_nr:%d\n", smap_blk0_nr);

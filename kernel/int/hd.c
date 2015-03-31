@@ -172,7 +172,7 @@ void hd_ioctl(struct message *msg)
 	int drive = DRV_OF_DEV(device);
 	assert(drive==0);
 	struct hd_info *hdi = &hd_info[drive];
-	
+	printk("hd_ioctl\ndevice:%d,MAX_PRIM:%d\n",device, MAX_PRIM);
 	if(msg->REQUEST == DIOCTL_GET_GEO){
 		void *dst = va2la(msg->PID, msg->BUF);
 		void *src = va2la(TASK_HD, device < MAX_PRIM?&hdi->primary[device] : &hdi->logical[(device - MINOR_hd1a) % SUB_PER_DRIVE]);
