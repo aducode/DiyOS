@@ -12,8 +12,10 @@ void init()
 	int stdout = open("/dev_tty0", O_RDWT);
 	assert(stdout == 1);
 	printf("init() is running ...\n");
-	test_fs();
-	untar("/cmd.tar");	
+	while(1);
+/*
+//	test_fs();
+//	untar("/cmd.tar");	
 	int pid = fork();
 	if(pid!=0){
 //		printf("parent is running, pid:%d, child pid:%d\n", getpid(), pid);
@@ -51,7 +53,9 @@ void init()
 		}
 		//如果wait返回-1表示init进程没有子进程
 	}
+*/
 }
+
 /*
 void init(){
 	int stdin = open("/dev_tty0", O_RDWT);
