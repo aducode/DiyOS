@@ -4,6 +4,7 @@
 #include "fork.h"
 #include "getpid.h"
 #include "tar.h"
+void test_fs();
 void init()
 {
 	int stdin = open("/dev_tty0", O_RDWT);
@@ -11,6 +12,7 @@ void init()
 	int stdout = open("/dev_tty0", O_RDWT);
 	assert(stdout == 1);
 	printf("init() is running ...\n");
+	test_fs();
 	untar("/cmd.tar");	
 	int pid = fork();
 	if(pid!=0){
@@ -72,3 +74,15 @@ void init(){
 	close(stdin);   
 }
 */
+
+/**
+ * @function test_fs
+ * @brief 测试文件系统
+ */
+void test_fs()
+{
+	int fd = open("/test.txt", O_CREATE|O_RDWT);
+	assert(fd!=-1);
+	write(fd,"1234567890",10);
+	close(fd);
+}

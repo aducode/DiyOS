@@ -124,6 +124,7 @@ void init_fs()
 	msg.DEVICE = MINOR(ROOT_DEV);
 	assert(dd_map[MAJOR(ROOT_DEV)].driver_pid != INVALID_DRIVER);
 	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
+	sb = (struct super_block*)fsbuf;
 	//打开后创建文件系统
 	mkfs();
 	//load super block of ROOT
@@ -737,13 +738,17 @@ int alloc_imap_bit(int dev)
  */
 int alloc_smap_bit(int dev, int sects_count_to_alloc)
 {
+	printk("alloc_smap_bit\n\ndev:%d,sects_count_to_alloc:%d\n",dev, sects_count_to_alloc);
 	int i; //sector index
 	int j; //byte index
 	int k; //bit index
 	
 	struct super_block *sb = get_super_block(dev);
-	
+	//------------dump super_block
+	printk("\ninodes_count:%d\nsects_counts:%d\nimap_sects_count:%d\nsmap_sects_count:%d\nfirst_sect:%d\ninode_sects_count:%d\n",super_block->inodes_count,super_block->sects_count, super_block->imap_sects_count, super_block->first_sect, super_block->inode_sects_count);
+	//------------	
 	int smap_blk0_nr = 1 + 1 + sb->imap_sects_count;
+	printk("smap_blk0_nr:%d\n", smap_blk0_nr);
 	int free_sect_nr = 0;
 	for(i=0;i<sb->smap_sects_count;i++){
 		READ_SECT(dev, smap_blk0_nr + i); //read data to fsbuf
@@ -766,12 +771,14 @@ int alloc_smap_bit(int dev, int sects_count_to_alloc)
 			}
 		}
 		if(free_sect_nr){ //free bit found, write the bits to smap
+			printk("free_sect_nr:%d\n", free_sect_nr);
 			WRITE_SECT(dev, smap_blk0_nr + i); //write fsbuf to dev
 		}
 		if(sects_count_to_alloc == 0){
 			break;
 		}
 	}
+	printk("the sects_count_to_alloc:%d\n", sects_count_to_alloc);
 	assert(sects_count_to_alloc == 0);
 	return free_sect_nr;
 }
