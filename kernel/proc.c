@@ -165,7 +165,8 @@ int msg_send(struct process *current, int dest, struct message *m)   //0x3b1a
 	int src = proc2pid(sender);
 	assert(src!=dest);	//不能给自己发
 	#ifdef _SHOW_MSG_SEND_
-	printk("[msg_send]\t(%s)[%d] send message to (%s)[%d]\n",src>=0?(src<TASKS_COUNT+PROCS_COUNT?(proc_table+src)->name:"ANY"):"INTERRUPT",src, dest>=0?(dest<TASKS_COUNT+PROCS_COUNT?(proc_table+dest)->name:"ANY"):"INTERRUPT", dest);
+	//printk("[msg_send]\t(%s)[%d] send message to (%s)[%d]\n",src>=0?(src<TASKS_COUNT+PROCS_COUNT?(proc_table+src)->name:"ANY"):"INTERRUPT",src, dest>=0?(dest<TASKS_COUNT+PROCS_COUNT?(proc_table+dest)->name:"ANY"):"INTERRUPT", dest);
+	printk("(%s)[%d]->(%s)[%d],",src>=0?(src<TASKS_COUNT+PROCS_COUNT?(proc_table+src)->name:"ANY"):"INTERRUPT",src, dest>=0?(dest<TASKS_COUNT+PROCS_COUNT?(proc_table+dest)->name:"ANY"):"INTERRUPT", dest);
 	#endif
 	//检查死锁
 	if(deadlock(src,dest)){
@@ -230,7 +231,8 @@ int msg_receive(struct process *current, int src, struct message *m)
 	//printk("[msg_receive]\t[%d] receive message from [%d]\n", dest,src);
 	assert(dest != src);
 	#ifdef _SHOW_MSG_RECEIVE_
-	printk("[msg_receive]\t(%s)[%d] receive message from (%s)[%d]\n", dest>=0?(dest<TASKS_COUNT+PROCS_COUNT?(dest+proc_table)->name:"ANY"):"INTERRUPT", dest,src>=0?(src<TASKS_COUNT+PROCS_COUNT?(src+proc_table)->name:"ANY"):"INTERRUPT",src);
+	//printk("[msg_receive]\t(%s)[%d] receive message from (%s)[%d]\n", dest>=0?(dest<TASKS_COUNT+PROCS_COUNT?(dest+proc_table)->name:"ANY"):"INTERRUPT", dest,src>=0?(src<TASKS_COUNT+PROCS_COUNT?(src+proc_table)->name:"ANY"):"INTERRUPT",src);
+	printk("(%s)[%d]<-(%s)[%d],",dest>=0?(dest<TASKS_COUNT+PROCS_COUNT?(dest+proc_table)->name:"ANY"):"INTERRUPT", dest,src>=0?(src<TASKS_COUNT+PROCS_COUNT?(src+proc_table)->name:"ANY"):"INTERRUPT",src);
 	#endif
 	if((receiver->has_int_msg) && ((src==ANY)||(src==INTERRUPT))){
 		//处理中断
