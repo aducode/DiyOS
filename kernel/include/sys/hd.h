@@ -164,21 +164,24 @@ extern void init_hd();
 //设备相关宏
 //系统最多支持两块硬盘
 #define MAX_DRIVES	2
-//每块硬盘支持的最大分区数
+//每块硬盘支持的最大主分区或扩展分区数为4
 #define PART_PER_DRIVE	4
 //每个扩展分区最大逻辑分区数
 #define SUB_PER_PART	16
 //每块硬盘的最大逻辑分区数
 #define SUB_PER_DRIVE	(SUB_PER_PART * PART_PER_DRIVE)
-//每块硬盘最大主分区数
+//每块硬盘的主分区数（hd0-4 第一块硬盘 其中hd0表示整体）（hd5-9表示第二块硬盘 hd5表示整体）
 #define PRIM_PER_DRIVE	(PART_PER_DRIVE + 1)
 //系统支持的最大主分区数
 /**
  *@def MAX_PRIM
  *Defines the max minor number of the primary partitions.
  * If there are 2 disks, prim_dev ranges in hd[0-9], this macro will eqauls 9.
+ * 最大主分区id号 9
+ * hd0表示第一块硬盘整体 hd1-4表示第一块硬盘上的4个主分区（扩展分区）
+ * hd5表示第二块硬盘整体 hd6-9表示第二块硬盘上的4个主分区（扩展分区）
  */
-#define MAX_PRIM	(MAX_DRIVES * PRIM_PER_DRIVE)
+#define MAX_PRIM	(MAX_DRIVES * PRIM_PER_DRIVE - 1)
 //系统支持的最大逻辑分区数
 #define MAX_SUBPARTITIONS	(SUB_PER_DRIVE * MAX_DRIVES)
 //
