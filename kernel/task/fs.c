@@ -189,7 +189,7 @@ void mkfs()
 	sb.dir_ent_fname_off	= (int)&de.name - (int)&de;
 	memset(fsbuf, 0x90, SECTOR_SIZE);
 	memcpy(fsbuf, &sb, SUPER_BLOCK_SIZE);
-	printk("mkfs\ninodes_count:%d\nsects_count:%d\nimap_sects_count:%d\nsmap_sects_count:%d\nfirst_sect:%d\ninode_sects_count:%d\n",sb.inodes_count,sb.sects_count, sb.imap_sects_count, sb.smap_sects_count, sb.first_sect, sb.inode_sects_count);
+	//printk("mkfs\ninodes_count:%d\nsects_count:%d\nimap_sects_count:%d\nsmap_sects_count:%d\nfirst_sect:%d\ninode_sects_count:%d\n",sb.inodes_count,sb.sects_count, sb.imap_sects_count, sb.smap_sects_count, sb.first_sect, sb.inode_sects_count);
 	//write the super block
 	WRITE_SECT(ROOT_DEV, 1);  //sector 0为boot sector
 				  //sector 1super block 写入1
@@ -773,17 +773,17 @@ int alloc_imap_bit(int dev)
  */
 int alloc_smap_bit(int dev, int sects_count_to_alloc)
 {
-	printk("alloc_smap_bit\n\ndev:%d,sects_count_to_alloc:%d\n",dev, sects_count_to_alloc);
+	//printk("alloc_smap_bit\n\ndev:%d,sects_count_to_alloc:%d\n",dev, sects_count_to_alloc);
 	int i; //sector index
 	int j; //byte index
 	int k; //bit index
 	
 	struct super_block *sb = get_super_block(dev);
 	//------------dump super_block
-	printk("\ninodes_count:%d\nsects_counts:%d\nimap_sects_count:%d\nsmap_sects_count:%d\nfirst_sect:%d\ninode_sects_count:%d\n",super_block->inodes_count,super_block->sects_count, super_block->imap_sects_count, super_block->smap_sects_count,super_block->first_sect, super_block->inode_sects_count);
+	//printk("\ninodes_count:%d\nsects_counts:%d\nimap_sects_count:%d\nsmap_sects_count:%d\nfirst_sect:%d\ninode_sects_count:%d\n",super_block->inodes_count,super_block->sects_count, super_block->imap_sects_count, super_block->smap_sects_count,super_block->first_sect, super_block->inode_sects_count);
 	//------------	
 	int smap_blk0_nr = 1 + 1 + sb->imap_sects_count;
-	printk("smap_blk0_nr:%d\n", smap_blk0_nr);
+	//printk("smap_blk0_nr:%d\n", smap_blk0_nr);
 	int free_sect_nr = 0;
 	for(i=0;i<sb->smap_sects_count;i++){
 		READ_SECT(dev, smap_blk0_nr + i); //read data to fsbuf
@@ -806,14 +806,14 @@ int alloc_smap_bit(int dev, int sects_count_to_alloc)
 			}
 		}
 		if(free_sect_nr){ //free bit found, write the bits to smap
-			printk("free_sect_nr:%d\n", free_sect_nr);
+			//printk("free_sect_nr:%d\n", free_sect_nr);
 			WRITE_SECT(dev, smap_blk0_nr + i); //write fsbuf to dev
 		}
 		if(sects_count_to_alloc == 0){
 			break;
 		}
 	}
-	printk("the sects_count_to_alloc:%d\n", sects_count_to_alloc);
+	//printk("the sects_count_to_alloc:%d\n", sects_count_to_alloc);
 	assert(sects_count_to_alloc == 0);
 	return free_sect_nr;
 }
