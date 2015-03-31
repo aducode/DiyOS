@@ -203,10 +203,11 @@ extern void init_hd();
 #define MINOR(x)        (x & 0xFF)
 //
 //硬盘设备号
+#define MINOR_hd1	0x01				//主分区
 #define MINOR_hd1a      0x10
 #define MINOR_hd2a      (MINOR_hd1a + SUB_PER_PART) 
 //
-#define ROOT_DEV	MAKE_DEV(DEV_HD, MINOR_hd2a)    //我们系统的文件系统根在hd2a
+#define ROOT_DEV	MAKE_DEV(DEV_HD, MINOR_hd1)    //我们系统的文件系统根目录在主分区（现在只有一个分区）
 
 //我们系统的ROOT_DEV
 //分区类型
