@@ -99,7 +99,7 @@ void hd_open(int device)
 		//保证只执行一次
 		partition(drive * (PART_PER_DRIVE +1 ), P_PRIMARY);
 		//打印信息
-		print_hdinfo(&hd_info[drive]);
+		//print_hdinfo(&hd_info[drive]);
 	}
 }
 
