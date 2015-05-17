@@ -8,3 +8,13 @@
 
 * 运行环境：bochs release 2.6.7
 * bochs调试断点：1.0x7c00 boot.bin入口地址；2.0x90100 loader.bin入口地址；3.0x400 kernel.bin入口地址
+
+###目前进度:
+
+1. boot loader 完成
+2. 微内核架构kernel，主要处理进程调度
+3. 自定义系统中断函数sendrecv，用于进程间消息通信
+4. 屏幕输出，完成用户级别输出（printf）
+5. 键盘输入
+6. 简单的文件系统
+7. 内存管理，fork进程
