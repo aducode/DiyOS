@@ -7,6 +7,9 @@
 void test_fs();
 void init()
 {
+	printk("Yooooooooooooo\n");
+	//下面打开stdin stdout了会死锁
+	//TODO fix it
 	int stdin = open("/dev_tty0", O_RDWT);
 	assert(stdin==0);
 	int stdout = open("/dev_tty0", O_RDWT);
