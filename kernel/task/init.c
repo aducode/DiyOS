@@ -11,8 +11,15 @@ void init()
 	assert(stdin==0);
 	int stdout = open("/dev_tty0", O_RDWT);
 	assert(stdout == 1);
-	printf("init() is running ...\n");
-	while(1);
+	char buf[128];
+	while(1){
+		printf("#");
+		int bytes = read(stdin, buf, 79);
+		buf[bytes]=0;
+		if(buf[0]){
+			printf(">%s\n", buf);
+		}
+	}
 /*
 //	test_fs();
 //	untar("/cmd.tar");	
