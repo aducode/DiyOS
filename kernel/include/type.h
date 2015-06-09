@@ -29,7 +29,7 @@
  * @define _INCLUDE_KLIB_
  * @brief 是否include klib.h
  */
-//#define _INCLUDE_KLIB_
+#define _INCLUDE_KLIB_
 
 //macro utils
 #define min(a,b) ((a)<(b)?(a):(b))
