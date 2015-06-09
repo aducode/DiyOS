@@ -28,7 +28,7 @@ _out_byte:
 	out dx, al
 	nop
 	nop	;一点延迟
-	nop
+	nop	; 原来两个nop，在操作磁盘时会造成死锁，所以多加了一个
 	ret
 
 
@@ -39,7 +39,7 @@ _in_byte:
 	in al, dx
 	nop
 	nop
-	nop
+	nop	; 多加一个nop指令，防止磁盘操作的时候阻塞线程
 	ret	;返回值在eax中
 ;void _port_read(u16 port, void* buf, int n);
 _port_read:
