@@ -10,7 +10,7 @@
 #include "stdio.h"
 #include "proc.h"
 
-//#include "klib.h"
+#include "klib.h"
 static void init_fs();
 static void mkfs();
 static void read_super_block(int dev);
@@ -61,6 +61,7 @@ void task_fs()
 		int src = msg.source;
 		switch(msg.type){
 			case OPEN:
+				//_disp_str("FS handle open", 0, 0, COLOR_GREEN);
 				//open 要返回FD
 				msg.FD = do_open(&msg);
 				break;
@@ -129,7 +130,6 @@ void init_fs()
 	mkfs();
 	//load super block of ROOT
 	read_super_block(ROOT_DEV);
-	
 	sb=get_super_block(ROOT_DEV);
 	assert(sb->magic == MAGIC_V1);
 	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
@@ -227,26 +227,37 @@ void mkfs()
 	 *                                    |   `---bit 0 is reserved
 	 *                                    `-------for '/'
 	 */
+	//_disp_str("@",0, 0, COLOR_RED);//display
 	for(i=0;i<nr_sects/8;i++){
 		fsbuf[i] = 0xFF;
 	}
 	for(j=0;j<nr_sects % 8;j++){
 		fsbuf[i] |= (1<<j);
 	}
+	//_disp_str("@",0, 0, COLOR_RED); //display
 	//sector bitmap 对应位置被设置成1
 	WRITE_SECT(ROOT_DEV, 2 + sb.imap_sects_count);//imap_sects_count==1
-	
+	//_disp_str("@",0, 0, COLOR_RED);	//display
 	memset(fsbuf, 0, SECTOR_SIZE);
+	//_disp_str("@",0, 0, COLOR_RED); //display
 	//设置其余的sector bitmap的扇区为0
+	//_disp_str("it will deadlock",0,0, COLOR_RED);
 	for(i=1;i<sb.smap_sects_count;i++){
+		//TODO fix
+		//something wrong here
+		//在循环里面打印信息时，程序又能正常运行！
+		//_disp_str("@",0,0, COLOR_GREEN);
 		WRITE_SECT(ROOT_DEV, 2 + sb.imap_sects_count + i);
 	}
+	//_disp_str("@",0, 0, COLOR_RED); //do not display
 	//sector map for 'cmd.tar'	
 	int bit_offset = INSTALL_START_SECT - sb.first_sect + 1;
 	int bit_off_in_sect = bit_offset % (SECTOR_SIZE * 8);
 	int bit_left = INSTALL_SECTS_COUNT;
 	int cur_sect = bit_offset/(SECTOR_SIZE*8);
+	//_disp_str("@",0, 0, COLOR_RED); //do not display
 	READ_SECT(ROOT_DEV,2+sb.imap_sects_count + cur_sect);
+	//_disp_str("@",0, 0, COLOR_RED); //do not display
 	while(bit_left){
 		int byte_off = bit_off_in_sect/8;
 		fsbuf[byte_off] |= 1 << (bit_off_in_sect % 8);
@@ -260,6 +271,7 @@ void mkfs()
 		}
 	}
 	WRITE_SECT(ROOT_DEV, 2+sb.imap_sects_count + cur_sect);
+	//_disp_str("@",0, 0, COLOR_RED);
 	//inodes
 	//设置inode array区域
 	//inode for '/'
