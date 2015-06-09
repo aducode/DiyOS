@@ -13,7 +13,7 @@ void init()
 	assert(stdout == 1);
 	char buf[128];
 	while(1){
-		printf("#");
+		printf("$");
 		int bytes = read(stdin, buf, 79);
 		buf[bytes]=0;
 		if(buf[0]){

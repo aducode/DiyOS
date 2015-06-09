@@ -27,8 +27,8 @@ _out_byte:
 	mov al, [esp + 4 + 4]	;value
 	out dx, al
 	nop
-	nop
 	nop	;一点延迟
+	nop
 	ret
 
 
@@ -47,7 +47,11 @@ _port_read:
 	mov edi, [esp + 4 + 4]		;buf
 	mov ecx, [esp + 4 + 4 + 4]	;n
 	shr ecx, 1
+	;cld 置位DF=0
 	cld
+	;rep 重复指令(DF指定方向)
+	;按计数寄存器 ((E)CX) 中指定的次数重复执行字符串指令，或是重复到 ZF 标志不再满足指定的条件。
+	;insw 按字从dx指定的port中读入一个字到ES：DI
 	rep insw
 	ret
 ;void _port_write(u16 port, void*buf, int n)
