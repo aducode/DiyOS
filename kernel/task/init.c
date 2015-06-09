@@ -7,15 +7,24 @@
 void test_fs();
 void init()
 {
-	printk("Yooooooooooooo\n");
+//	_disp_str("Yooooooooooo",0,0, COLOR_RED);
 	//下面打开stdin stdout了会死锁
 	//TODO fix it
 	int stdin = open("/dev_tty0", O_RDWT);
 	assert(stdin==0);
+//	_disp_str("open stdin success", 2, 0, COLOR_GREEN);
 	int stdout = open("/dev_tty0", O_RDWT);
 	assert(stdout == 1);
-	printf("init() is running ...\n");
-	while(1);
+//	_disp_str("open stdout success", 4, 0, COLOR_GREEN);
+	char buf[128];
+	while(1){
+		printf("$");
+		int l = read(stdin, buf, 70);
+		buf[l] = 0;
+		if(buf[0]){
+			printf(">%s\n", buf);	
+		}
+	}
 /*
 //	test_fs();
 //	untar("/cmd.tar");	

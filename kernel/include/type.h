@@ -25,6 +25,12 @@
  */
 //#define _SHOW_MSG_RECEIVE_
 
+/**
+ * @define _INCLUDE_KLIB_
+ * @brief 是否include klib.h
+ */
+//#define _INCLUDE_KLIB_
+
 //macro utils
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
@@ -160,4 +166,7 @@ enum msgtype {
 //中断类型消息
 #define INTERRUPT               -10
 
+#ifdef _INCLUDE_KLIB_
+#include "klib.h"
+#endif
 #endif
