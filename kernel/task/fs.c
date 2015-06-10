@@ -10,7 +10,7 @@
 #include "stdio.h"
 #include "proc.h"
 
-//#include "klib.h"
+#include "klib.h"
 static void init_fs();
 static void mkfs();
 static void read_super_block(int dev);
@@ -21,6 +21,8 @@ static void sync_inode(struct inode *p);
 static int do_open(struct message *p_msg);
 static int do_close(struct message *p_msg);
 static int do_rdwt(struct message *p_msg);
+static int do_seek(struct message *p_msg);
+static int do_tell(struct message *p_msg);
 static int do_unlink(struct message *p_msg);
 static int fs_fork(struct message *msg);
 static int fs_exit(struct message *msg);
@@ -61,6 +63,7 @@ void task_fs()
 		int src = msg.source;
 		switch(msg.type){
 			case OPEN:
+				//_disp_str("FS handle open", 0, 0, COLOR_GREEN);
 				//open 要返回FD
 				msg.FD = do_open(&msg);
 				break;
@@ -71,6 +74,12 @@ void task_fs()
 			case READ:
 			case WRITE:
 				msg.CNT = do_rdwt(&msg);
+				break;
+			case SEEK:
+				msg.RETVAL = do_seek(&msg);
+				break;
+			case TELL:
+				msg.POSITION = do_tell(&msg);
 				break;
 			case UNLINK:
 				msg.RETVAL = do_unlink(&msg);
@@ -129,7 +138,6 @@ void init_fs()
 	mkfs();
 	//load super block of ROOT
 	read_super_block(ROOT_DEV);
-	
 	sb=get_super_block(ROOT_DEV);
 	assert(sb->magic == MAGIC_V1);
 	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
@@ -227,26 +235,37 @@ void mkfs()
 	 *                                    |   `---bit 0 is reserved
 	 *                                    `-------for '/'
 	 */
+	//_disp_str("@",0, 0, COLOR_RED);//display
 	for(i=0;i<nr_sects/8;i++){
 		fsbuf[i] = 0xFF;
 	}
 	for(j=0;j<nr_sects % 8;j++){
 		fsbuf[i] |= (1<<j);
 	}
+	//_disp_str("@",0, 0, COLOR_RED); //display
 	//sector bitmap 对应位置被设置成1
 	WRITE_SECT(ROOT_DEV, 2 + sb.imap_sects_count);//imap_sects_count==1
-	
+	//_disp_str("@",0, 0, COLOR_RED);	//display
 	memset(fsbuf, 0, SECTOR_SIZE);
+	//_disp_str("@",0, 0, COLOR_RED); //display
 	//设置其余的sector bitmap的扇区为0
+	//_disp_str("it will deadlock",0,0, COLOR_RED);
 	for(i=1;i<sb.smap_sects_count;i++){
+		//TODO fix
+		//something wrong here
+		//在循环里面打印信息时，程序又能正常运行！
+		//_disp_str("@",0,0, COLOR_GREEN);
 		WRITE_SECT(ROOT_DEV, 2 + sb.imap_sects_count + i);
 	}
+	//_disp_str("@",0, 0, COLOR_RED); //do not display
 	//sector map for 'cmd.tar'	
 	int bit_offset = INSTALL_START_SECT - sb.first_sect + 1;
 	int bit_off_in_sect = bit_offset % (SECTOR_SIZE * 8);
 	int bit_left = INSTALL_SECTS_COUNT;
 	int cur_sect = bit_offset/(SECTOR_SIZE*8);
+	//_disp_str("@",0, 0, COLOR_RED); //do not display
 	READ_SECT(ROOT_DEV,2+sb.imap_sects_count + cur_sect);
+	//_disp_str("@",0, 0, COLOR_RED); //do not display
 	while(bit_left){
 		int byte_off = bit_off_in_sect/8;
 		fsbuf[byte_off] |= 1 << (bit_off_in_sect % 8);
@@ -260,6 +279,7 @@ void mkfs()
 		}
 	}
 	WRITE_SECT(ROOT_DEV, 2+sb.imap_sects_count + cur_sect);
+	//_disp_str("@",0, 0, COLOR_RED);
 	//inodes
 	//设置inode array区域
 	//inode for '/'
@@ -421,6 +441,79 @@ int do_open(struct message *p_msg)
 	return fd;
 }
 
+/**
+ * @function do_seek
+ * @brief 
+ */
+int do_seek(struct message *p_msg)
+{
+	int fd = p_msg->FD;
+	int offset = p_msg->OFFSET;
+	int where = p_msg->WHERE;
+	if((offset<0 && where == 0) || (offset>0 && where == 2)){
+		//where:0 SEEK_START 偏移只能为正
+		//where:2 SEEK_END   偏移只能为负
+		return -1;
+	}
+	int src = p_msg->source;
+	struct process *pcaller = proc_table + src;
+        assert((pcaller->filp[fd]>=f_desc_table) & (pcaller->filp[fd] < f_desc_table + MAX_FILE_DESC_COUNT));
+        if(!(pcaller->filp[fd]->fd_mode & O_RDWT)){
+                return -1;
+        }
+	struct inode *pin = pcaller->filp[fd]->fd_inode;
+	assert(pin>=inode_table && pin<inode_table + MAX_INODE_COUNT);
+	int imode = pin->i_mode & I_TYPE_MASK;
+	if(imode!=I_REGULAR){
+		return -1;//只对普通文件有效
+	}
+	int file_size = pin->i_size;	
+        int pos = pcaller->filp[fd]->fd_pos;
+	int new_pos = 0;
+	switch(where){
+	case 0:
+		new_pos = offset;
+		break;
+	case 1:
+		new_pos = pos + offset;
+		break;
+	case 2:
+		new_pos = file_size + offset; //之前已经判断过 offset一定为负数
+		break;
+	default:
+		break;
+	}
+	if(new_pos<0||new_pos>file_size){
+		return -1; //invalid new pos
+	}
+	//update pos
+	pcaller->filp[fd]->fd_pos = new_pos;
+	return 0;	
+}
+
+/**
+ * @function do_tell
+ * @brief 文件位置
+ */
+int do_tell(struct message *p_msg)
+{
+	int fd= p_msg->FD;
+	int src = p_msg->source;
+	struct process *pcaller = proc_table + src;
+        assert((pcaller->filp[fd]>=f_desc_table) & (pcaller->filp[fd] < f_desc_table + MAX_FILE_DESC_COUNT));
+        if(!(pcaller->filp[fd]->fd_mode & O_RDWT)){
+                return -1;
+        }
+	struct inode * pin = pcaller->filp[fd]->fd_inode;
+        assert(pin>= inode_table && pin<inode_table + MAX_INODE_COUNT);
+        int imode = pin->i_mode & I_TYPE_MASK;
+	if(imode!=I_REGULAR){
+		//只能对普通文件进行操作
+		return -1;
+	}
+        int pos = pcaller->filp[fd]->fd_pos;
+	return pos;
+}
 
 /**
  * @function do_close
@@ -509,6 +602,7 @@ int do_rdwt(struct message *p_msg)
 			} else {
 				//write
 				memcpy((void*)va2la(TASK_FS, fsbuf+off), (void*)va2la(src, buf+bytes_rw), bytes);
+				//TODO add file cache here
 				rw_sector(DEV_WRITE,pin->i_dev, i*SECTOR_SIZE, chunk*SECTOR_SIZE, TASK_FS, fsbuf);
 			}
 			off = 0;

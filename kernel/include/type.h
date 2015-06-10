@@ -25,6 +25,12 @@
  */
 //#define _SHOW_MSG_RECEIVE_
 
+/**
+ * @define _INCLUDE_KLIB_
+ * @brief 是否include klib.h
+ */
+//#define _INCLUDE_KLIB_
+
 //macro utils
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
@@ -89,7 +95,7 @@ enum msgtype {
 	//sys task
 	GET_TICKS, GET_PID,
 	//FS
-	OPEN, CLOSE, READ, WRITE,LSEEK,STAT, UNLINK,
+	OPEN, CLOSE, READ, WRITE,SEEK,TELL,STAT, UNLINK,
 	//FS & TTY
 	SUSPEND_PROC,	RESUME_PROC,
 	//MM
@@ -130,6 +136,9 @@ enum msgtype {
 #define FLAGS		u.m3.m3i1
 #define NAME_LEN	u.m3.m3i2
 
+#define OFFSET		u.m3.m3i2
+#define WHERE		u.m3.m3i3
+
 //about process
 //#define MAX_PROCESS_COUNT     32      //最多32个进程
 #define TASKS_COUNT             6       //系统进程个数
@@ -160,4 +169,7 @@ enum msgtype {
 //中断类型消息
 #define INTERRUPT               -10
 
+#ifdef _INCLUDE_KLIB_
+#include "klib.h"
+#endif
 #endif

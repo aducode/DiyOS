@@ -177,6 +177,42 @@ int write(int fd, const void * buf, int count)
 }
 
 /**
+ * @function seek
+ * @brief 设置文件内部指针位置
+ * @param fd
+ * @param offset 偏移
+ * @param where 起始位置SEEK_SET:相对于当前位置 SEEK_START: 相对于开始位置 SEEK_END:相对于结束位置
+ * @return 0 成功
+ */
+int seek(int fd, int offset, int where)
+{
+	struct message msg;
+	msg.type = SEEK;
+	msg.FD = fd;
+	msg.OFFSET = offset;
+	msg.WHERE = where;
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.RETVAL;
+}
+
+/**
+ * @function tell
+ * @brief 文件指针当前位置
+ * @param fd
+ * @return 位置
+ */
+long tell(int fd)
+{
+	struct message msg;
+	msg.type = TELL;
+	msg.FD = fd;
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);	
+	return msg.POSITION;
+}
+
+/**
  * @function unlink
  * @brief 删除文件
  * @param pathanem  文件名
