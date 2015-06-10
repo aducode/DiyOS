@@ -17,8 +17,35 @@ void init()
 	assert(stdout == 1);
 //	_disp_str("open stdout success", 4, 0, COLOR_GREEN);
 	test_fs();
+	int pid = fork();
+	if(pid!=0){
+		printf("parent is running, pid:%d child pid:%d\n", getpid(), pid);
+		//int pid2 = fork();
+		//if(pid2!=0){
+				
+		//} else {
+		//	printf("child is running, pid:%d\n", getpid());
+		//}
+		int s;
+		int cpid = wait(&s);
+		printf("child %d exit:%d\n", cpid, s);
+	} else {
+		printf("child is running, pid:%d\n", getpid());
+		//int pid3 = fork();
+		//if(pid3!=0){
+		//	printf("parent is running, pid:%d, child pid:%d\n", getpid(), pid);
+		//} else {
+		//	printf("child is running, pid:%d\n", getpid());
+		//}
+		exit(2333);
+	}
 	char buf[128];
 	while(1){
+		int status;
+		int child = wait(&status);
+		if(child>=0){
+			printf("child %d exit:%d\n",child, status);	
+		}
 		printf("$");
 		int l = read(stdin, buf, 70);
 		buf[l] = 0;
