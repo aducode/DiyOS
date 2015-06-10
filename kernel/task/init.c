@@ -16,6 +16,7 @@ void init()
 	int stdout = open("/dev_tty0", O_RDWT);
 	assert(stdout == 1);
 //	_disp_str("open stdout success", 4, 0, COLOR_GREEN);
+	test_fs();
 	char buf[128];
 	while(1){
 		printf("$");
@@ -97,8 +98,24 @@ void init(){
  */
 void test_fs()
 {
-	int fd = open("/test.txt", O_CREATE|O_RDWT);
+	int fd;
+	fd = open("/test.txt", O_CREATE|O_RDWT);
 	assert(fd!=-1);
-	write(fd,"1234567890",10);
+	write(fd,"0987654321",10);
+	int pos = tell(fd);
+	printf("----pos:%d\n", pos);
+	seek(fd,0,SEEK_START);
+	pos = tell(fd);
+	printf("----pos:%d\n", pos);
+	char buf[11];
+	int bytes = read(fd, buf, 10);
+	buf[bytes]=0;
+	printf("%s\n", buf);
 	close(fd);
+	//fd = open("/test.txt", O_RDWT);
+	//char buf[11];
+	//int bytes = read(fd, buf, 10);
+	//buf[bytes]=0;
+	//printf(buf);
+	//close(fd);
 }

@@ -26,7 +26,8 @@ _out_byte:
 	mov edx, [esp + 4]	;port
 	mov al, [esp + 4 + 4]	;value
 	out dx, al
-	nop
+	;nop
+	;nop
 	nop	;一点延迟
 	nop
 	ret
@@ -37,6 +38,7 @@ _in_byte:
 	mov edx, [esp + 4]	;port
 	xor eax, eax
 	in al, dx
+	nop
 	nop
 	nop
 	nop
