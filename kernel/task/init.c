@@ -4,6 +4,28 @@
 #include "fork.h"
 #include "getpid.h"
 #include "tar.h"
+
+#define _FOR_TEST_
+#ifndef _FOR_TEST_
+void init(){
+	int stdin = open("/dev_tty0", O_RDWT);
+	assert(stdin==0);
+	int stdout = open("/dev_tty0", O_RDWT);
+	assert(stdout==1);
+	int stderr = open("/dev_tty0", O_RDWT);
+	assert(stderr==2);
+	char buf[81];
+	int bytes;
+	while(1){
+		printf("$");
+		bytes=read(stdin, buf, 79);
+		buf[bytes] = 0;
+		if(buf[0]){
+			printf(">%s\n", buf);
+		}	
+	}
+}
+#else
 void test_fs();
 void init()
 {
@@ -17,6 +39,7 @@ void init()
 	assert(stdout == 1);
 //	_disp_str("open stdout success", 4, 0, COLOR_GREEN);
 	test_fs();
+	untar("/cmd.tar");
 	int pid = fork();
 	if(pid!=0){
 		printf("parent is running, pid:%d child pid:%d\n", getpid(), pid);
@@ -139,6 +162,18 @@ void test_fs()
 	buf[bytes]=0;
 	printf("%s\n", buf);
 	close(fd);
+	printf("read data from cmd.tar\n");
+	fd = open("/cmd.tar", O_RDWT);
+	while(1){
+		bytes = read(fd,buf, 10);
+		buf[bytes]=0;
+		if(buf[0]){
+			printf("%s\n",buf);
+		} else {
+			printf("read data from cmd.tar END\n");
+			break;
+		}
+	}
 	//fd = open("/test.txt", O_RDWT);
 	//char buf[11];
 	//int bytes = read(fd, buf, 10);
@@ -146,3 +181,4 @@ void test_fs()
 	//printf(buf);
 	//close(fd);
 }
+#endif
