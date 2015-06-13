@@ -141,7 +141,7 @@ void init_fs()
 	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
 	sb = (struct super_block*)fsbuf;
 	//打开后创建文件系统
-	fmtfs();
+	//fmtfs();
 	mkfs();
 	//load super block of ROOT
 	read_super_block(ROOT_DEV);
@@ -570,6 +570,7 @@ int do_open(struct message *p_msg)
 		assert(flags & O_RDWT);
 		char filename[MAX_PATH];
 		struct inode *dir_inode;
+		//printk("line:573\n");
 		if(strip_path(filename, pathname, &dir_inode) != 0){
 			return -1;
 		}
@@ -818,6 +819,7 @@ int do_unlink(struct message *p_msg)
 	}
 	char filename[MAX_PATH];
 	struct inode* dir_inode;
+	//printk("line:821\n");
 	if(strip_path(filename, pathname, &dir_inode)!=0){
 		return -1;
 	}
@@ -971,14 +973,19 @@ int fs_exit(struct message *msg)
  * @function create_file
  * @brief 创建新的inode，并设置磁盘上的数据
  * @param path 文件路径
+ * @param type  I_REGULAR:普通文件 I_DIRECTORY:目录  I_CHAR_SPECIAL:tty
  * @param flags
+ * @param start_sect 普通文件/目录 开始扇区号 设备文件 设备号
+ * @param sect_count 占用扇区数 （设备文件0）
  * 
  * @return 新inode指针，失败返回0
  */
+//struct inode * create_file(char *path, int type,  int flags, int start_sect, int sect_count)
 struct inode * create_file(char *path, int flags)
 {
 	char filename[MAX_PATH];
 	struct inode * dir_inode;
+	//printk("line:986\n");
 	if(strip_path(filename, path, &dir_inode) != 0){
 		return 0;
 	}
@@ -1178,6 +1185,75 @@ void new_dir_entry(struct inode *dir_inode, int inode_nr, char *filename)
  */
 int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 {
+/*
+	//以下这段代码从hd中读取扇区时，可能会读不出数据
+	//why?
+	//printk("----------------------------\npathname:%s\n", pathname);
+	int i, k,  nr_dir_blks, dir_entry_count;
+	struct inode * pinode;
+	struct dir_entry * pde;
+	const char * s = pathname;
+	char *t;
+	//一层一层寻找
+	if(s==0){
+		return -1; //失败
+	}
+	if(*s != '/'){
+		return -1;//必须绝对路径		
+	}
+	s++;
+	*ppinode = root_inode;	//in global.c
+	while(*s){
+		t = filename;
+		while(*s!='/' && *s!=0){
+			*t++=*s++;
+		}
+		*t=0;
+		nr_dir_blks = ((*ppinode)->i_size + SECTOR_SIZE)/SECTOR_SIZE;
+		pinode = 0;
+		for(k=0;k<nr_dir_blks;k++){
+			//printk("\tdev:%d, start_sect:%d\n", (*ppinode)->i_dev, (*ppinode)->i_start_sect);
+			READ_SECT((*ppinode)->i_dev, (*ppinode)->i_start_sect + i);	
+			pde = (struct dir_entry*)fsbuf;
+			assert((*ppinode)->i_size%DIR_ENTRY_SIZE==0);
+			dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
+		//	printk("\t%s\n", pde->name);
+			for(i=0;i<dir_entry_count;i++, pde++){
+				//printk("\t\t%s==%s\n", filename, pde->name);
+				if(strcmp(filename, pde->name)==0){
+					pinode = get_inode((*ppinode)->i_dev, pde->inode_idx); 
+				//	printk("pinode:%d\n", pinode);
+					goto find_in_dir_end;
+				//	break;
+				}
+			}
+		}
+find_in_dir_end:
+		if(pinode == 0){
+			//printk("FAIL", pathname);
+			//assert(0);
+			return -1; //说明不存在正确的路径
+		}
+		if(pinode->i_mode!=I_DIRECTORY){
+			//不是目录了
+			//有两种可能
+			//	1. pathname最后一级是文件
+			//	2. pathname中间某一级不是目录（错误）
+			if(*s!=0){
+				printk("?%d",*s==0?1:0);
+				assert(0);
+				//说明pathname还没结束，错误
+				return -1;
+			} else {
+				//说明可以结束循环
+			}
+		} else {
+			//下一级目录
+			*ppinode = pinode;
+		}
+		
+	}
+*/
 	const char * s = pathname;
 	char *t = filename;
 	if(s==0){
@@ -1199,6 +1275,8 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 	}
 	*t=0;
 	*ppinode = root_inode;
+
+	assert(*ppinode == root_inode);
 	return 0;
 }
 
@@ -1218,6 +1296,7 @@ int search_file(char *path)
 	char filename[MAX_PATH];
 	memset(filename, 0, MAX_FILENAME_LEN);
 	struct inode* dir_inode;
+	//printk("line:1293\n");
 	if(strip_path(filename, path, &dir_inode)!=0){
 		return 0;
 	}
