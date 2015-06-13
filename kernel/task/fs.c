@@ -12,6 +12,12 @@
 
 #include "klib.h"
 static void init_fs();
+static void init_super_block(struct super_block * p_sb);
+static void init_inode_bitmap();
+static void init_sect_bitmap(struct super_block * p_sb);
+static void init_inode_array(struct super_block * p_sb);
+static void init_data_blocks(struct super_block * p_sb);
+static void fmtfs();
 static void mkfs();
 static void read_super_block(int dev);
 static struct super_block * get_super_block(int dev);
@@ -135,12 +141,170 @@ void init_fs()
 	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
 	sb = (struct super_block*)fsbuf;
 	//打开后创建文件系统
+	fmtfs();
 	mkfs();
 	//load super block of ROOT
 	read_super_block(ROOT_DEV);
 	sb=get_super_block(ROOT_DEV);
 	assert(sb->magic == MAGIC_V1);
 	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
+}
+
+
+/**
+ * @function fmtfs
+ * @brief 格式化文件系统
+ *	- 写入超级块
+ *	- 创建'\'根目录
+ * @return
+ */
+void fmtfs()
+{
+	struct super_block sb;
+	//step 1 初始化超级块
+	init_super_block(&sb);
+	//step 2 初始化inode bitmap
+	init_inode_bitmap();
+	//step 3 初始化sector bitmap
+	init_sect_bitmap(&sb);
+	//step 4 初始化inode array
+	init_inode_array(&sb);
+	//step 5 初始化数据块
+	init_data_blocks(&sb);
+}
+
+
+/**
+ * @function init_super_block
+ * @brief 初始化super block，并写入磁盘
+ * @param p_sb outparam
+ * @return
+ */
+void init_super_block(struct super_block* p_sb)
+{
+	//step 1 获取硬盘分区信息
+	struct message msg;
+	int bits_per_sect = SECTOR_SIZE * 8;
+	struct part_info geo;
+	msg.type		= DEV_IOCTL;
+	msg.DEVICE		= MINOR(ROOT_DEV);
+	msg.REQUEST		= DIOCTL_GET_GEO;
+	msg.BUF			= &geo;
+	msg.PID			= TASK_FS;
+	assert(dd_map[MAJOR(ROOT_DEV)].driver_pid != INVALID_DRIVER);
+	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
+	printk("dev size: %d sectors\n", geo.size);
+	//step 2 写入超级块
+	p_sb->magic		= MAGIC_V1;
+	p_sb->inodes_count	= bits_per_sect;
+	//inode array所占的扇区数
+	p_sb->inode_sects_count	= p_sb->inodes_count * INODE_SIZE/SECTOR_SIZE;
+	//扇区总数
+	p_sb->sects_count	= geo.size;
+	//inode bitmap 所占扇区数1个扇区
+	p_sb->imap_sects_count	= 1;
+	//sector map所占扇区数 多预留一位
+	p_sb->smap_sects_count	= p_sb->sects_count/bits_per_sect + 1;
+	p_sb->first_sect	= 1 + 1 + p_sb->imap_sects_count + p_sb->smap_sects_count + p_sb->inode_sects_count;//数据区的第一个扇区，跳过boot sector和super block sector和inode bitmap 和 sector bitmap 和inode array扇区
+	p_sb->root_inode	= ROOT_INODE;	//inode bitmap 下标1
+	p_sb->inode_size	= INODE_SIZE;	//每个inode结构体持久化大小
+	struct inode x;
+	p_sb->inode_isize_off	= (int)&x.i_size - (int)&x;
+	p_sb->inode_start_off	= (int)&x.i_start_sect - (int)&x;
+	p_sb->dir_ent_size	= DIR_ENTRY_SIZE;
+	struct dir_entry de;
+	p_sb->dir_ent_inode_off	= (int)&de.inode_idx - (int)&de;
+	p_sb->dir_ent_fname_off	= (int)&de.name - (int)&de;
+	memset(fsbuf, 0x90, SECTOR_SIZE);
+	memcpy(fsbuf, (void*)p_sb, SUPER_BLOCK_SIZE);
+	//super block写入磁盘
+	WRITE_SECT(ROOT_DEV, 1);//写入扇区1（0为boot扇区，不使用)
+	
+}
+
+/**
+ * @function init_inode_bitmap
+ * @brief 初始化inode bitmap扇区
+ * @return
+ */
+void init_inode_bitmap()
+{
+	int i;
+	memset(fsbuf, 0, SECTOR_SIZE);
+	for(i=0;i<2;i++){
+		fsbuf[0] |= 1<<i;
+	}
+	assert(fsbuf[0] == 0x03); /* 0000 0011
+				   *        ||
+				   *        |`bit 0: reserved
+				   *        `-bit 1: the first inode /
+                                   */
+	WRITE_SECT(ROOT_DEV, 2); //sector 2 inode bitmap
+}
+
+/**
+ * @function init_sect_bitmap
+ * @brief 初始化sector bitmap
+ * @param p_sb  超级块
+ * @return
+ */
+void init_sect_bitmap(struct super_block * p_sb)
+{
+	int i,j;
+	memset(fsbuf, 0, SECTOR_SIZE);
+	int nr_sects = DEFAULT_FILE_SECTS_COUNT + 1;
+				/*            |   |
+				 *	      |   `bit 0 is reserved
+				 *	      `----bit 1 for '/'
+				 */
+	for(i=0; i < nr_sects / 8; i++){
+		fsbuf[i] = 0xFF;
+	}	
+	for(j=0; j < nr_sects % 8; j++){
+		fsbuf[i] |= (1<<j);
+	}
+	WRITE_SECT(ROOT_DEV, 2 + p_sb->imap_sects_count);
+	//设置区域sector bitmap项为0
+	for(i=1;i<p_sb->smap_sects_count;i++){
+		WRITE_SECT(ROOT_DEV, 2 + p_sb->imap_sects_count + i);
+	}
+}
+
+/**
+ * @function init_inode_array
+ * @brief 初始化inode array 区域
+ * @param p_sb 超级块
+ * @return
+ */ 
+void init_inode_array(struct super_block * p_sb)
+{
+	//inode for '/'
+	memset(fsbuf, 0, SECTOR_SIZE);
+	struct inode * pi = (struct inode *)fsbuf;
+	pi->i_mode = I_DIRECTORY;
+	pi->i_size = DIR_ENTRY_SIZE * 2;// '.', '..'
+	pi->i_start_sect = p_sb->first_sect;
+	pi->i_sects_count = DEFAULT_FILE_SECTS_COUNT; //暂时都设置成1KB 虽然有些浪费
+	WRITE_SECT(ROOT_DEV, 2 + p_sb->imap_sects_count + p_sb->smap_sects_count);
+}
+
+/**
+ * @function init_data_blocks
+ * @brief 初始化文件数据区
+ * @param p_sb 超级块
+ * @return
+ */
+void init_data_blocks(struct super_block * p_sb)
+{
+	//初始化时只有/目录数据
+	memset(fsbuf, 0, SECTOR_SIZE);
+	struct dir_entry *pde = (struct dir_entry*)fsbuf;
+	pde->inode_idx = 1; //.
+	strcpy(pde->name, ".");
+	(++pde)->inode_idx = 1; //..
+	strcpy(pde->name, "..");
+	WRITE_SECT(ROOT_DEV, p_sb->first_sect);
+	
 }
 
 /**
