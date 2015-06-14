@@ -149,6 +149,25 @@ void init_fs()
 	assert(sb->magic == MAGIC_V1);
 	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
 	//test
+	//这里测试多次也都能获取到root_inode在磁盘中的内容，
+	//可是为什么多次调用strip_path，里面的类似内容却不能正常运行？
+	//TODO find out
+	int ii;
+	for(ii=0;ii<3;ii++){
+		assert(root_inode->i_size%DIR_ENTRY_SIZE==0);
+		int repeat = root_inode->i_size/DIR_ENTRY_SIZE;
+		printk("%d/%d=%d\n", root_inode->i_size, DIR_ENTRY_SIZE,repeat);
+		struct dir_entry de , *pde;
+		READ_SECT(root_inode->i_dev, root_inode->i_start_sect);
+		pde=(struct dir_entry*)fsbuf;
+		for(i=0;i<repeat;i++,pde++){
+			memcpy((void*)&de, (void*)(fsbuf + i * DIR_ENTRY_SIZE), DIR_ENTRY_SIZE);
+			printk("[%d]de.inode_idx=%d,de.name=%s\n", ii,de.inode_idx, de.name);
+			printk("[%d]pde->inode_idx=%d,pde->name=%s\n",ii, pde->inode_idx, pde->name);
+		}
+	}
+	assert(0);
+/*
 	printk("root_inode->i_dev:%d,i_start_sect:%d, i_sects_count:%d\n",root_inode->i_dev, root_inode->i_start_sect, root_inode->i_sects_count);
 	//memset(fsbuf, 0, SECTOR_SIZE);
 	//test READ_SECT & WRITE_SECT
@@ -184,6 +203,7 @@ void init_fs()
 	assert(tinode == root_inode);
 	assert(strip_path(filename, "/dev_tty2", &tinode)!=-1);
 	assert(tinode == root_inode);
+*/
 }
 
 
