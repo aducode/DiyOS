@@ -69,7 +69,7 @@ extern void task_mm();
 extern void empty_proc();
 //init的作用
 //如果其他task都处于阻塞状态，现在的进程调度会陷入死循环，导致时钟中断阻塞
-//现在的处理方案就是加入一个什么也不做的进程init，防止时钟中断时，进程调度死循环
+//现在的处理方案就是加入一个什么也不做的进程EMPTY，防止时钟中断时，进程调度死循环
 struct task task_table[TASKS_COUNT] = {
 	/* entry        stack size        task name */
 	/* -----        ----------        --------- */
