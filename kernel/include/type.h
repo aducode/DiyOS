@@ -12,7 +12,7 @@
  * @brief 用来判断是否打印系统级别panic信息
  * @default on
  */
-#define _SHOW_PANIC_
+//#define _SHOW_PANIC_
 
 /**
  * @define _SHOW_MSG_SEND_

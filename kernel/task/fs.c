@@ -148,6 +148,42 @@ void init_fs()
 	sb=get_super_block(ROOT_DEV);
 	assert(sb->magic == MAGIC_V1);
 	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
+	//test
+	printk("root_inode->i_dev:%d,i_start_sect:%d, i_sects_count:%d\n",root_inode->i_dev, root_inode->i_start_sect, root_inode->i_sects_count);
+	//memset(fsbuf, 0, SECTOR_SIZE);
+	//test READ_SECT & WRITE_SECT
+	int repeat,t;
+	char tmp [SECTOR_SIZE];
+	char tmp2[SECTOR_SIZE];
+	for(repeat=0;repeat<8;repeat++){
+		//memset(fsbuf, 0, SECTOR_SIZE);
+		//for(t=0;t<SECTOR_SIZE-1;t++){
+		//	tmp[i]='#';
+		//}
+		//tmp[100]=0;
+		//printk("%s\n", fsbuf);
+		sprintf(tmp, "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789%d", repeat);
+		//sprintf(tmp, "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012%d", repeat);
+		strcpy(fsbuf, tmp);
+		WRITE_SECT(root_inode->i_dev, root_inode->i_start_sect);
+		READ_SECT(root_inode->i_dev, root_inode->i_start_sect);
+		strcpy(tmp2, fsbuf);
+		printk("%d:%d---%d\n",strlen(tmp), strlen(tmp2),strcmp(tmp, tmp2));
+		READ_SECT(root_inode->i_dev, root_inode->i_start_sect);
+		strcpy(tmp2, fsbuf);
+		printk("%d:%d+++%d\n",strlen(tmp), strlen(tmp2), strcmp(tmp, tmp2));
+	}
+	assert(0);
+	READ_SECT(root_inode->i_dev, root_inode->i_start_sect);
+	printk("\n%s\n", fsbuf);	
+	char filename[MAX_PATH];
+	struct inode * tinode;
+	assert(strip_path(filename, "/dev_tty0", &tinode)!=-1);
+	assert(tinode == root_inode);
+	assert(strip_path(filename, "/dev_tty1", &tinode)!=-1);
+	assert(tinode == root_inode);
+	assert(strip_path(filename, "/dev_tty2", &tinode)!=-1);
+	assert(tinode == root_inode);
 }
 
 
@@ -1185,10 +1221,10 @@ void new_dir_entry(struct inode *dir_inode, int inode_nr, char *filename)
  */
 int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 {
-/*
 	//以下这段代码从hd中读取扇区时，可能会读不出数据
 	//why?
-	//printk("----------------------------\npathname:%s\n", pathname);
+	printk("----------------------------\npathname:%s\n", pathname);
+	//printk("root_inode->i_dev=%d\n", root_inode->i_dev);
 	int i, k,  nr_dir_blks, dir_entry_count;
 	struct inode * pinode;
 	struct dir_entry * pde;
@@ -1212,9 +1248,10 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 		nr_dir_blks = ((*ppinode)->i_size + SECTOR_SIZE)/SECTOR_SIZE;
 		pinode = 0;
 		for(k=0;k<nr_dir_blks;k++){
-			//printk("\tdev:%d, start_sect:%d\n", (*ppinode)->i_dev, (*ppinode)->i_start_sect);
-			READ_SECT((*ppinode)->i_dev, (*ppinode)->i_start_sect + i);	
+			printk("\tdev:%d, start_sect:%d\n", (*ppinode)->i_dev, (*ppinode)->i_start_sect);
+			READ_SECT((*ppinode)->i_dev, (*ppinode)->i_start_sect + i);
 			pde = (struct dir_entry*)fsbuf;
+			printk("%d,%s\n", pde->inode_idx, pde->name);
 			assert((*ppinode)->i_size%DIR_ENTRY_SIZE==0);
 			dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
 		//	printk("\t%s\n", pde->name);
@@ -1253,7 +1290,7 @@ find_in_dir_end:
 		}
 		
 	}
-*/
+/*
 	const char * s = pathname;
 	char *t = filename;
 	if(s==0){
@@ -1275,7 +1312,7 @@ find_in_dir_end:
 	}
 	*t=0;
 	*ppinode = root_inode;
-
+*/
 	assert(*ppinode == root_inode);
 	return 0;
 }
