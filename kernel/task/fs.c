@@ -1274,12 +1274,12 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 			for(j=0;j<step;j++, pde++){
 				if(strcmp(pde->name, filename)==0){
 					pinode=get_inode((*ppinode)->i_dev, pde->inode_idx);
-					goto found_next_path;		
+					goto try_to_find_next_path;		
 				}
 			}
 			dir_entry_count -= dir_entry_count_per_sect;	
 		}
-found_next_path:
+try_to_find_next_path:
 		if(*s!=0){
 			//不是最后一级目录
 			if(pinode==0){
