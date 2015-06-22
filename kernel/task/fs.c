@@ -229,9 +229,7 @@ void fmtfs()
 	//step 4 初始化inode array
 	init_inode_array(&sb);
 	//step 5 初始化数据块
-	init_data_blocks(&sb);
-	//step 6 create dirctory /dev
-			
+	init_data_blocks(&sb);	
 }
 
 
