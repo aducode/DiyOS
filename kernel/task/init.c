@@ -148,23 +148,29 @@ void init(){
  */
 void test_fs()
 {
-	char file_content[] = "file:/hello/test.txt:hello world";
+	char file_content[] = "@@@@@@@@@@@@@@@@@@@@@@@@@@@";
 	int file_content_len = strlen(file_content);
-	mkdir("/hello");
+	int ret = mkdir("/hello");
+	printf("ret:%d\n",ret);
+	//这里连续两个mkdir后，下面write就会出错
+	//HD_TASK有问题
+	//ret = mkdir("/hello/fuckyou");
+	//printf("ret:%d\n", ret);
 	int fd;
 	fd = open("/hello/test.txt", O_CREATE|O_RDWT);
 	assert(fd!=-1);
-	write(fd,file_content,file_content_len);
-	int pos = tell(fd);
-	printf("----pos:%d\n", pos);
-	seek(fd,0,SEEK_START);
-	pos = tell(fd);
-	printf("----pos:%d\n", pos);
-	char buf[50];
-	int bytes = read(fd, buf, file_content_len);
-	buf[bytes]=0;
-	printf("%s\n", buf);
+	write(fd,file_content, file_content_len);
+	//int pos = tell(fd);
+	//printf("----pos:%d\n", pos);
+	//seek(fd,0,SEEK_START);
+	//pos = tell(fd);
+	//printf("----pos:%d\n", pos);
+	//char buf[50];
+	//int bytes = read(fd, buf, file_content_len);
+	//buf[bytes]=0;
+	//printf("%s\n", buf);
 	close(fd);
+/*
 	printf("read data from cmd.tar\n");
 	fd = open("/cmd.tar", O_RDWT);
 	while(1){
@@ -182,5 +188,6 @@ void test_fs()
 	buf[bytes]=0;
 	printf(buf);
 	close(fd);
+*/
 }
 #endif

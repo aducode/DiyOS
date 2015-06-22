@@ -1005,6 +1005,7 @@ int do_unlink(struct message *p_msg)
  */
 int do_mkdir(struct message *p_msg)
 {
+	struct inode *pinode;
 	char pathname[MAX_PATH];
         int flags = p_msg->FLAGS;
         int name_len = p_msg->NAME_LEN;
@@ -1013,7 +1014,7 @@ int do_mkdir(struct message *p_msg)
         assert(name_len<MAX_PATH);
         memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
         pathname[name_len] = 0;
-	return create_directory(pathname, O_CREATE);
+	return create_directory(pathname, O_CREATE)!=0?0:-1;
 }
 
 /**
@@ -1070,6 +1071,19 @@ struct inode * create_directory(char *path, int flags)
 	struct inode * dir_inode;
 	if(strip_path(filename, path, &dir_inode)!=0){
 		return 0;
+	}
+	struct inode *pinode;
+	int inode_idx = search_file(path);
+	if(inode_idx!=0){
+		pinode = get_inode(dir_inode->i_dev, inode_idx);
+		if(pinode==0){
+			return 0;
+		}
+		if(pinode->i_mode == I_DIRECTORY){
+			return 1; //说明已经存在目录
+		} else {
+			return 0; //父目录下有同名文件
+		}
 	}
 	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
 	int free_sect_nr = alloc_smap_bit(dir_inode->i_dev, DEFAULT_FILE_SECTS_COUNT);
