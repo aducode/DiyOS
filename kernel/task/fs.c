@@ -148,6 +148,7 @@ void init_fs()
 	sb=get_super_block(ROOT_DEV);
 	assert(sb->magic == MAGIC_V1);
 	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
+/*
 	//test
 	//这里测试多次也都能获取到root_inode在磁盘中的内容，
 	//可是为什么多次调用strip_path，里面的类似内容却不能正常运行？
@@ -167,6 +168,7 @@ void init_fs()
 		}
 	}
 	assert(0);
+*/
 /*
 	printk("root_inode->i_dev:%d,i_start_sect:%d, i_sects_count:%d\n",root_inode->i_dev, root_inode->i_start_sect, root_inode->i_sects_count);
 	//memset(fsbuf, 0, SECTOR_SIZE);
@@ -1241,9 +1243,60 @@ void new_dir_entry(struct inode *dir_inode, int inode_nr, char *filename)
  */
 int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 {
+	const char * s = pathname;
+	struct dir_entry *pde;
+	struct inode* pinode;
+	char * t;
+	int i,j;
+	if(*s==0){
+		return -1;
+	}
+	if(*s!='/'){
+		return -1;
+	}
+	s++;
+	*ppinode=root_inode;
+	int dir_entry_count_per_sect = SECTOR_SIZE/DIR_ENTRY_SIZE;
+	int dir_entry_count, dir_entry_blocks_count;
+	while(*s){
+		t = filename;
+		while(*s!='/' && *s!=0){
+			*t++=*s++;
+		}
+		*t=0;
+		dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
+		dir_entry_blocks_count = (*ppinode)->i_size/SECTOR_SIZE + (*ppinode)->i_size%SECTOR_SIZE==0?0:1;
+		for(i=0;i<dir_entry_blocks_count;i++){ 
+			READ_SECT((*ppinode)->i_dev, (*ppinode)->i_start_sect + i);
+			pde=(struct dir_entry*)fsbuf;
+			int dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
+			int step = min(dir_entry_count_per_sect, dir_entry_count);
+			for(j=0;j<step;j++, pde++){
+				if(strcmp(pde->name, filename)==0){
+					pinode=get_inode((*ppinode)->i_dev, pde->inode_idx);
+					goto found_next_path;		
+				}
+			}
+			dir_entry_count -= dir_entry_count_per_sect;	
+		}
+found_next_path:
+		if(*s!=0){
+			//不是最后一级目录
+			if(pinode==0){
+				//目录不存在
+				return -1;
+			}
+			if(pinode->i_mode!=I_DIRECTORY){
+				//不是目录
+				return -1;
+			}
+			*ppinode=pinode;		
+		}
+	}
+/*
 	//以下这段代码从hd中读取扇区时，可能会读不出数据
 	//why?
-	printk("----------------------------\npathname:%s\n", pathname);
+	//printk("----------------------------\npathname:%s\n", pathname);
 	//printk("root_inode->i_dev=%d\n", root_inode->i_dev);
 	int i, k,  nr_dir_blks, dir_entry_count;
 	struct inode * pinode;
@@ -1251,7 +1304,7 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 	const char * s = pathname;
 	char *t;
 	//一层一层寻找
-	if(s==0){
+	if(*s==0){
 		return -1; //失败
 	}
 	if(*s != '/'){
@@ -1266,14 +1319,17 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 		}
 		*t=0;
 		nr_dir_blks = ((*ppinode)->i_size + SECTOR_SIZE)/SECTOR_SIZE;
+		//printk("nr_dir_blks:%d\n", nr_dir_blks);
 		pinode = 0;
 		for(k=0;k<nr_dir_blks;k++){
-			printk("\tdev:%d, start_sect:%d\n", (*ppinode)->i_dev, (*ppinode)->i_start_sect);
+		//	printk("\tdev:%d, start_sect:%d\n", (*ppinode)->i_dev, (*ppinode)->i_start_sect);
 			READ_SECT((*ppinode)->i_dev, (*ppinode)->i_start_sect + i);
 			pde = (struct dir_entry*)fsbuf;
-			printk("%d,%s\n", pde->inode_idx, pde->name);
+		//	printk("%d,%s\n", pde->inode_idx, pde->name);
 			assert((*ppinode)->i_size%DIR_ENTRY_SIZE==0);
+			//如果一个目录文件占用多个扇区，这里的逻辑就是错误的
 			dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
+			//printk("dir_entry_count:%d\n",dir_entry_count);
 		//	printk("\t%s\n", pde->name);
 			for(i=0;i<dir_entry_count;i++, pde++){
 				//printk("\t\t%s==%s\n", filename, pde->name);
@@ -1310,6 +1366,7 @@ find_in_dir_end:
 		}
 		
 	}
+*/
 /*
 	const char * s = pathname;
 	char *t = filename;
@@ -1333,6 +1390,7 @@ find_in_dir_end:
 	*t=0;
 	*ppinode = root_inode;
 */
+	printk("--->%s\n", filename);
 	assert(*ppinode == root_inode);
 	return 0;
 }
