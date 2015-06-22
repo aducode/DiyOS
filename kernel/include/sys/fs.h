@@ -200,6 +200,8 @@ struct file_desc {
 };
 
 
+#define GET_INODE_IDX(pinode) (inode_table - (pinode)) 
+
 /**
  * @def MAX_FILE_DESC_COUNT
  * @brief 最大文件描述符数量

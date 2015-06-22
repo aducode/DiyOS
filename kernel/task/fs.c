@@ -1043,8 +1043,7 @@ struct inode * create_directory(char *path, int flags)
 {
 	char filename[MAX_PATH];
 	struct inode * dir_inode;
-	int dir_inode_idx = strip_path(filename, path, &dir_inode);
-	if(dir_inode_idx!=0){
+	if(strip_path(filename, path, &dir_inode)!=0){
 		return 0;
 	}
 	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
@@ -1056,7 +1055,7 @@ struct inode * create_directory(char *path, int flags)
 	pde=(struct dir_entry*)fsbuf;
 	pde->inode_idx = inode_nr;
 	strcpy(pde->name, "."); //.
-	(++pde)->inode_idx = dir_inode_idx ;
+	(++pde)->inode_idx = GET_INODE_IDX(dir_inode) ;
 	strcpy(pde->name, ".."); //..
 	//写入磁盘
 	WRITE_SECT(dir_inode->i_dev, free_sect_nr);
@@ -1425,8 +1424,7 @@ find_in_dir_end:
 	*t=0;
 	*ppinode = root_inode;
 */
-	printk("--->%s\n", filename);
-	assert(*ppinode == root_inode);
+	//assert(*ppinode == root_inode);
 	return 0;
 }
 
