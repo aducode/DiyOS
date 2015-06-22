@@ -56,6 +56,7 @@ void task_mm()
 void init_mm()
 {
 //	printk("{MM} memsize:%dMB\n", boot_params.mem_size/(1024*1024));
+	//do nothing
 	
 }
 

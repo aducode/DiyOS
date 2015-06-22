@@ -52,21 +52,6 @@ void schedule()
         	}
 
         }
-	/*
-	static int i=0;
-	struct process *p;
-	i++;
-	//这里能使用printk是因为我们0号进程设置成task_tty了，printk会用到tty的write,所以当时钟中断发生时write已经可以被调用了
-	if(i>=TASKS_COUNT + PROCS_COUNT) i=0;
-	p=proc_table + i;
-	while(p->p_flags>0){
-		//p_flags不为0表示需要阻塞线程，不分配cpu时间片
-		i++;
-		if(i>=TASKS_COUNT + PROCS_COUNT) i=0;
-		p=proc_table + i;
-	}
-	p_proc_ready = p;
-	*/
 }
 /**
  * 计算线程ldt中idx索引的线性地址
@@ -172,7 +157,6 @@ int msg_send(struct process *current, int dest, struct message *m)   //0x3b1a
 	if(deadlock(src,dest)){
 		panic(">>DEADLOCK<< %s->%s", sender->name, receiver->name);
 	}
-	//printk("[msg_send]\t[%d] send message to [%d]\n",src, dest);
 	if((receiver->p_flags & RECEIVING) && //dest is waiting for the msg
 		(receiver->p_recvfrom == src || receiver->p_recvfrom == ANY)){
 		//目标进程在等待消息，并且发送的目标接收者被设置成本进程，或接收广播
@@ -228,7 +212,6 @@ int msg_receive(struct process *current, int src, struct message *m)
 	struct process *prev = 0;
 	int copyok = 0;
 	int dest = proc2pid(receiver);
-	//printk("[msg_receive]\t[%d] receive message from [%d]\n", dest,src);
 	assert(dest != src);
 	#ifdef _SHOW_MSG_RECEIVE_
 	//printk("[msg_receive]\t(%s)[%d] receive message from (%s)[%d]\n", dest>=0?(dest<TASKS_COUNT+PROCS_COUNT?(dest+proc_table)->name:"ANY"):"INTERRUPT", dest,src>=0?(src<TASKS_COUNT+PROCS_COUNT?(src+proc_table)->name:"ANY"):"INTERRUPT",src);
@@ -458,15 +441,6 @@ int waitfor(int reg_port, int mask, int val, int timeout)
  */
 void interrupt_wait()
 {
-	//这里输出12345678的时候，就不会在次阻塞
-//	_disp_str("1234567",20,0,COLOR_YELLOW);
-	//跟时间有关吗
-//	int i=100;
-//	while(i-->0){
-//	};
-//	printk("in interrupt wait\n");
-	//以上测试i=17时不会在此阻塞 i=16就会阻塞在此
-	//这里应该是跟时间有关，上面i=100就不会阻塞 i=10就会阻塞在这里
         struct message msg;
         send_recv(RECEIVE, INTERRUPT, &msg);
 }

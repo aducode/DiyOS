@@ -19,7 +19,6 @@ static void init_inode_array(struct super_block * p_sb);
 static void init_data_blocks(struct super_block * p_sb);
 static void init_tty_files();
 static void fmtfs();
-static void mkfs();
 static void read_super_block(int dev);
 static struct super_block * get_super_block(int dev);
 static struct inode * get_inode(int dev, int inode_idx);
@@ -48,31 +47,14 @@ static int search_file(char *path);
  */
 void task_fs()
 {
-	//_disp_str("fs...",23,0,COLOR_GREEN);
-	//printk("Task FS begins.\n");
-/*
-	struct message msg;
-	msg.type = DEV_OPEN;
-	msg.DEVICE = MINOR(ROOT_DEV);		//ROOT_DEV=MAKE_DEV(DEV_HD, MINOR_hd2a) 是文件系统的根分区 我们的次设备号定义 hd2a 就是第2主分区（扩展分区）的第一个逻辑分区，主设备号是DEV_HD 表明设备是硬盘
-	//这个设备号的主设备号对应的是消息的目标，根据dd_map可以由主设备号映射到驱动进程的pid，也就是消息的目标
-	//次设备号就是msg中的DEVICE
-	assert(dd_map[MAJOR(ROOT_DEV)].driver_pid != INVALID_DRIVER);
-	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
-	printk("close dev\n");
-	msg.type=DEV_CLOSE;
-	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
-	spin("FS");
-*/
 	init_fs();
 	struct message msg;
 	while(1){
-//		printk("fs running...\n");
 		//wait for other process
 		send_recv(RECEIVE, ANY, &msg);
 		int src = msg.source;
 		switch(msg.type){
 			case OPEN:
-				//_disp_str("FS handle open", 0, 0, COLOR_GREEN);
 				//open 要返回FD
 				msg.FD = do_open(&msg);
 				break;
@@ -148,71 +130,12 @@ void init_fs()
 	sb = (struct super_block*)fsbuf;
 	//打开后创建文件系统
 	fmtfs();
-	//mkfs();
 	//load super block of ROOT
 	read_super_block(ROOT_DEV);
 	sb=get_super_block(ROOT_DEV);
 	assert(sb->magic == MAGIC_V1);
 	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
 	init_tty_files();
-/*
-	//test
-	//这里测试多次也都能获取到root_inode在磁盘中的内容，
-	//可是为什么多次调用strip_path，里面的类似内容却不能正常运行？
-	//TODO find out
-	int ii;
-	for(ii=0;ii<3;ii++){
-		assert(root_inode->i_size%DIR_ENTRY_SIZE==0);
-		int repeat = root_inode->i_size/DIR_ENTRY_SIZE;
-		printk("%d/%d=%d\n", root_inode->i_size, DIR_ENTRY_SIZE,repeat);
-		struct dir_entry de , *pde;
-		READ_SECT(root_inode->i_dev, root_inode->i_start_sect);
-		pde=(struct dir_entry*)fsbuf;
-		for(i=0;i<repeat;i++,pde++){
-			memcpy((void*)&de, (void*)(fsbuf + i * DIR_ENTRY_SIZE), DIR_ENTRY_SIZE);
-			printk("[%d]de.inode_idx=%d,de.name=%s\n", ii,de.inode_idx, de.name);
-			printk("[%d]pde->inode_idx=%d,pde->name=%s\n",ii, pde->inode_idx, pde->name);
-		}
-	}
-	assert(0);
-*/
-/*
-	printk("root_inode->i_dev:%d,i_start_sect:%d, i_sects_count:%d\n",root_inode->i_dev, root_inode->i_start_sect, root_inode->i_sects_count);
-	//memset(fsbuf, 0, SECTOR_SIZE);
-	//test READ_SECT & WRITE_SECT
-	int repeat,t;
-	char tmp [SECTOR_SIZE];
-	char tmp2[SECTOR_SIZE];
-	for(repeat=0;repeat<8;repeat++){
-		//memset(fsbuf, 0, SECTOR_SIZE);
-		//for(t=0;t<SECTOR_SIZE-1;t++){
-		//	tmp[i]='#';
-		//}
-		//tmp[100]=0;
-		//printk("%s\n", fsbuf);
-		sprintf(tmp, "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789%d", repeat);
-		//sprintf(tmp, "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012%d", repeat);
-		strcpy(fsbuf, tmp);
-		WRITE_SECT(root_inode->i_dev, root_inode->i_start_sect);
-		READ_SECT(root_inode->i_dev, root_inode->i_start_sect);
-		strcpy(tmp2, fsbuf);
-		printk("%d:%d---%d\n",strlen(tmp), strlen(tmp2),strcmp(tmp, tmp2));
-		READ_SECT(root_inode->i_dev, root_inode->i_start_sect);
-		strcpy(tmp2, fsbuf);
-		printk("%d:%d+++%d\n",strlen(tmp), strlen(tmp2), strcmp(tmp, tmp2));
-	}
-	assert(0);
-	READ_SECT(root_inode->i_dev, root_inode->i_start_sect);
-	printk("\n%s\n", fsbuf);	
-	char filename[MAX_PATH];
-	struct inode * tinode;
-	assert(strip_path(filename, "/dev_tty0", &tinode)!=-1);
-	assert(tinode == root_inode);
-	assert(strip_path(filename, "/dev_tty1", &tinode)!=-1);
-	assert(tinode == root_inode);
-	assert(strip_path(filename, "/dev_tty2", &tinode)!=-1);
-	assert(tinode == root_inode);
-*/
 }
 
 
@@ -280,7 +203,6 @@ void init_super_block(struct super_block* p_sb)
 	msg.PID			= TASK_FS;
 	assert(dd_map[MAJOR(ROOT_DEV)].driver_pid != INVALID_DRIVER);
 	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
-	//printk("dev size: %d sectors\n", geo.size);
 	//step 2 写入超级块
 	p_sb->magic		= MAGIC_V1;
 	p_sb->inodes_count	= bits_per_sect;
@@ -396,187 +318,6 @@ void init_data_blocks(struct super_block * p_sb)
 }
 
 /**
- * @function mkfs
- * @brief Make a avaliable DIYOS's FS in the disk. It will
- *	- Write a super block to sector 1.
- *	- Create three special files:dev_tty0, dev_tty1, dev_tty2
- *	- Create the inode map
- *	- Create the sector map
- *	- Create the inodes of the files
- *	- Create '/', the root directory
- * @return
- */
-void mkfs()
-{
-	struct message msg;
-	int i, j;
-	int bits_per_sect = SECTOR_SIZE * 8; //8 bits per byte
-	//get the geometry of ROOTDEV
-	struct part_info geo;
-	msg.type	= DEV_IOCTL;
-	msg.DEVICE	= MINOR(ROOT_DEV);
-	msg.REQUEST	= DIOCTL_GET_GEO;
-	msg.BUF		= &geo;
-	msg.PID		= TASK_FS;
-	assert(dd_map[MAJOR(ROOT_DEV)].driver_pid != INVALID_DRIVER);
-	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
-	//printk("dev size: 0x%x sectors\n", geo.size);
-	//super block
-	struct super_block sb;
-	sb.magic		= MAGIC_V1;
-	sb.inodes_count		= bits_per_sect;//一般情况下就是4096
-	//inode_sects_count inode_array占用的扇区数
-	//就是inode数*每个inode结构体大小/每个扇区的字节数
-	sb.inode_sects_count	= sb.inodes_count * INODE_SIZE/SECTOR_SIZE;
-	//全部扇区数
-	sb.sects_count		= geo.size;
-	//inode 位图占用一个扇区
-	sb.imap_sects_count	= 1;
-	//sector 位图占用的扇区数
-	//总扇区数/每扇区位数+1
-	sb.smap_sects_count	= sb.sects_count/bits_per_sect + 1;
-	//第一个数据扇区
-	//跳过boot sector, super block sector，inode bitmap sector[1], sectors bitmap sectors, inode_array sectors
-	sb.first_sect		= 1 + 1 /*boot sector & super block*/+ sb.imap_sects_count + sb.smap_sects_count + sb.inode_sects_count;
-	sb.root_inode		= ROOT_INODE;
-	sb.inode_size		= INODE_SIZE;
-	struct inode x;
-	sb.inode_isize_off	= (int)&x.i_size - (int)&x;
-	sb.inode_start_off	= (int)&x.i_start_sect - (int)&x;
-	sb.dir_ent_size		= DIR_ENTRY_SIZE;
-	struct dir_entry de;
-	sb.dir_ent_inode_off	= (int)&de.inode_idx - (int)&de;
-	sb.dir_ent_fname_off	= (int)&de.name - (int)&de;
-	memset(fsbuf, 0x90, SECTOR_SIZE);
-	memcpy(fsbuf, &sb, SUPER_BLOCK_SIZE);
-	//printk("mkfs\ninodes_count:%d\nsects_count:%d\nimap_sects_count:%d\nsmap_sects_count:%d\nfirst_sect:%d\ninode_sects_count:%d\n",sb.inodes_count,sb.sects_count, sb.imap_sects_count, sb.smap_sects_count, sb.first_sect, sb.inode_sects_count);
-	//write the super block
-	WRITE_SECT(ROOT_DEV, 1);  //sector 0为boot sector
-				  //sector 1super block 写入1
-	/*
-	printk("devbase:0x%x00, sb:0x%x00, imap:0x%x00, smap:0x%x00 "
-		"inodes:0x%x00 1st_sector:0x%x00\n",	
-		geo.base * 2,
-		(geo.base + 1) * 2,
-		(geo.base + 1 + 1) * 2,
-		(geo.base + 1 + 1 + sb.imap_sects_count) * 2,
-		(geo.base + 1 + 1 + sb.imap_sects_count + sb.smap_sects_count) * 2,
-		(geo.base + sb.first_sect) * 2);
-	*/
-	//inode map
-	memset(fsbuf, 0, SECTOR_SIZE);
-	for(i=0;i<(CONSOLE_COUNT + 3);i++){
-		fsbuf[0] |= 1<<i;
-	}
-	assert(fsbuf[0] == 0x3F);/* 0011 1111
-				  *   || ||||
-				  *   || |||`----bit 0: reserved
-				  *   || ||`-----bit 1:the first inode, '/'
-				  *   || |`------bit 2:/dev_tty0
-				  *   || `-------bit 3:/dev_tty1
-				  *   |`---------bit 4:/dev_tty2
-				  *   `----------bit 5:/cmd.tar
-				  */
-	WRITE_SECT(ROOT_DEV, 2);//secotr 2为inode sector
-	//sector map
-	memset(fsbuf, 0, SECTOR_SIZE);
-	//DEFAULT_FILE_SECTS_COUNT 每个文件默认占用的扇区数
-	//目前是固定值2048
-	int nr_sects = DEFAULT_FILE_SECTS_COUNT + 1;
-	/*	       ~~~~~~~~~~~~~~~~~~~~~~~|~~~|
-	 *                                    |   `---bit 0 is reserved
-	 *                                    `-------for '/'
-	 */
-	//_disp_str("@",0, 0, COLOR_RED);//display
-	for(i=0;i<nr_sects/8;i++){
-		fsbuf[i] = 0xFF;
-	}
-	for(j=0;j<nr_sects % 8;j++){
-		fsbuf[i] |= (1<<j);
-	}
-	//_disp_str("@",0, 0, COLOR_RED); //display
-	//sector bitmap 对应位置被设置成1
-	WRITE_SECT(ROOT_DEV, 2 + sb.imap_sects_count);//imap_sects_count==1
-	//_disp_str("@",0, 0, COLOR_RED);	//display
-	memset(fsbuf, 0, SECTOR_SIZE);
-	//_disp_str("@",0, 0, COLOR_RED); //display
-	//设置其余的sector bitmap的扇区为0
-	//_disp_str("it will deadlock",0,0, COLOR_RED);
-	for(i=1;i<sb.smap_sects_count;i++){
-		//TODO fix
-		//something wrong here
-		//在循环里面打印信息时，程序又能正常运行！
-		//_disp_str("@",0,0, COLOR_GREEN);
-		WRITE_SECT(ROOT_DEV, 2 + sb.imap_sects_count + i);
-	}
-	//_disp_str("@",0, 0, COLOR_RED); //do not display
-	//sector map for 'cmd.tar'	
-	int bit_offset = INSTALL_START_SECT - sb.first_sect + 1;
-	int bit_off_in_sect = bit_offset % (SECTOR_SIZE * 8);
-	int bit_left = INSTALL_SECTS_COUNT;
-	int cur_sect = bit_offset/(SECTOR_SIZE*8);
-	//_disp_str("@",0, 0, COLOR_RED); //do not display
-	READ_SECT(ROOT_DEV,2+sb.imap_sects_count + cur_sect);
-	//_disp_str("@",0, 0, COLOR_RED); //do not display
-	while(bit_left){
-		int byte_off = bit_off_in_sect/8;
-		fsbuf[byte_off] |= 1 << (bit_off_in_sect % 8);
-		bit_left --;
-		bit_off_in_sect++;
-		if(bit_off_in_sect == (SECTOR_SIZE *8)){
-			WRITE_SECT(ROOT_DEV, 2 + sb.imap_sects_count+cur_sect);
-			cur_sect++;
-			READ_SECT(ROOT_DEV, 2 + sb.imap_sects_count + cur_sect);
-			bit_off_in_sect = 0;
-		}
-	}
-	WRITE_SECT(ROOT_DEV, 2+sb.imap_sects_count + cur_sect);
-	//_disp_str("@",0, 0, COLOR_RED);
-	//inodes
-	//设置inode array区域
-	//inode for '/'
-	memset(fsbuf, 0, SECTOR_SIZE);
-	struct inode * pi = (struct inode*)fsbuf;
-	pi->i_mode = I_DIRECTORY;
-	pi->i_size = DIR_ENTRY_SIZE * 5;//5files  '.',dev_tty0, dev_tty1, dev_tty2 cmd.tar
-	pi->i_start_sect = sb.first_sect;
-	pi->i_sects_count = DEFAULT_FILE_SECTS_COUNT;
-	//inode for /dev_tty0~2
-	for(i=0;i<CONSOLE_COUNT;i++){
-		pi=(struct inode*)(fsbuf + (INODE_SIZE * (i+1)));
-		pi->i_mode = I_CHAR_SPECIAL;
-		pi->i_size = 0;
-		pi->i_start_sect = MAKE_DEV(DEV_CHAR_TTY, i);
-		pi->i_sects_count = 0;
-	}
-	//inode for cmd.tar
-	
-	//WRITE_SECT(ROOT_DEV, 2+sb.imap_sects_count + sb.smap_sects_count);
-	//for 'cmd.tar'
-	pi = (struct inode*)(fsbuf+(INODE_SIZE * (CONSOLE_COUNT+1)));
-	pi->i_mode = I_REGULAR;
-	pi->i_size = INSTALL_SECTS_COUNT * SECTOR_SIZE;
-	pi->i_start_sect = INSTALL_START_SECT;
-	pi->i_sects_count = INSTALL_SECTS_COUNT;
-	WRITE_SECT(ROOT_DEV, 2+sb.imap_sects_count + sb.smap_sects_count);
-	//设置真正的文件数据区域
-	//'/'
-	memset(fsbuf, 0, SECTOR_SIZE);
-	struct dir_entry *pde = (struct dir_entry*)fsbuf;
-	pde->inode_idx = 1;
-	strcpy(pde->name, ".");
-	//dir entries of "/dev_tty0~2
-	for(i=0;i<CONSOLE_COUNT;i++){
-		pde++;
-		pde->inode_idx = i+2;
-		sprintf(pde->name, "dev_tty%d", i);
-	}
-	(++pde)->inode_idx = CONSOLE_COUNT + 2;
-	strcpy(pde->name, "cmd.tar");
-	WRITE_SECT(ROOT_DEV, sb.first_sect);
-}
-
-/**
  * @function rw_sector
  * R/W a sector via messaging with the corresponding driver
  *
@@ -649,7 +390,7 @@ int do_open(struct message *p_msg)
 	if(flags & O_CREATE){
 		//创建文件
 		if(inode_nr){
-			printk("file exists.\n");
+			//printk("file exists.\n");
 			return -1;
 		} else {
 			pin = create_file(pathname, flags);
@@ -658,7 +399,6 @@ int do_open(struct message *p_msg)
 		assert(flags & O_RDWT);
 		char filename[MAX_PATH];
 		struct inode *dir_inode;
-		//printk("line:573\n");
 		if(strip_path(filename, pathname, &dir_inode) != 0){
 			return -1;
 		}
@@ -1135,7 +875,6 @@ struct inode * create_file(char *path, int flags)
 {
 	char filename[MAX_PATH];
 	struct inode * dir_inode;
-	//printk("line:986\n");
 	if(strip_path(filename, path, &dir_inode) != 0){
 		return 0;
 	}
@@ -1188,17 +927,12 @@ int alloc_imap_bit(int dev)
  */
 int alloc_smap_bit(int dev, int sects_count_to_alloc)
 {
-	//printk("alloc_smap_bit\n\ndev:%d,sects_count_to_alloc:%d\n",dev, sects_count_to_alloc);
 	int i; //sector index
 	int j; //byte index
 	int k; //bit index
 	
 	struct super_block *sb = get_super_block(dev);
-	//------------dump super_block
-	//printk("\ninodes_count:%d\nsects_counts:%d\nimap_sects_count:%d\nsmap_sects_count:%d\nfirst_sect:%d\ninode_sects_count:%d\n",super_block->inodes_count,super_block->sects_count, super_block->imap_sects_count, super_block->smap_sects_count,super_block->first_sect, super_block->inode_sects_count);
-	//------------	
 	int smap_blk0_nr = 1 + 1 + sb->imap_sects_count;
-	//printk("smap_blk0_nr:%d\n", smap_blk0_nr);
 	int free_sect_nr = 0;
 	for(i=0;i<sb->smap_sects_count;i++){
 		READ_SECT(dev, smap_blk0_nr + i); //read data to fsbuf
@@ -1213,9 +947,6 @@ int alloc_smap_bit(int dev, int sects_count_to_alloc)
 			}
 			for(;k<8;k++){
 				//repeat till enough bits are set
-				int tmp = fsbuf[j]>>k&1;
-				if(tmp!=0)
-					printk("\ndev:%d, sects_count_to_alloc:%dsmap_sects_count:%d\n%d, %d, %d, %d\n", dev, sects_count_to_alloc,sb->smap_sects_count, tmp, i, j, k);
 				assert((fsbuf[j]>>k&1)==0);
 				fsbuf[j] |= (1<<k);
 				if(--sects_count_to_alloc==0){
@@ -1224,14 +955,12 @@ int alloc_smap_bit(int dev, int sects_count_to_alloc)
 			}
 		}
 		if(free_sect_nr){ //free bit found, write the bits to smap
-			//printk("free_sect_nr:%d\n", free_sect_nr);
 			WRITE_SECT(dev, smap_blk0_nr + i); //write fsbuf to dev
 		}
 		if(sects_count_to_alloc == 0){
 			break;
 		}
 	}
-	//printk("the sects_count_to_alloc:%d\n", sects_count_to_alloc);
 	assert(sects_count_to_alloc == 0);
 	return free_sect_nr;
 }
@@ -1392,104 +1121,6 @@ try_to_find_next_path:
 			*ppinode=pinode;		
 		}
 	}
-/*
-	//以下这段代码从hd中读取扇区时，可能会读不出数据
-	//why?
-	//printk("----------------------------\npathname:%s\n", pathname);
-	//printk("root_inode->i_dev=%d\n", root_inode->i_dev);
-	int i, k,  nr_dir_blks, dir_entry_count;
-	struct inode * pinode;
-	struct dir_entry * pde;
-	const char * s = pathname;
-	char *t;
-	//一层一层寻找
-	if(*s==0){
-		return -1; //失败
-	}
-	if(*s != '/'){
-		return -1;//必须绝对路径		
-	}
-	s++;
-	*ppinode = root_inode;	//in global.c
-	while(*s){
-		t = filename;
-		while(*s!='/' && *s!=0){
-			*t++=*s++;
-		}
-		*t=0;
-		nr_dir_blks = ((*ppinode)->i_size + SECTOR_SIZE)/SECTOR_SIZE;
-		//printk("nr_dir_blks:%d\n", nr_dir_blks);
-		pinode = 0;
-		for(k=0;k<nr_dir_blks;k++){
-		//	printk("\tdev:%d, start_sect:%d\n", (*ppinode)->i_dev, (*ppinode)->i_start_sect);
-			READ_SECT((*ppinode)->i_dev, (*ppinode)->i_start_sect + i);
-			pde = (struct dir_entry*)fsbuf;
-		//	printk("%d,%s\n", pde->inode_idx, pde->name);
-			assert((*ppinode)->i_size%DIR_ENTRY_SIZE==0);
-			//如果一个目录文件占用多个扇区，这里的逻辑就是错误的
-			dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
-			//printk("dir_entry_count:%d\n",dir_entry_count);
-		//	printk("\t%s\n", pde->name);
-			for(i=0;i<dir_entry_count;i++, pde++){
-				//printk("\t\t%s==%s\n", filename, pde->name);
-				if(strcmp(filename, pde->name)==0){
-					pinode = get_inode((*ppinode)->i_dev, pde->inode_idx); 
-				//	printk("pinode:%d\n", pinode);
-					goto find_in_dir_end;
-				//	break;
-				}
-			}
-		}
-find_in_dir_end:
-		if(pinode == 0){
-			//printk("FAIL", pathname);
-			//assert(0);
-			return -1; //说明不存在正确的路径
-		}
-		if(pinode->i_mode!=I_DIRECTORY){
-			//不是目录了
-			//有两种可能
-			//	1. pathname最后一级是文件
-			//	2. pathname中间某一级不是目录（错误）
-			if(*s!=0){
-				printk("?%d",*s==0?1:0);
-				assert(0);
-				//说明pathname还没结束，错误
-				return -1;
-			} else {
-				//说明可以结束循环
-			}
-		} else {
-			//下一级目录
-			*ppinode = pinode;
-		}
-		
-	}
-*/
-/*
-	const char * s = pathname;
-	char *t = filename;
-	if(s==0){
-		return -1;
-	}
-	if(*s=='/'){
-		s++;
-	}
-	while(*s){
-		//check each character
-		if(*s=='/'){
-			return -1;//invalid '/'
-		}
-		*t++=*s++;
-		//if filename is too long, just truncate it
-		if(t-filename >= MAX_FILENAME_LEN){
-			break;
-		}
-	}
-	*t=0;
-	*ppinode = root_inode;
-*/
-	//assert(*ppinode == root_inode);
 	return 0;
 }
 
@@ -1509,7 +1140,6 @@ int search_file(char *path)
 	char filename[MAX_PATH];
 	memset(filename, 0, MAX_FILENAME_LEN);
 	struct inode* dir_inode;
-	//printk("line:1293\n");
 	if(strip_path(filename, path, &dir_inode)!=0){
 		return 0;
 	}

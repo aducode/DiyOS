@@ -101,7 +101,6 @@ void task_tty()
 				dump_msg("TTY:unknown msg", &msg);
 				break;
 		}
-	//	printk("tty receive...\n");
 	}
 }
 void tty_dev_read(struct tty * p_tty)
@@ -278,20 +277,6 @@ void tty_write(struct tty *p_tty, char *buffer, int size){
 }
 
 
-/**
- *系统调用
- * 现在系统调用使用了4个参数，这个地方_unsed1存储ebx的值，但是write没有使用ebx，这里
- * 忽略
- */
-/*
-int sys_write(int _unsed1, char *buffer,int size, struct process *p_proc)
-{
-	//tty_write(&tty_table[p_proc->tty_idx], buffer, size);
-	//printk直接输出到tty0
-	tty_write(tty_table, buffer, size);
-	return 0;
-}
-*/
 /**
  *系统调用，内核级打印
  */
