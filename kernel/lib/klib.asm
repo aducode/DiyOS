@@ -36,8 +36,8 @@ _in_byte:
 	mov edx, [esp + 4]	;port
 	xor eax, eax
 	in al, dx
-	nop
 	nop	; 多加一个nop指令，防止磁盘操作的时候阻塞线程
+	nop
 	nop
 	nop
 	ret	;返回值在eax中

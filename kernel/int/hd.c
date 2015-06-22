@@ -49,7 +49,7 @@
                         dev/PRIM_PER_DRIVE:\
                         (dev-MINOR_hd1a) / SUB_PER_DRIVE)
 static u8 hd_status;
-static u8 hdbuf[SECTOR_SIZE * 2];
+static u8 hdbuf[SECTOR_SIZE * 3];
 
 static void hd_cmd_out(struct hd_cmd *cmd);
 static void hd_identify(int drive);

@@ -340,10 +340,12 @@ int msg_receive(struct process *current, int src, struct message *m)
 		//所以这里不要assert了
 		///这个是proc里面的系统调用，系统调用不会被阻塞，会按顺序执行完毕，直至返回///
 		//通过输出，可以看出receiver的值并没有被改变，只是receiver里面的值被改变
-		assert(receiver->p_flags == RECEIVING);
-		assert(receiver->p_msg !=0 );
-		assert(receiver->p_recvfrom != NO_TASK);
-		assert(receiver->p_sendto == NO_TASK);
+		//下面可能出错的情况是inform_int在硬件中断时被调用，在软中断系统调用sendrecv中，可能发生这些硬中断，导致receiver->p_flags的值改变
+		//如果发生过硬件中断(调用过infrom_int),那么has_int_msg会被置0
+		assert(receiver->has_int_msg==0 || receiver->p_flags == RECEIVING);
+		assert(receiver->has_int_msg == 0 || receiver->p_msg !=0 );
+		assert(receiver->has_int_msg == 0 || receiver->p_recvfrom != NO_TASK);
+		assert(receiver->has_int_msg == 0 ||receiver->p_sendto == NO_TASK);
 		assert(receiver->has_int_msg == 0);
 	}
 	return 0;

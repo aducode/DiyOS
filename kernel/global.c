@@ -77,6 +77,7 @@ struct task task_table[TASKS_COUNT] = {
 	{task_tty,	STACK_SIZE_TASK_TTY,		"TTY"  	},//0
 	{task_hd,	STACK_SIZE_TASK_HD,		"HD"   	},//1
 	{task_sys,	STACK_SIZE_TASK_SYS,		"SYS"	},//2
+//	{task_hd,	STACK_SIZE_TASK_HD,		"HD"	},//2
 	{task_fs,	STACK_SIZE_TASK_FS,		"FS"	},//3
 	{task_mm,	STACK_SIZE_TASK_MM,		"MM"	},//4
 	{empty_proc,	STACK_SIZE_TASK_EMPTY,		"EMPTY"	},

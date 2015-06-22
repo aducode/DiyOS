@@ -6,7 +6,7 @@
 int printf(const char *fmt, ...)
 {
 	int i;
-	char buf[256];
+	char buf[512];
 	va_list arg = (va_list)((char*)(&fmt)+4);
         i = vsprintf(buf,fmt, arg);
         int c = write(1, buf, i);  //调用之前必须保证进程打开stdout
@@ -21,7 +21,7 @@ int printf(const char *fmt, ...)
 int fprintf(int fd, const char *fmt, ...)
 {
 	int i;
-	char buf[256];
+	char buf[1024];
 	//开始写成下面的，导致不定参赛出错
 	//va_list arg = (va_list)((char*)(&fmt+4));
 	//正确写法如下，&fmt取地址（地址类型是4Byte 32bit的，我机器是32位），将4Byte的地址转换成char* 变为1Byte 这样后面+4 就是真正的加4Byte，变成下一个参数首地址
@@ -114,6 +114,22 @@ int open(const char *pathname, int flags)   //0x1b7c
 	return msg.FD;
 }
 
+/**
+ * @function mkdir
+ * @brief 创建目录
+ * @param pathname 目录
+ * @return
+ */
+int mkdir(const char *pathname)
+{
+	struct message msg;
+	msg.type = MKDIR;
+	msg.PATHNAME = (void*)pathname;
+	msg.NAME_LEN = strlen(pathname);
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.RETVAL;
+}
 /**
  * @function close
  * @brief 关闭文件
