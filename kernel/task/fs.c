@@ -33,9 +33,10 @@ static int do_unlink(struct message *p_msg);
 static int fs_fork(struct message *msg);
 static int fs_exit(struct message *msg);
 static struct inode * create_file(char *path, int flags);
+static struct inode * create_directory(char *path, int flags);
 static int alloc_imap_bit(int dev);
 static int alloc_smap_bit(int dev, int sects_count_to_alloc);
-static struct inode* new_inode(int dev, int inode_nr, int start_sect);
+static struct inode* new_inode(int dev, int inode_nr, u32 i_mode, int start_sect);
 static void new_dir_entry(struct inode *dir_inode, int inode_nr, char *filename);
 static int strip_path(char *filename, const char *pathname, struct inode **ppinode);
 static int search_file(char *path);
@@ -229,6 +230,8 @@ void fmtfs()
 	init_inode_array(&sb);
 	//step 5 初始化数据块
 	init_data_blocks(&sb);
+	//step 6 create dirctory /dev
+			
 }
 
 
@@ -1027,14 +1030,44 @@ int fs_exit(struct message *msg)
 	}
 	return 0;
 }
+
+
+/**
+ * @function create_directory
+ * @brief 创建新的目录inode, 并设置磁盘上的数据
+ * @param path 目录
+ * @param  flags
+ * @return inode指针
+ */
+struct inode * create_directory(char *path, int flags)
+{
+	char filename[MAX_PATH];
+	struct inode * dir_inode;
+	int dir_inode_idx = strip_path(filename, path, &dir_inode);
+	if(dir_inode_idx!=0){
+		return 0;
+	}
+	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
+	int free_sect_nr = alloc_smap_bit(dir_inode->i_dev, DEFAULT_FILE_SECTS_COUNT);
+	struct inode * newino = new_inode(dir_inode->i_dev, inode_nr, I_DIRECTORY, free_sect_nr);
+	//写入directory文件数据 . ..
+	memset(fsbuf, 0, SECTOR_SIZE);
+	struct dir_entry *pde;
+	pde=(struct dir_entry*)fsbuf;
+	pde->inode_idx = inode_nr;
+	strcpy(pde->name, "."); //.
+	(++pde)->inode_idx = dir_inode_idx ;
+	strcpy(pde->name, ".."); //..
+	//写入磁盘
+	WRITE_SECT(dir_inode->i_dev, free_sect_nr);
+	new_dir_entry(dir_inode, newino->i_num, filename);
+	return newino;
+}
 /**
  * @function create_file
  * @brief 创建新的inode，并设置磁盘上的数据
  * @param path 文件路径
- * @param type  I_REGULAR:普通文件 I_DIRECTORY:目录  I_CHAR_SPECIAL:tty
  * @param flags
- * @param start_sect 普通文件/目录 开始扇区号 设备文件 设备号
- * @param sect_count 占用扇区数 （设备文件0）
  * 
  * @return 新inode指针，失败返回0
  */
@@ -1049,7 +1082,7 @@ struct inode * create_file(char *path, int flags)
 	}
 	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
 	int free_sect_nr = alloc_smap_bit(dir_inode->i_dev, DEFAULT_FILE_SECTS_COUNT);
-	struct inode *newino = new_inode(dir_inode->i_dev, inode_nr, free_sect_nr);
+	struct inode *newino = new_inode(dir_inode->i_dev, inode_nr,I_REGULAR, free_sect_nr);
 	new_dir_entry(dir_inode, newino->i_num, filename);
 	return newino;
 }
@@ -1146,14 +1179,16 @@ int alloc_smap_bit(int dev, int sects_count_to_alloc)
  * @brief 在inode_array中分配一个inode并写入内容
  * @param dev home device of the inode
  * @param inode_nr
+ * @param i_mode
+ * @param start_sect
  *
  * @return ptr of the new inode
  */
-struct inode* new_inode(int dev, int inode_nr, int start_sect)
+struct inode* new_inode(int dev, int inode_nr,u32 i_mode, int start_sect)
 {
 	//get from inode array by inode_nr
 	struct inode * new_inode = get_inode(dev, inode_nr);
-	new_inode->i_mode = I_REGULAR;
+	new_inode->i_mode = i_mode;
 	new_inode->i_size = 0;
 	new_inode->i_start_sect = start_sect;
 	new_inode->i_sects_count = DEFAULT_FILE_SECTS_COUNT;
@@ -1239,7 +1274,7 @@ void new_dir_entry(struct inode *dir_inode, int inode_nr, char *filename)
  * @param[in] pathname the full pathname.
  * @param[out] ppinode the ptr of the dir's inode will be stored here.
  *
- * @return Zero if success, otherwise the pathname is not valid.
+ * @return dir_inode_idx if success, otherwise the pathname is not valid.
  */
 int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 {
