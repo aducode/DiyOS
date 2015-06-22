@@ -1056,7 +1056,7 @@ struct inode * create_directory(char *path, int flags)
 	pde=(struct dir_entry*)fsbuf;
 	pde->inode_idx = inode_nr;
 	strcpy(pde->name, "."); //.
-	(++pde)->inode_idx = GET_INODE_IDX(dir_inode) ;
+	(++pde)->inode_idx = dir_inode->i_num ;
 	strcpy(pde->name, ".."); //..
 	//写入磁盘
 	WRITE_SECT(dir_inode->i_dev, free_sect_nr);
