@@ -30,6 +30,7 @@ static int do_rdwt(struct message *p_msg);
 static int do_seek(struct message *p_msg);
 static int do_tell(struct message *p_msg);
 static int do_unlink(struct message *p_msg);
+static int do_mkdir(struct message *p_msg);
 static int fs_fork(struct message *msg);
 static int fs_exit(struct message *msg);
 static struct inode * create_file(char *path, int flags);
@@ -90,6 +91,9 @@ void task_fs()
 				break;
 			case UNLINK:
 				msg.RETVAL = do_unlink(&msg);
+				break;
+			case MKDIR:
+				msg.RETVAL = do_mkdir(&msg);
 				break;
 			case RESUME_PROC:
 				src = msg.PID; //恢复进程,此时将src变成TTY进程发来的消息中的PID
@@ -992,6 +996,25 @@ int do_unlink(struct message *p_msg)
 	return 0;
 }
 
+
+/**
+ * @function do_mkdir
+ * @brief 创建目录
+ * @param p_msg
+ * @return
+ */
+int do_mkdir(struct message *p_msg)
+{
+	char pathname[MAX_PATH];
+        int flags = p_msg->FLAGS;
+        int name_len = p_msg->NAME_LEN;
+        int src = p_msg->source;
+        struct process *pcaller = proc_table + src;
+        assert(name_len<MAX_PATH);
+        memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
+        pathname[name_len] = 0;
+	return create_directory(pathname, O_CREATE);
+}
 
 /**
  * @function fs_fork

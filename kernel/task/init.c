@@ -148,17 +148,20 @@ void init(){
  */
 void test_fs()
 {
+	char file_content[] = "file:/hello/test.txt:hello world";
+	int file_content_len = strlen(file_content);
+	mkdir("/hello");
 	int fd;
-	fd = open("/test.txt", O_CREATE|O_RDWT);
+	fd = open("/hello/test.txt", O_CREATE|O_RDWT);
 	assert(fd!=-1);
-	write(fd,"0987654321",10);
+	write(fd,file_content,file_content_len);
 	int pos = tell(fd);
 	printf("----pos:%d\n", pos);
 	seek(fd,0,SEEK_START);
 	pos = tell(fd);
 	printf("----pos:%d\n", pos);
-	char buf[11];
-	int bytes = read(fd, buf, 10);
+	char buf[50];
+	int bytes = read(fd, buf, file_content_len);
 	buf[bytes]=0;
 	printf("%s\n", buf);
 	close(fd);
@@ -174,11 +177,10 @@ void test_fs()
 			break;
 		}
 	}
-	//fd = open("/test.txt", O_RDWT);
-	//char buf[11];
-	//int bytes = read(fd, buf, 10);
-	//buf[bytes]=0;
-	//printf(buf);
-	//close(fd);
+	fd = open("/hello/test.txt", O_RDWT);
+	bytes = read(fd, buf, file_content_len);
+	buf[bytes]=0;
+	printf(buf);
+	close(fd);
 }
 #endif

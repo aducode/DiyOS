@@ -115,6 +115,22 @@ int open(const char *pathname, int flags)   //0x1b7c
 }
 
 /**
+ * @function mkdir
+ * @brief 创建目录
+ * @param pathname 目录
+ * @return
+ */
+int mkdir(const char *pathname)
+{
+	struct message msg;
+	msg.type = MKDIR;
+	msg.PATHNAME = (void*)pathname;
+	msg.NAME_LEN = strlen(pathname);
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.RETVAL;
+}
+/**
  * @function close
  * @brief 关闭文件
  * 
