@@ -149,8 +149,9 @@ void init_fs()
 	sb=get_super_block(ROOT_DEV);
 	assert(sb->magic == MAGIC_V1);
 	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
-
-	create_directory("/dev",O_CREATE);
+	//create_file("/fuck",O_CREATE);
+	//create_directory("/dev",O_CREATE);
+	//create_file("/dev/fuck.txt",O_CREATE);
 	//assert(0);
 /*
 	//test
@@ -1293,12 +1294,13 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 	*ppinode=root_inode;
 	int dir_entry_count_per_sect = SECTOR_SIZE/DIR_ENTRY_SIZE;
 	int dir_entry_count, dir_entry_blocks_count;
-	while(*s){
+	while(*s!=0){
 		t = filename;
 		while(*s!='/' && *s!=0){
 			*t++=*s++;
 		}
 		*t=0;
+		if(*s!=0) s++; //skip /
 		dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
 		dir_entry_blocks_count = (*ppinode)->i_size/SECTOR_SIZE + (*ppinode)->i_size%SECTOR_SIZE==0?0:1;
 		for(i=0;i<dir_entry_blocks_count;i++){ 
