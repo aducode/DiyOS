@@ -8,11 +8,11 @@
 #define _FOR_TEST_
 #ifndef _FOR_TEST_
 void init(){
-	int stdin = open("/dev_tty0", O_RDWT);
+	int stdin = open("/dev/tty0", O_RDWT);
 	assert(stdin==0);
-	int stdout = open("/dev_tty0", O_RDWT);
+	int stdout = open("/dev/tty0", O_RDWT);
 	assert(stdout==1);
-	int stderr = open("/dev_tty0", O_RDWT);
+	int stderr = open("/dev/tty0", O_RDWT);
 	assert(stderr==2);
 	char buf[81];
 	int bytes;
@@ -32,14 +32,14 @@ void init()
 //	_disp_str("Yooooooooooo",0,0, COLOR_RED);
 	//下面打开stdin stdout了会死锁
 	//TODO fix it
-	int stdin = open("/dev_tty0", O_RDWT);
+	int stdin = open("/dev/tty0", O_RDWT);
 	assert(stdin==0);
 //	_disp_str("open stdin success", 2, 0, COLOR_GREEN);
-	int stdout = open("/dev_tty0", O_RDWT);
+	int stdout = open("/dev/tty0", O_RDWT);
 	assert(stdout == 1);
 //	_disp_str("open stdout success", 4, 0, COLOR_GREEN);
 	test_fs();
-	untar("/cmd.tar");
+	//untar("/cmd.tar");
 	int pid = fork();
 	if(pid!=0){
 		printf("parent is running, pid:%d child pid:%d\n", getpid(), pid);
@@ -186,7 +186,7 @@ void test_fs()
 	fd = open("/hello/fuckyou/test.txt", O_RDWT);
 	bytes = read(fd, buf, file_content_len);
 	buf[bytes]=0;
-	printf(buf);
+	printf("%s\n",buf);
 	close(fd);
 }
 #endif

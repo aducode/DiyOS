@@ -17,6 +17,7 @@ static void init_inode_bitmap();
 static void init_sect_bitmap(struct super_block * p_sb);
 static void init_inode_array(struct super_block * p_sb);
 static void init_data_blocks(struct super_block * p_sb);
+static void init_tty_files();
 static void fmtfs();
 static void mkfs();
 static void read_super_block(int dev);
@@ -37,7 +38,7 @@ static struct inode * create_file(char *path, int flags);
 static struct inode * create_directory(char *path, int flags);
 static int alloc_imap_bit(int dev);
 static int alloc_smap_bit(int dev, int sects_count_to_alloc);
-static struct inode* new_inode(int dev, int inode_nr, u32 i_mode, int start_sect);
+static struct inode* new_inode(int dev, int inode_nr, u32 i_mode, u32 start_sect,u32 i_sects_count, u32 i_size);
 static void new_dir_entry(struct inode *dir_inode, int inode_nr, char *filename);
 static int strip_path(char *filename, const char *pathname, struct inode **ppinode);
 static int search_file(char *path);
@@ -146,17 +147,14 @@ void init_fs()
 	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
 	sb = (struct super_block*)fsbuf;
 	//打开后创建文件系统
-	//fmtfs();
-	mkfs();
+	fmtfs();
+	//mkfs();
 	//load super block of ROOT
 	read_super_block(ROOT_DEV);
 	sb=get_super_block(ROOT_DEV);
 	assert(sb->magic == MAGIC_V1);
 	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
-	//create_file("/fuck",O_CREATE);
-	//create_directory("/dev",O_CREATE);
-	//create_file("/dev/fuck.txt",O_CREATE);
-	//assert(0);
+	init_tty_files();
 /*
 	//test
 	//这里测试多次也都能获取到root_inode在磁盘中的内容，
@@ -219,6 +217,28 @@ void init_fs()
 
 
 /**
+ * @function int_tty_files
+ * @brief 初始化tty设备文件
+ * @return
+ */
+void init_tty_files()
+{
+	//step 1 创建/dev 目录
+	struct inode* dir_inode = create_directory("/dev", O_CREATE);
+	assert(dir_inode!=0);
+	//step 2 创建tty0 tty1 tty2三个tty设备文件
+	char filename[MAX_PATH];
+	int i, inode_nr, free_sect_nr;
+	for(i=0;i<CONSOLE_COUNT;i++){
+		inode_nr = alloc_imap_bit(dir_inode->i_dev);
+        	struct inode *newino = new_inode(dir_inode->i_dev, inode_nr,I_CHAR_SPECIAL, MAKE_DEV(DEV_CHAR_TTY, i),0, 0);
+		sprintf(filename, "tty%d", i);
+       		new_dir_entry(dir_inode, newino->i_num, filename);
+	}
+		
+}
+
+/**
  * @function fmtfs
  * @brief 格式化文件系统
  *	- 写入超级块
@@ -260,7 +280,7 @@ void init_super_block(struct super_block* p_sb)
 	msg.PID			= TASK_FS;
 	assert(dd_map[MAJOR(ROOT_DEV)].driver_pid != INVALID_DRIVER);
 	send_recv(BOTH, dd_map[MAJOR(ROOT_DEV)].driver_pid, &msg);
-	printk("dev size: %d sectors\n", geo.size);
+	//printk("dev size: %d sectors\n", geo.size);
 	//step 2 写入超级块
 	p_sb->magic		= MAGIC_V1;
 	p_sb->inodes_count	= bits_per_sect;
@@ -332,6 +352,7 @@ void init_sect_bitmap(struct super_block * p_sb)
 	}
 	WRITE_SECT(ROOT_DEV, 2 + p_sb->imap_sects_count);
 	//设置区域sector bitmap项为0
+	memset(fsbuf, 0, SECTOR_SIZE);
 	for(i=1;i<p_sb->smap_sects_count;i++){
 		WRITE_SECT(ROOT_DEV, 2 + p_sb->imap_sects_count + i);
 	}
@@ -1080,14 +1101,14 @@ struct inode * create_directory(char *path, int flags)
 			return 0;
 		}
 		if(pinode->i_mode == I_DIRECTORY){
-			return 1; //说明已经存在目录
+			return pinode; //说明已经存在目录
 		} else {
 			return 0; //父目录下有同名文件
 		}
 	}
 	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
 	int free_sect_nr = alloc_smap_bit(dir_inode->i_dev, DEFAULT_FILE_SECTS_COUNT);
-	struct inode * newino = new_inode(dir_inode->i_dev, inode_nr, I_DIRECTORY, free_sect_nr);
+	struct inode * newino = new_inode(dir_inode->i_dev, inode_nr, I_DIRECTORY, free_sect_nr, DEFAULT_FILE_SECTS_COUNT, 2*DIR_ENTRY_SIZE);
 	//写入directory文件数据 . ..
 	memset(fsbuf, 0, SECTOR_SIZE);
 	struct dir_entry *pde;
@@ -1120,7 +1141,7 @@ struct inode * create_file(char *path, int flags)
 	}
 	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
 	int free_sect_nr = alloc_smap_bit(dir_inode->i_dev, DEFAULT_FILE_SECTS_COUNT);
-	struct inode *newino = new_inode(dir_inode->i_dev, inode_nr,I_REGULAR, free_sect_nr);
+	struct inode *newino = new_inode(dir_inode->i_dev, inode_nr,I_REGULAR, free_sect_nr, DEFAULT_FILE_SECTS_COUNT, 0);
 	new_dir_entry(dir_inode, newino->i_num, filename);
 	return newino;
 }
@@ -1192,6 +1213,9 @@ int alloc_smap_bit(int dev, int sects_count_to_alloc)
 			}
 			for(;k<8;k++){
 				//repeat till enough bits are set
+				int tmp = fsbuf[j]>>k&1;
+				if(tmp!=0)
+					printk("\ndev:%d, sects_count_to_alloc:%dsmap_sects_count:%d\n%d, %d, %d, %d\n", dev, sects_count_to_alloc,sb->smap_sects_count, tmp, i, j, k);
 				assert((fsbuf[j]>>k&1)==0);
 				fsbuf[j] |= (1<<k);
 				if(--sects_count_to_alloc==0){
@@ -1219,17 +1243,18 @@ int alloc_smap_bit(int dev, int sects_count_to_alloc)
  * @param inode_nr
  * @param i_mode
  * @param start_sect
+ * @param i_size 
  *
  * @return ptr of the new inode
  */
-struct inode* new_inode(int dev, int inode_nr,u32 i_mode, int start_sect)
+struct inode* new_inode(int dev, int inode_nr,u32 i_mode, u32 start_sect, u32 i_sects_count, u32 i_size)
 {
 	//get from inode array by inode_nr
 	struct inode * new_inode = get_inode(dev, inode_nr);
 	new_inode->i_mode = i_mode;
-	new_inode->i_size = 0;
+	new_inode->i_size = i_size;
 	new_inode->i_start_sect = start_sect;
-	new_inode->i_sects_count = DEFAULT_FILE_SECTS_COUNT;
+	new_inode->i_sects_count = i_sects_count;
 	
 	new_inode->i_dev = dev;
 	new_inode->i_cnt = 1;
