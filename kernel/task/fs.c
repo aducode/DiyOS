@@ -149,6 +149,9 @@ void init_fs()
 	sb=get_super_block(ROOT_DEV);
 	assert(sb->magic == MAGIC_V1);
 	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
+
+	create_directory("/dev",O_CREATE);
+	//assert(0);
 /*
 	//test
 	//这里测试多次也都能获取到root_inode在磁盘中的内容，
