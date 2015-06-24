@@ -55,12 +55,14 @@ int k_reenter = -1;	//由于最开始执行中断时，会先减1 ，所以这�
 
 
 //这里定义Task
-//task/hddriver.c
-extern void task_hd();
 //task/ticks.c
 extern void  task_sys();
 //task/tty.c
 extern void task_tty();
+//task/hddriver.c
+extern void task_hd();
+//task/floppydriver.c
+extern void task_floppy();
 //task/fs.c
 extern void task_fs();
 //task/mm.c
@@ -71,25 +73,24 @@ extern void empty_proc();
 //如果其他task都处于阻塞状态，现在的进程调度会陷入死循环，导致时钟中断阻塞
 //现在的处理方案就是加入一个什么也不做的进程EMPTY，防止时钟中断时，进程调度死循环
 struct task task_table[TASKS_COUNT] = {
-	/* entry        stack size        task name */
-	/* -----        ----------        --------- */
-//	{init,		STACK_SIZE_TASK_TTY,		"INIT"	},//0
-	{task_tty,	STACK_SIZE_TASK_TTY,		"TTY"  	},//0
-	{task_hd,	STACK_SIZE_TASK_HD,		"HD"   	},//1
-	{task_sys,	STACK_SIZE_TASK_SYS,		"SYS"	},//2
-//	{task_hd,	STACK_SIZE_TASK_HD,		"HD"	},//2
-	{task_fs,	STACK_SIZE_TASK_FS,		"FS"	},//3
-	{task_mm,	STACK_SIZE_TASK_MM,		"MM"	},//4
-	{empty_proc,	STACK_SIZE_TASK_EMPTY,		"EMPTY"	},
+	/* entry        stack size        task name 	priority*/
+	/* -----        ----------        --------- 	--------*/
+	{task_sys,      STACK_SIZE_TASK_SYS,            "SYS",		TASK_SYS_PRIORITY},//0
+	{task_tty,	STACK_SIZE_TASK_TTY,		"TTY",		TASK_TTY_PRIORITY},//1
+	{task_hd,	STACK_SIZE_TASK_HD,		"HD",		TASK_HD_PRIORITY},//2
+	{task_floppy,	STACK_SIZE_TASK_FLOPPY,		"FLOPPY",	TASK_FLOPPY_PRIORITY},//3
+	{task_fs,	STACK_SIZE_TASK_FS,		"FS",		TASK_FS_PRIORITY},//4
+	{task_mm,	STACK_SIZE_TASK_MM,		"MM",		TASK_MM_PRIORITY},//5
+	{empty_proc,	STACK_SIZE_TASK_EMPTY,		"EMPTY",	TASK_EMPTY_PRIORITY},//6
 };
 
 
 //task/init.c
 extern init();
 struct task user_proc_table[PROCS_COUNT] = {
-	/*entry		stack size	task name8*/
-	/*----		----------	----------*/
-	{init,		STACK_SIZE_INIT,		"INIT"},
+	/*entry		stack size	task name	priority*/
+	/*----		----------	----------	--------*/
+	{init,		STACK_SIZE_INIT,		"INIT",		INIT_PRIORITY},
 };
 //定义任务栈空间
 char task_stack[STACK_SIZE_TOTAL];
@@ -124,7 +125,7 @@ struct dev_drv_map dd_map[]={
 	/* driver pid.		major device num.*/
 	/* _____________	_________________*/
 	{INVALID_DRIVER},	//<0: unused
-	{INVALID_DRIVER},	//<1:Reserved for floppy driver
+	{TASK_FLOPPY},		//<1:Reserved for floppy driver
 	{INVALID_DRIVER},	//<2:Reserved for cdrom driver
 	{TASK_HD},		//<3:Hard disk
 	{TASK_TTY},		//<4:TTY

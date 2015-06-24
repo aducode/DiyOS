@@ -29,7 +29,7 @@
  * @define _INCLUDE_KLIB_
  * @brief 是否include klib.h
  */
-//#define _INCLUDE_KLIB_
+#define _INCLUDE_KLIB_
 
 //macro utils
 #define min(a,b) ((a)<(b)?(a):(b))
@@ -141,25 +141,41 @@ enum msgtype {
 
 //about process
 //#define MAX_PROCESS_COUNT     32      //最多32个进程
-#define TASKS_COUNT             6       //系统进程个数
+#define TASKS_COUNT             7       //系统进程个数
 #define PROCS_COUNT             32      //系统支持最大进程数32
 #define NATIVE_PROCS_COUNT      1       //用户进程数量
+
+//默认优先级
+//15:5时，可能死锁，所以先改成16:5
+#define TASK_DEFAULT_PRIORITY   16      //系统进程权重
+#define PROC_DEFAULT_PRIORITY	5	//用户进程权重
 
 /**
  * @define TASKS
  * @brief define system task pid
  */
-//#define INIT          0
-#define TASK_TTY        0
-#define TASK_HD         1
-#define TASK_SYS        2
-#define TASK_FS         3
-#define TASK_MM         4
+#define TASK_SYS        0
+#define TASK_TTY        1
+#define TASK_HD         2
+#define TASK_FLOPPY	3
+#define TASK_FS         4
+#define TASK_MM         5
 
-#define TASK_EMPTY      5
+#define TASK_EMPTY      6
 
-#define INIT            6
+#define INIT            7
 
+//进程权重
+#define TASK_SYS_PRIORITY	TASK_DEFAULT_PRIORITY
+#define TASK_TTY_PRIORITY	TASK_DEFAULT_PRIORITY
+#define TASK_HD_PRIORITY	TASK_DEFAULT_PRIORITY
+#define TASK_FLOPPY_PRIORITY	TASK_DEFAULT_PRIORITY
+#define TASK_FS_PRIORITY	TASK_DEFAULT_PRIORITY
+#define TASK_MM_PRIORITY	TASK_DEFAULT_PRIORITY
+
+#define TASK_EMPTY_PRIORITY	100
+
+#define INIT_PRIORITY		PROC_DEFAULT_PRIORITY
 
 //消息广播
 #define ANY     (TASKS_COUNT + PROCS_COUNT + 10)

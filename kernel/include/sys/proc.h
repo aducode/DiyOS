@@ -17,9 +17,10 @@
 #define INVALID_DRIVER  -20
 //进程栈
 //stacks of tasks
+#define STACK_SIZE_TASK_SYS     0x8000
 #define STACK_SIZE_TASK_TTY	0x8000
 #define STACK_SIZE_TASK_HD	0x8000
-#define STACK_SIZE_TASK_SYS	0x8000
+#define STACK_SIZE_TASK_FLOPPY	0x8000
 #define STACK_SIZE_TASK_FS	0x8000
 #define STACK_SIZE_TASK_MM	0x8000
 //由于empty_proc只是一个空进程体，所以不需要使用栈
@@ -33,9 +34,10 @@
 #define STACK_SIZE_PROC_TESTD	0x8000
 */
 //stacks size
-#define STACK_SIZE_TOTAL        (STACK_SIZE_TASK_TTY + \
+#define STACK_SIZE_TOTAL        (STACK_SIZE_TASK_SYS + \
+				 STACK_SIZE_TASK_TTY + \
 				 STACK_SIZE_TASK_HD + \
-				 STACK_SIZE_TASK_SYS + \
+				 STACK_SIZE_TASK_FLOPPY + \
 				 STACK_SIZE_TASK_FS + \
 				 STACK_SIZE_TASK_MM + \
 				 STACK_SIZE_TASK_EMPTY + \
@@ -120,8 +122,9 @@ typedef void (*proc_entry_point)();
 //任务
 struct task{
 	proc_entry_point	entry;
-	int stacksize;
-	char name[32];	
+	int 			stacksize;
+	char 			name[32];	
+	int 			priority;		
 };
 
 

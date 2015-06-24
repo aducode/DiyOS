@@ -120,6 +120,12 @@ void hd_close(int device)
  */
 void hd_rdwt(struct message *msg)
 {
+	//这里加上一个输出就可以正常运行
+	//为什么
+	//_disp_str(" ",0,0,COLOR_LIGHT_WHITE);
+	//tmp++<49就出错
+	//int tmp=0;
+	//while(tmp++<50){}
 	//根据次设备号获取操作哪一个具体的硬盘
 	int drive = DRV_OF_DEV(msg->DEVICE);
 	u64 pos = msg->POSITION;

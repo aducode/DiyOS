@@ -12,6 +12,7 @@
 void exit(int status)
 {
 	struct message msg;
+	reset_msg(&msg);
 	msg.type = EXIT;
 	msg.STATUS = status;
 	send_recv(BOTH, TASK_MM, &msg);

@@ -1,17 +1,3 @@
-/*
-#include <stdio.h>
-void itoa(int value, char * string, int radix);
-void strcpy(char *, char*);
-int main(int argv, char ** argc)
-{
-	char str[256];
-	char str2[256]="hello world";
-	itoa(20, str, 8);
-	strcpy(str2+11, str);
-	printf("%s\n",str2);
-}
-*/
-//#include "klib.h"
 /**
  *不依赖汇编函数
  */

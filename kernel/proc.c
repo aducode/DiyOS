@@ -7,10 +7,6 @@
 #include "assert.h"
 #include "clock.h"
 #include "hd.h"
-
-
-//#include "klib.h"
-
 static int ldt_seg_linear(struct process *p_proc, int idx);
 //判断消息发送是否有环
 static int deadlock(int src, int dest);

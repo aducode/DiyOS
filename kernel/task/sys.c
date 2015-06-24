@@ -5,8 +5,6 @@
 #include "proc.h"
 #include "global.h"
 #include "stdio.h"
-
-//#include "klib.h"
 void task_sys()
 {
 	struct message msg;

@@ -9,8 +9,6 @@
 #include "fs.h"
 #include "stdio.h"
 #include "proc.h"
-
-#include "klib.h"
 static void init_fs();
 static void init_super_block(struct super_block * p_sb);
 static void init_inode_bitmap();
