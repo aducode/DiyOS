@@ -19,7 +19,7 @@
 		case 3:			*to++ = *from++;
 		case 2:			*to++ = *from++;
 		case 1:			*to++ = *from++;
-		default:	}while(--i>0)
+		default:	}while(--i>0);
 	 }
 	 return ret;
  }
