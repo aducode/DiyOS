@@ -15,7 +15,8 @@ static void init_inode_bitmap();
 static void init_sect_bitmap(struct super_block * p_sb);
 static void init_inode_array(struct super_block * p_sb);
 static void init_data_blocks(struct super_block * p_sb);
-static void init_tty_files();
+static void init_tty_files(struct inode *pin);
+static void init_block_dev_files(struct inode *pin);
 static void fmtfs();
 static void read_super_block(int dev);
 static struct super_block * get_super_block(int dev);
@@ -133,7 +134,12 @@ void init_fs()
 	sb=get_super_block(ROOT_DEV);
 	assert(sb->magic == MAGIC_V1);
 	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
-	init_tty_files();
+	//创建/dev目录
+	struct inode *p_dir_inode = create_directory("/dev", O_CREATE);
+	assert(p_dir_inode!=0);
+	init_tty_files(p_dir_inode);
+	//init block device files
+	init_block_dev_files(p_dir_inode);
 }
 
 
@@ -142,12 +148,9 @@ void init_fs()
  * @brief 初始化tty设备文件
  * @return
  */
-void init_tty_files()
+void init_tty_files(struct inode *dir_inode)
 {
-	//step 1 创建/dev 目录
-	struct inode* dir_inode = create_directory("/dev", O_CREATE);
-	assert(dir_inode!=0);
-	//step 2 创建tty0 tty1 tty2三个tty设备文件
+	//step 1 创建tty0 tty1 tty2三个tty设备文件
 	char filename[MAX_PATH];
 	int i, inode_nr, free_sect_nr;
 	for(i=0;i<CONSOLE_COUNT;i++){
@@ -157,6 +160,19 @@ void init_tty_files()
        		new_dir_entry(dir_inode, newino->i_num, filename);
 	}
 		
+}
+
+/**
+ * @function init_block_dev_files
+ * @brief 初始化块设备文件
+ * @return
+ */
+void init_block_dev_files(struct inode *dir_inode)
+{
+	int inode_nr, free_sect_nr;
+	inode_nr = alloc_imap_bit(dir_inode->i_dev);
+	struct inode *newino = new_inode(dir_inode->i_dev, inode_nr, I_BLOCK_SPECIAL, MAKE_DEV(DEV_FLOPPY, 0), 0, 0);
+	new_dir_entry(dir_inode, newino->i_num, "floppy");
 }
 
 /**

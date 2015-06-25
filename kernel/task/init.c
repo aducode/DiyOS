@@ -80,7 +80,7 @@ void init()
  */
 void test_fs()
 {
-	char file_content[] = "@@@@@@@@@@@@@@@@@@@@@@@@@@@";
+	char file_content[] = "!@#$%^&*()_+";
 	int file_content_len = strlen(file_content);
 	mkdir("/hello");
 	//这里连续两个mkdir后，下面write就会出错
