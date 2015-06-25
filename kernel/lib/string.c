@@ -5,6 +5,7 @@
  * memcpy
  * @see Duff's Device
  */
+/*
  void* memcpy(void *p_dst, const void *p_src, int size)
  {
 	 void *ret = p_dst;
@@ -23,7 +24,7 @@
 	 }
 	 return ret;
  }
- /*
+*/
 void* memcpy(void* p_dst,const void* p_src, int size)
 {
 	void *ret = p_dst;
@@ -37,7 +38,6 @@ void* memcpy(void* p_dst,const void* p_src, int size)
 	}
 	return ret;
 }
-*/
 
 /**
  * @function memset
