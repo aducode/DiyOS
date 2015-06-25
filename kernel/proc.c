@@ -31,6 +31,8 @@ void schedule()
 	struct process *p;
         int greatest_ticks = 0;
         while(!greatest_ticks){
+				//这里PROCS_COUNT 是最大进程数
+				//不能改成NATIVE_PROCS_COUNT 因为会又从Init fork出来的进程，也要参与进程调度
                 for(p=proc_table;p<proc_table+TASKS_COUNT+PROCS_COUNT;p++){
                         if(p->p_flags == 0){
                                 if(p->ticks > greatest_ticks){
@@ -40,7 +42,10 @@ void schedule()
                         }
                 }
 		if(!greatest_ticks){
-                	for(p=proc_table;p<=proc_table+TASKS_COUNT+PROCS_COUNT+1;p++){
+					//如果全部进程的priority都已经到
+                	//for(p=proc_table;p<=proc_table+TASKS_COUNT+PROCS_COUNT+1;p++){
+					//以上逻辑有点问题，proc_table数组越界，修改一下
+					for(p=proc_table;p<proc_table+TASKS_COUNT+PROCS_COUNT;p++){
                         	if(p->p_flags == 0){
                                 	p->ticks = p->priority;
                         	}
