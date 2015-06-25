@@ -3,7 +3,27 @@
  */
 /**
  * memcpy
+ * @see Duff's Device
  */
+ void* memcpy(void *p_dst, const void *p_src, int size)
+ {
+	 void *ret = p_dst;
+	 char *to = (char*)p_dst, *from = (char*)p_src;
+	 int i = (size + 7)/8;
+	 switch(size % 8){
+		case 0:		do{ *to++ = *from++;
+		case 7:			*to++ = *from++;
+		case 6:			*to++ = *from++;
+		case 5:			*to++ = *from++;
+		case 4:			*to++ = *from++;
+		case 3:			*to++ = *from++;
+		case 2:			*to++ = *from++;
+		case 1:			*to++ = *from++;
+		default:	}while(--i>0)
+	 }
+	 return ret;
+ }
+ /*
 void* memcpy(void* p_dst,const void* p_src, int size)
 {
 	void *ret = p_dst;
@@ -17,6 +37,7 @@ void* memcpy(void* p_dst,const void* p_src, int size)
 	}
 	return ret;
 }
+*/
 
 /**
  * @function memset
