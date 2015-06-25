@@ -15,6 +15,7 @@ void task_floppy()
 	{
 		//floppy driver main loop
 		send_recv(RECEIVE, ANY, &msg); //接收广播
+		printk("no receive.....\n");
 		int src = msg.source;
 		switch(msg.type){
 			default:
