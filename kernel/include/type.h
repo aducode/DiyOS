@@ -147,8 +147,8 @@ enum msgtype {
 
 //默认优先级
 //15:5时，可能死锁，所以先改成16:5
-#define TASK_DEFAULT_PRIORITY   16      //系统进程权重
-#define PROC_DEFAULT_PRIORITY	5	//用户进程权重
+#define TASK_DEFAULT_PRIORITY   100      //系统进程权重
+#define PROC_DEFAULT_PRIORITY	20	//用户进程权重
 
 /**
  * @define TASKS

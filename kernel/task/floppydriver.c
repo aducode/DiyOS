@@ -13,7 +13,6 @@ void task_floppy()
 	init_floppy();
 	while(1)
 	{
-		/*
 		//floppy driver main loop
 		send_recv(RECEIVE, ANY, &msg); //接收广播
 		int src = msg.source;
@@ -24,7 +23,6 @@ void task_floppy()
 				break;
 		}
 		send_recv(SEND, src, &msg);
-		*/
 	}
 }
 
