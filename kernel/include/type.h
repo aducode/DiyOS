@@ -181,7 +181,8 @@ enum msgtype {
 #define ANY     (TASKS_COUNT + PROCS_COUNT + 10)
 //
 #define NO_TASK (TASKS_COUNT + PROCS_COUNT + 20)
-#define HARD_INT                1
+//has in msgtype
+//#define HARD_INT                1
 //中断类型消息
 #define INTERRUPT               -10
 

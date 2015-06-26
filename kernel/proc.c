@@ -262,6 +262,8 @@ int msg_receive(struct process *current, int src, struct message *m)
 				assert(sender->p_flags & SENDING);
 				if(proc2pid(p) == src){
 					//找到接收队列中的特定消息
+					//sender 之前已经根据src得到了
+					//这里从新赋值，是为了得到q_sending中的next_sending
 					sender=p;
 					break;
 				}
