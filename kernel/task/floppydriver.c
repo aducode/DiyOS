@@ -6,7 +6,6 @@
 #include "proc.h"
 #include "assert.h"
 #include "floppy.h"
-static void init_floppy();
 void task_floppy()
 {
 	struct message msg;//用于进程间通信
@@ -15,9 +14,18 @@ void task_floppy()
 	{
 		//floppy driver main loop
 		send_recv(RECEIVE, ANY, &msg); //接收广播
-		printk("no receive.....\n");
 		int src = msg.source;
 		switch(msg.type){
+			case DEV_OPEN:
+				break;
+			case DEV_CLOSE:
+				break;
+			case DEV_READ:
+				break;
+			case DEV_WRITE:
+				break;
+			case DEV_IOCTL:
+				break;
 			default:
 				dump_msg("FLOPPY driver::unknown msg", &msg);
 				spin("FLOPPY::main_loop (invalid msg.type)");
@@ -25,15 +33,4 @@ void task_floppy()
 		}
 		send_recv(SEND, src, &msg);
 	}
-}
-
-
-/**
- * @function init_floppy
- * @brief 初始化
- * @return
- */
-void init_floppy()
-{
-	
 }

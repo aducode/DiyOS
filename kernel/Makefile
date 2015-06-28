@@ -36,7 +36,7 @@ DASM=ndisasm
 DASMFLAGS=-u -o $(KERNEL_ENTRY_POINT) -e $(KERNEL_ENTRY_OFFSET)
 DASMOUTPUT=$(KERNEL).bin.asm
 
-OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o systicks.o getpid.o fork.o exit.o wait.o tar.o assert.o clock.o keyboard.o hd.o console.o proc.o ipc.o syscall.o tty.o hddriver.o floppydriver.o sys.o fs.o mm.o init.o
+OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o systicks.o getpid.o fork.o exit.o wait.o tar.o assert.o clock.o keyboard.o hd.o floppy.o console.o proc.o ipc.o syscall.o tty.o hddriver.o floppydriver.o sys.o fs.o mm.o init.o
 #OBJECTS=$(KERNEL).o main.o global.o head.o klib.o  interrupt.o string.o stdio.o clock.o keyboard.o console.o proc.o  syscall.o tty.o test.o
 
 all:$(KERNEL).bin
@@ -94,6 +94,8 @@ console.o:int/console.c
 	$(CC) $(CFLAGS) int/console.c -o console.o
 hd.o:int/hd.c
 	$(CC) $(CFLAGS) int/hd.c -o hd.o
+floppy.o:int/floppy.c
+	$(CC) $(CFLAGS) int/floppy.c -o floppy.o
 
 
 ########################### TASKS ##########################################
