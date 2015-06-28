@@ -341,12 +341,12 @@ int msg_receive(struct process *current, int src, struct message *m)
 int sys_sendrec(int function, int dest_src, struct message *msg , struct process *p_proc)
 {
 	assert(k_reenter == 0); //make sure we are not in ring0
-	assert((dest_src >= 0 && dest_src < TASKS_COUNT + PROCS_COUNT) || dest_src == ANY || dest_src == INTERRUPT);	
-	int ret;
+	assert((dest_src >= 0 && dest_src < TASKS_COUNT + PROCS_COUNT) || dest_src == ANY || dest_src == INTERRUPT);
 	int caller = proc2pid(p_proc);
+	assert(caller != dest_src);
 	struct message *mla = (struct message *)va2la(caller, msg);
+	int ret;
 	mla->source = caller;
-	assert(mla->source != dest_src);
 	switch(function){
 		case SEND:
 			ret = msg_send(p_proc, dest_src, msg);
