@@ -28,6 +28,49 @@ void init_floppy()
 	_enable_irq(FLOPPY_IRQ);	
 }
 
+/**
+ * @function floppy_open
+ * @brief 打开设备
+ * @param device 设备号
+ * @return
+ */
+void floppy_open(int device)
+{
+	
+}
+
+/**
+ * @function floppy_close
+ * @brief 关闭设备
+ * @param device 设备号
+ * @return
+ */
+void floppy_close(int device)
+{
+	
+}
+
+/**
+ * @function floppy_rdwt
+ * @brief 设备读写数据
+ * @param msg 消息
+ * @return
+ */
+void floppy_rdwt(struct message *msg)
+{
+	
+}
+
+/**
+ * @function floppy_ioctl
+ * @brief 控制设备
+ * @param msg 消息
+ */
+void floppy_ioctl(struct message *msg)
+{
+	
+}
+
 /********************************************* PRIVATE ************************************/
 
 void floppy_handler(int irq_no)

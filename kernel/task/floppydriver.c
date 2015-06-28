@@ -17,14 +17,17 @@ void task_floppy()
 		int src = msg.source;
 		switch(msg.type){
 			case DEV_OPEN:
+				floppy_open(msg.DEVICE);
 				break;
 			case DEV_CLOSE:
+				floppy_close(msg.DEVICE);
 				break;
 			case DEV_READ:
-				break;
 			case DEV_WRITE:
+				floppy_rdwt(&msg);
 				break;
 			case DEV_IOCTL:
+				floppy_ioctl(&msg);
 				break;
 			default:
 				dump_msg("FLOPPY driver::unknown msg", &msg);
