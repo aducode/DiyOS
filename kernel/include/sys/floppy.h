@@ -39,6 +39,9 @@ extern void floppy_rdwt(struct message *msg);
  */
 extern void floppy_ioctl(struct message *msg);
 
+#define		FD_US1			0x02
+#define		FD_US2			0x01
+
 //IO port
 //I/O address			Read or Write			Register
 //0x3f2					Write					DOR: Digital Output Register
@@ -47,9 +50,10 @@ extern void floppy_ioctl(struct message *msg);
 //0x3f7					Read					DIR: Digital Input Register
 //						Write					DCR: Disk Control Register
 
-#define		REG_DOR			0x3f2
-#define		FDC_STATUS		0x3f4
-#define		FDC_DATA		0x3f5
+#define		FLOPPY_REG_DOR			0x3f2
+#define		FLOPPY_FDC_STATUS		0x3f4
+#define		FLOPPY_FDC_DATA			0x3f5
+#define		FLOPPY_DCR				0x3f7
 
 //DOR 数字输出寄存器
 //DOR是一个8为寄存器，他控制驱动器马达的开启、驱动器选择、启动/复位FDC以及允许/禁止DMA请求

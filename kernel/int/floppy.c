@@ -23,9 +23,7 @@ static void floppy_handler(int irq_no);
  */
 void init_floppy()
 {
-	_disable_irq(FLOPPY_IRQ);
-	irq_handler_table[FLOPPY_IRQ] = floppy_handler;
-	_enable_irq(FLOPPY_IRQ);	
+	//empty
 }
 
 /**
@@ -36,7 +34,16 @@ void init_floppy()
  */
 void floppy_open(int device)
 {
-	
+	int i;
+	//setp 1 enable interrupt
+	_disable_irq(FLOPPY_IRQ);
+	irq_handler_table[FLOPPY_IRQ] = floppy_handler;
+	_enable_irq(FLOPPY_IRQ);	
+	//step 2 reset
+	_out_byte(FLOPPY_REG_DOR, 0x08);		//重启
+	for(i=0;i<100;i++){
+		__asm__("nop");//延时保证重启完成
+	}
 }
 
 /**
