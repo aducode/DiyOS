@@ -50,10 +50,13 @@ extern void floppy_ioctl(struct message *msg);
 //0x3f7					Read					DIR: Digital Input Register
 //						Write					DCR: Disk Control Register
 
-#define		FLOPPY_REG_DOR			0x3f2
-#define		FLOPPY_FDC_STATUS		0x3f4
-#define		FLOPPY_FDC_DATA			0x3f5
-#define		FLOPPY_DCR				0x3f7
+
+#define		FD_STATUS			0x3f4		//主状态寄存器端口
+#define		FD_DATA				0x3f5		//数据端口
+
+#define		FD_DOR				0x3f2		//数字输出寄存器 Digital Output Register
+#define		FD_DIR				0x3f7		//数字出入寄存器 Digital Input Register(read)
+#define		FD_DCR				0x3f7		//数据传输率控制寄存器 Diskette Control Register(write)
 
 //DOR 数字输出寄存器
 //DOR是一个8为寄存器，他控制驱动器马达的开启、驱动器选择、启动/复位FDC以及允许/禁止DMA请求
@@ -80,6 +83,12 @@ extern void floppy_ioctl(struct message *msg);
 //1			DBB			Driver B busy
 //0			DAB			Driver A busy
 //
+//状态定义
+#define		FD_STATUS_BUSYMASK		0x0F		//driver busy
+#define		FD_STATUS_BUS			0x10		//FDC 忙
+#define		FD_STATUS_DMA			0x20		//0-DMA model
+#define		FD_STATUS_DIR			0x40		//传输方向0 CPU 1 相反
+#define		FD_STATUS_READY			0x80		//数据寄存器就位
 // FDC Data：FDC数据寄存器
 //FDC Data寄存器用于向FDC发送控制命令或从FDC读取状态，实现数据读写等。FDC的使用比较复杂，可支持多种命令。每个命令都通过一个命令序列实现：命令阶段、执行阶段和结果阶段。
 //(1)重新校正命令（FD_RECALIBRATE）
@@ -152,6 +161,32 @@ extern void floppy_ioctl(struct message *msg);
 //	0		ST2_MAM				未找到扇区地址标志ID（Miss Address Mask）
 #define		CMD_FD_READ			0xE6	
 
+//ST0 bits
+#define		FD_ST0_DS			0x03	//驱动器选择号
+#define		FD_ST0_HA			0x04	//磁头号
+#define		FD_ST0_NR			0x08	//磁盘驱动器未准备好
+#define		FD_ST0_ECE			0x10	//设备检测出错
+#define		FD_ST0_SE			0x20	//寻到或重新校正操作执行结束
+#define		FD_ST0_INTR			0xC0	//中断代码位(中断原因) 00-命令正常结束 01 命令异常结束 10-命令无效 11-FDD就绪状态改变
+//ST1 bits
+#define		FD_ST1_MAM			0x01	//未找到地址标志(ID AM)
+#define		FD_ST1_WP			0x02	//写保护
+#define		FD_ST1_ND			0x04	//未找到指定扇区
+#define		FD_ST1_OR			0x10	//数据传输超时(DMA控制器故障)
+#define 	FD_ST1_CRC			0x20	//CRC校验出错
+#define		FD_ST1_BOC			0x80	//访问超过一个磁道上的最大扇区号
+//ST2  bits
+#define 	FD_ST2_MAM			0x01	//未找到数据地址标志
+#define 	FD_ST2_BC			0x02	//磁道坏
+#define 	FD_ST2_SNS			0x04	//检索条件不满足
+#define 	FD_ST2_SEH			0x08	//检索条件满足
+#define 	FD_ST2_WC			0x10	//磁道号不符
+#define		FD_ST2_CRC			0x20	//CRC校验出错
+#define		FD_ST2_CM			0x40	//读数据遇到删除标志
+//ST3 bits
+#define 	FD_ST3_HA			0x04	//磁头号
+#define		FD_ST3_TZ			0x10	//零磁道信号
+#define		FD_ST3_WP			0x40	//写保护
 //(4)写扇区数据命令（FD_WRITE）
 //FD_WRITE cmd:
 //	7	6	5	4	3	2	1	0
@@ -196,5 +231,9 @@ extern void floppy_ioctl(struct message *msg);
 
 // DCR：磁盘控制寄存器
 //DCR仅是用户D0与D1位，用于表示数据传输率。
-//00-500kpbs, 01-300kpbs, 10-250kpbs					
+//00-500kpbs, 01-300kpbs, 10-250kpbs
+
+//DMA commands
+#define			DMA_READ			0x46		//DMA 读盘，DMA方式字(送DMA端口12,11)
+#define			DMA_WRITE			0x4A		//DMA写盘，DMA方式					
 #endif

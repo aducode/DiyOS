@@ -40,11 +40,11 @@ void floppy_open(int device)
 	irq_handler_table[FLOPPY_IRQ] = floppy_handler;
 	_enable_irq(FLOPPY_IRQ);	
 	//step 2 reset
-	_out_byte(FLOPPY_REG_DOR, 0x08);		//重启
+	_out_byte(FD_DOR, 0x08);		//重启
 	for(i=0;i<100;i++){
 		__asm__("nop");//延时保证重启完成
 	}
-	_out_byte(FLOPPY_REG, 0x0c);			//选择DMA模式，选择软驱A
+	_out_byte(FD_DOR, 0x0c);			//选择DMA模式，选择软驱A
 	
 }
 
