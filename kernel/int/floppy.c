@@ -44,6 +44,8 @@ void floppy_open(int device)
 	for(i=0;i<100;i++){
 		__asm__("nop");//延时保证重启完成
 	}
+	_out_byte(FLOPPY_REG, 0x0c);			//选择DMA模式，选择软驱A
+	
 }
 
 /**
