@@ -7,10 +7,6 @@
 #include "assert.h"
 #include "clock.h"
 #include "hd.h"
-
-
-//#include "klib.h"
-
 static int ldt_seg_linear(struct process *p_proc, int idx);
 //判断消息发送是否有环
 static int deadlock(int src, int dest);
@@ -35,6 +31,8 @@ void schedule()
 	struct process *p;
         int greatest_ticks = 0;
         while(!greatest_ticks){
+		//这里PROCS_COUNT 是最大进程数
+		//不能改成NATIVE_PROCS_COUNT 因为会又从Init fork出来的进程，也要参与进程调度
                 for(p=proc_table;p<proc_table+TASKS_COUNT+PROCS_COUNT;p++){
                         if(p->p_flags == 0){
                                 if(p->ticks > greatest_ticks){
@@ -44,7 +42,10 @@ void schedule()
                         }
                 }
 		if(!greatest_ticks){
-                	for(p=proc_table;p<=proc_table+TASKS_COUNT+PROCS_COUNT+1;p++){
+			//如果全部进程的priority都已经到
+                	//for(p=proc_table;p<=proc_table+TASKS_COUNT+PROCS_COUNT+1;p++){
+			//以上逻辑有点问题，proc_table数组越界，修改一下
+			for(p=proc_table;p<proc_table+TASKS_COUNT+PROCS_COUNT;p++){
                         	if(p->p_flags == 0){
                                 	p->ticks = p->priority;
                         	}
@@ -261,6 +262,8 @@ int msg_receive(struct process *current, int src, struct message *m)
 				assert(sender->p_flags & SENDING);
 				if(proc2pid(p) == src){
 					//找到接收队列中的特定消息
+					//sender 之前已经根据src得到了
+					//这里从新赋值，是为了得到q_sending中的next_sending
 					sender=p;
 					break;
 				}
@@ -338,12 +341,12 @@ int msg_receive(struct process *current, int src, struct message *m)
 int sys_sendrec(int function, int dest_src, struct message *msg , struct process *p_proc)
 {
 	assert(k_reenter == 0); //make sure we are not in ring0
-	assert((dest_src >= 0 && dest_src < TASKS_COUNT + PROCS_COUNT) || dest_src == ANY || dest_src == INTERRUPT);	
-	int ret;
+	assert((dest_src >= 0 && dest_src < TASKS_COUNT + PROCS_COUNT) || dest_src == ANY || dest_src == INTERRUPT);
 	int caller = proc2pid(p_proc);
+	assert(caller != dest_src);
 	struct message *mla = (struct message *)va2la(caller, msg);
+	int ret;
 	mla->source = caller;
-	assert(mla->source != dest_src);
 	switch(function){
 		case SEND:
 			ret = msg_send(p_proc, dest_src, msg);

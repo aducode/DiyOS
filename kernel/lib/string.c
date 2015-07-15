@@ -1,23 +1,30 @@
-/*
-#include <stdio.h>
-void itoa(int value, char * string, int radix);
-void strcpy(char *, char*);
-int main(int argv, char ** argc)
-{
-	char str[256];
-	char str2[256]="hello world";
-	itoa(20, str, 8);
-	strcpy(str2+11, str);
-	printf("%s\n",str2);
-}
-*/
-//#include "klib.h"
 /**
  *不依赖汇编函数
  */
 /**
  * memcpy
+ * @see Duff's Device
  */
+/*
+ void* memcpy(void *p_dst, const void *p_src, int size)
+ {
+	 void *ret = p_dst;
+	 char *to = (char*)p_dst, *from = (char*)p_src;
+	 int i = (size + 7)/8;
+	 switch(size % 8){
+		case 0:		do{ *to++ = *from++;
+		case 7:			*to++ = *from++;
+		case 6:			*to++ = *from++;
+		case 5:			*to++ = *from++;
+		case 4:			*to++ = *from++;
+		case 3:			*to++ = *from++;
+		case 2:			*to++ = *from++;
+		case 1:			*to++ = *from++;
+					}while(--i>0);
+	 }
+	 return ret;
+ }
+*/
 void* memcpy(void* p_dst,const void* p_src, int size)
 {
 	void *ret = p_dst;

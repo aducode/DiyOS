@@ -11,6 +11,7 @@
 int fork()
 {
 	struct message msg;
+	reset_msg(&msg);
 	msg.type = FORK;
 	
 	send_recv(BOTH, TASK_MM, &msg);

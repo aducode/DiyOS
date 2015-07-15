@@ -105,6 +105,7 @@ int vsprintf(char *buf, const char * fmt, va_list args)
 int open(const char *pathname, int flags)   //0x1b7c
 {
 	struct message msg;
+	reset_msg(&msg);
 	msg.type = OPEN;
 	msg.PATHNAME = (void*)pathname;
 	msg.FLAGS = flags;
@@ -123,6 +124,7 @@ int open(const char *pathname, int flags)   //0x1b7c
 int mkdir(const char *pathname)
 {
 	struct message msg;
+	reset_msg(&msg);
 	msg.type = MKDIR;
 	msg.PATHNAME = (void*)pathname;
 	msg.NAME_LEN = strlen(pathname);
@@ -141,6 +143,7 @@ int mkdir(const char *pathname)
 int close(int fd)
 {
 	struct message msg;
+	reset_msg(&msg);
 	msg.type	= CLOSE;
 	msg.FD		= fd;
 	send_recv(BOTH, TASK_FS, &msg);
@@ -161,6 +164,7 @@ int close(int fd)
 int read(int fd, void *buf, int count)
 {
 	struct message msg;
+	reset_msg(&msg);
 	msg.type = READ;
 	msg.FD = fd;
 	msg.BUF = buf;
@@ -183,6 +187,7 @@ int read(int fd, void *buf, int count)
 int write(int fd, const void * buf, int count)
 {
 	struct message msg;
+	reset_msg(&msg);
 	msg.type = WRITE;
 	msg.FD = fd;
 	msg.BUF = (void*)buf;
@@ -203,6 +208,7 @@ int write(int fd, const void * buf, int count)
 int seek(int fd, int offset, int where)
 {
 	struct message msg;
+	reset_msg(&msg);
 	msg.type = SEEK;
 	msg.FD = fd;
 	msg.OFFSET = offset;
@@ -221,6 +227,7 @@ int seek(int fd, int offset, int where)
 long tell(int fd)
 {
 	struct message msg;
+	reset_msg(&msg);
 	msg.type = TELL;
 	msg.FD = fd;
 	send_recv(BOTH, TASK_FS, &msg);
@@ -238,6 +245,7 @@ long tell(int fd)
 int unlink(const char * pathname)
 {
 	struct message msg;
+	reset_msg(&msg);
 	msg.type = UNLINK;
 	msg.PATHNAME = (void*)pathname;
 	msg.NAME_LEN = strlen(pathname);

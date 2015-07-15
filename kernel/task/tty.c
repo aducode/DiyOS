@@ -7,8 +7,6 @@
 #include "keyboard.h"
 #include "global.h"
 #include "assert.h"
-
-//#include "klib.h"
 //全局变量
 /**
  *tty和console表
@@ -59,7 +57,6 @@ static void tty_write(struct tty *p_tty, char *buffer, int size);
  */
 void task_tty()
 {
-//	_disp_str("tty.",20,0,COLOR_WHITE);
 	struct message msg;
 	//进程开始时先初始化键盘
 	init_keyboard();

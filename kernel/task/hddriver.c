@@ -6,8 +6,6 @@
 #include "proc.h"
 #include "assert.h"
 #include "hd.h"
-
-//#include "klib.h"
 /**
  * Main Loop of HD driver
  */

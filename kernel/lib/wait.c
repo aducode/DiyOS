@@ -13,6 +13,7 @@
 int wait(int *status)
 {
 	struct message msg;
+	reset_msg(&msg);
 	msg.type = WAIT;
 	send_recv(BOTH, TASK_MM, &msg);
 	assert(msg.type == SYSCALL_RET);
