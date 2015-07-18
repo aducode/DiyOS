@@ -80,6 +80,7 @@ void task_tty()
 		struct tty *p_tty = &tty_table[msg.DEVICE];
 		switch(msg.type){
 			case DEV_OPEN:
+				//tty开机后就已经设置好了，所以不需要真正的处理DEV_OPEN消息
 				reset_msg(&msg);
 				msg.type = SYSCALL_RET;
 				send_recv(SEND, src, &msg);

@@ -433,10 +433,26 @@ int do_open(struct message *p_msg)
 			driver_msg.type = DEV_OPEN;
 			int dev = pin->i_start_sect;
 			driver_msg.DEVICE=MINOR(dev);
+			//@see kernel/global.c dd_map[]
+			//4 is index of dd_map
+			//dd_map[4] = TASK_TTY
 			assert(MAJOR(dev) == 4);
 			assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
 			//printk("FS send message to %d\n", dd_map[MAJOR(dev)].driver_pid);
 			send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
+			assert(driver_msg.type==SYSCALL_RET);
+		} else if (imode == I_BLOCK_SPECIAL) {
+			//打开块设备文件
+			struct message driver_msg;
+			driver_msg.type = DEV_OPEN;
+			int dev = pin->i_start_sect;
+			driver_msg.DEVICE=MINOR(dev);
+			//dd_map[1] = TASK_FLOPPY
+			//assert(MAJOR(dev)==1); //可能有多个块设备
+			assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
+			send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
+			assert(driver_msg.type==SYSCALL_RET);
+			
 		} else if (imode == I_DIRECTORY) {
 			assert(pin->i_num == ROOT_INODE);
 		} else {
@@ -986,6 +1002,7 @@ int alloc_smap_bit(int dev, int sects_count_to_alloc)
  * @param inode_nr
  * @param i_mode
  * @param start_sect
+ * @param i_sects_count
  * @param i_size 
  *
  * @return ptr of the new inode
