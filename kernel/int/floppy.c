@@ -56,7 +56,10 @@ void floppy_open(int device)
  */
 void floppy_close(int device)
 {
-	
+	//disable irq
+	_disable_irq(FLOPPY_IRQ);
+	//rest irq handler
+	irq_handler_table[FLOPPY_IRQ] = default_irq_handler;	
 }
 
 /**
@@ -84,5 +87,5 @@ void floppy_ioctl(struct message *msg)
 
 void floppy_handler(int irq_no)
 {
-	printk("floppy irq:%d\n", irq_no);
+	printk("[*]floppy irq:%d\n", irq_no);
 }

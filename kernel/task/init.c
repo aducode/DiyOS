@@ -33,6 +33,9 @@ void init()
 	assert(stdin==0);
 	int stdout = open("/dev/tty0", O_RDWT);
 	assert(stdout == 1);
+	//test /dev/floppy
+	int pf = open("/dev/floppy", O_RDWT);
+	assert(0);
 	test_fs();
 	//untar("/cmd.tar");
 	int pid = fork();
