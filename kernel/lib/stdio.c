@@ -20,6 +20,7 @@ int printf(const char *fmt, ...)
  */
 int fprintf(int fd, const char *fmt, ...)
 {
+	assert(fd!=-1);
 	int i;
 	char buf[1024];
 	//开始写成下面的，导致不定参赛出错
@@ -142,6 +143,7 @@ int mkdir(const char *pathname)
  */
 int close(int fd)
 {
+	assert(fd!=-1);
 	struct message msg;
 	reset_msg(&msg);
 	msg.type	= CLOSE;
@@ -163,6 +165,7 @@ int close(int fd)
  */
 int read(int fd, void *buf, int count)
 {
+	assert(fd!=-1);
 	struct message msg;
 	reset_msg(&msg);
 	msg.type = READ;
@@ -186,6 +189,7 @@ int read(int fd, void *buf, int count)
  */
 int write(int fd, const void * buf, int count)
 {
+	assert(fd!=-1);
 	struct message msg;
 	reset_msg(&msg);
 	msg.type = WRITE;
@@ -207,6 +211,7 @@ int write(int fd, const void * buf, int count)
  */
 int seek(int fd, int offset, int where)
 {
+	assert(fd!=-1);
 	struct message msg;
 	reset_msg(&msg);
 	msg.type = SEEK;
@@ -226,6 +231,7 @@ int seek(int fd, int offset, int where)
  */
 long tell(int fd)
 {
+	assert(fd!=-1);
 	struct message msg;
 	reset_msg(&msg);
 	msg.type = TELL;

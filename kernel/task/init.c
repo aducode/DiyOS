@@ -34,8 +34,8 @@ void init()
 	int stdout = open("/dev/tty0", O_RDWT);
 	assert(stdout == 1);
 	//test /dev/floppy
-	int pf = open("/dev/floppy", O_RDWT);
-	assert(0);
+	open("/dev/floppy", O_RDWT);
+	//assert(0);
 	test_fs();
 	//untar("/cmd.tar");
 	int pid = fork();
@@ -83,14 +83,16 @@ void init()
  */
 void test_fs()
 {
-	char file_content[] = "!@#$%^&*()_+";
+	char file_content[] = "issac!@#$%^&*()_+";
 	int file_content_len = strlen(file_content);
 	mkdir("/hello");
 	//这里连续两个mkdir后，下面write就会出错
 	//HD_TASK有问题
 	mkdir("/hello/fuckyou");
+	mkdir("/hello/fuckyou/test");
 	int fd;
-	fd = open("/hello/fuckyou/test.txt", O_CREATE|O_RDWT);
+	fd = open("/hello/fuckyou/test/test.txt", O_CREATE|O_RDWT);
+//	fd = open("/hello/test.txt", O_CREATE|O_RDWT);
 	assert(fd!=-1);
 	write(fd,file_content, file_content_len);
 	//int pos = tell(fd);
@@ -104,8 +106,12 @@ void test_fs()
 	//buf[bytes]=0;
 	//printf("%s\n", buf);
 	close(fd);
-	fd = open("/hello/fuckyou/test.txt", O_RDWT);
+	fd = open("/hello/fuckyou/test/test.txt", O_RDWT);
+	//printf("len:%d\n", file_content_len);
+	//TODO read's third param: file_content_len>file size, but the return value still equ file_content_len
+	//This is wrong
 	bytes = read(fd, buf, file_content_len);
+	printf("%d bytes\n", bytes);
 	buf[bytes]=0;
 	printf("%s\n",buf);
 	close(fd);
