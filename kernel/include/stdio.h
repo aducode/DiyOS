@@ -20,6 +20,7 @@
 #define STDOUT		1
 extern int open(const char * pathname, int flags);
 extern int mkdir(const char *pathname);
+extern int rmdir(contst char *pathname);
 extern int close(int fd);
 extern int read(int fd, void *buf, int count);
 extern int write(int fd, const void * buf, int count);

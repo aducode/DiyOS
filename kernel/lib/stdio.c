@@ -133,6 +133,18 @@ int mkdir(const char *pathname)
 	assert(msg.type == SYSCALL_RET);
 	return msg.RETVAL;
 }
+
+/**
+ * @function rmdir
+ * @brief 删除空目录
+ * @param pathname 目录
+ * @return 
+ */
+int rmdir(contst char *pathname)
+{
+	//TODO
+	return -1;
+}
 /**
  * @function close
  * @brief 关闭文件
