@@ -30,6 +30,10 @@ static int do_seek(struct message *p_msg);
 static int do_tell(struct message *p_msg);
 static int do_unlink(struct message *p_msg);
 static int do_mkdir(struct message *p_msg);
+static int do_rmdir(struct message *p_msg);
+static int do_stat(struct message *p_msg);
+static int do_mount(struct message *p_msg);
+static int do_unmount(struct message *p_msg);
 static int fs_fork(struct message *msg);
 static int fs_exit(struct message *msg);
 static struct inode * create_file(char *path, int flags);
@@ -65,6 +69,9 @@ void task_fs()
 			case WRITE:
 				msg.CNT = do_rdwt(&msg);
 				break;
+			case STAT:
+				msg.RETVAL = do_stat(&msg);
+				break;
 			case SEEK:
 				msg.RETVAL = do_seek(&msg);
 				break;
@@ -76,6 +83,15 @@ void task_fs()
 				break;
 			case MKDIR:
 				msg.RETVAL = do_mkdir(&msg);
+				break;
+			case RMDIR:
+				msg.RETVAL = do_mkdir(&msg);
+				break;
+			case MOUNT:
+				msg.RETVAL = do_mount(&msg);
+				break;
+			case UNMOUNT:
+				msg.RETVAL = do_unmount(&msg);
 				break;
 			case RESUME_PROC:
 				src = msg.PID; //恢复进程,此时将src变成TTY进程发来的消息中的PID
@@ -121,6 +137,10 @@ void init_fs()
 	}
 	//open the device:hard disk
 	//打开硬盘设备
+	//设定硬盘为根文件系统，所以这里给HD发送DEV_OPEN消息
+	//对于其他的存储介质，统一抽象成/dev/xxx
+	//比如软盘 /dev/floppy
+	//将来对软盘的操作由mount unmount来完成
 	struct message msg;
 	msg.type = DEV_OPEN;
 	msg.DEVICE = MINOR(ROOT_DEV);
@@ -443,6 +463,9 @@ int do_open(struct message *p_msg)
 			assert(driver_msg.type==SYSCALL_RET);
 		} else if (imode == I_BLOCK_SPECIAL) {
 			//打开块设备文件
+			//之前考虑open块设备时发送DEV_OPEN消息
+			//现在改为mount时发送DEV_OPEN消息
+			/*
 			struct message driver_msg;
 			driver_msg.type = DEV_OPEN;
 			int dev = pin->i_start_sect;
@@ -452,11 +475,12 @@ int do_open(struct message *p_msg)
 			assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
 			send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
 			assert(driver_msg.type==SYSCALL_RET);
-			
+			*/
+			assert(i_mode == I_BLOCK_SPECIAL);
 		} else if (imode == I_DIRECTORY) {
 			assert(pin->i_num == ROOT_INODE);
 		} else {
-			assert(pin->i_mode == I_REGULAR);
+			assert(i_mode == I_REGULAR);
 		}
 	} else {
 		return -1;
@@ -600,7 +624,18 @@ int do_rdwt(struct message *p_msg)
 		//assert(p_msg->type == SYSCALL_RET);
 		//收到的消息不是都是SYSCALL_RET类型的，TTY read返回SUSPEND_PROC
 		return p_msg->CNT;
-	} else {
+	} else if(imode == I_BLOCK_SPECIAL){
+		//读写块设备
+		//这里设定可以读块设备内的raw数据
+		//if(p_msg->type == READ) {
+			//read函数理论上可以直接读取软盘
+			//但是这没什么意义，而且read传入的count可以是任意Byte，而我们floppy的DEV_OPEN处理函数一般要求512Byte为单位
+			//所以当对BLOCK 文件read/write时，直接忽略，不错操作
+		//} else {
+			//write函数中不可以直接写入软盘
+		//}
+		return 0; //直接返回0byte
+	}else {
 		assert(pin->i_mode == I_REGULAR || pin->i_mode == I_DIRECTORY);
 		assert((p_msg->type == READ)||(p_msg->type == WRITE));
 		int pos_end;
@@ -808,6 +843,17 @@ int do_mkdir(struct message *p_msg)
 	return create_directory(pathname, O_CREATE)!=0?0:-1;
 }
 
+/**
+ * @function do_rmdir
+ * @brief 删除空目录
+ * @param p_msg
+ * @return
+ */
+int do_rmdir(struct message *p_msg)
+{
+	//TODO
+	return -1;
+}
 /**
  * @function fs_fork
  * @brief Perform the aspects of fork() that relate to files
@@ -1344,4 +1390,41 @@ struct super_block * get_super_block(int dev)
 	}
 	panic("super block of devie %d not found.\n", dev);
 	return 0;
+}
+
+/**
+ * @function do_stat
+ * @brief 处理stat消息
+ * @param p_msg 消息体
+ * @return 
+ */
+int do_stat(struct message *p_msg)
+{
+	//TODO
+	return -1;
+}
+
+/**
+ * @function do_mount
+ * @brief 处理MOUNT消息
+ * @param p_msg
+ * @return 
+ */
+int do_mount(struct message *p_msg)
+{
+	//TODO
+	return -1;
+}
+
+
+/**
+ * @function do_unmount
+ * @brief 处理UNMOUNT消息
+ * @param p_msg
+ * @return 
+ */
+int do_unmount(struct message *p_msg)
+{
+	//TODO
+	return -1;
 }

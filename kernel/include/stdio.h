@@ -33,4 +33,24 @@ extern int vsprintf(char *buffer, const char *fmt, va_list args);
 extern int sprintf(char *buffer, const char* fmt, ...);
 extern int fprintf(int fd, const char *fmt, ...);
 extern int printf(const char *fmt, ...);
+//stat函数 获取文件信息
+/**
+ * @struct stat
+ * @brief 文件信息
+ */
+ struct stat {
+	int st_dev;			/* major/minor device number */
+	int st_ino;			/* i-node number */
+	int st_mode;		/* file mode, protection bits, etc. */
+	int st_rdev;		/* device ID (if special file) */
+	int st_size;		/* file size */
+};
+/**
+ * @function stat
+ * @brief get file stat
+ * @param path  file path
+ * @param buf   for output
+ * @return 0 success
+ */
+extern int stat(const char *path, struct stat *buf);
 #endif

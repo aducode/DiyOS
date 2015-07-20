@@ -259,3 +259,16 @@ int unlink(const char * pathname)
 	assert(msg.type == SYSCALL_RET);
 	return msg.RETVAL;
 }
+
+/**
+ * @function stat
+ * @brief get file stat
+ * @param path  file path
+ * @param buf   for output
+ * @return 0 success
+ */
+int stat(const char *path, struct stat *buf)
+{
+	//TODO
+	return -1;
+}

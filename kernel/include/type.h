@@ -91,23 +91,38 @@ struct message {
 };
 
 enum msgtype {
-	HARD_INT = 1,
+	HARD_INT = 1,		/*硬件中断*/
 	//sys task
-	GET_TICKS, GET_PID,
+	GET_TICKS, 			/*获取当前系统ticket*/
+	GET_PID,			/*获取当前进程PID*/
 	//FS
-	OPEN, CLOSE, READ, WRITE,SEEK,TELL,STAT, UNLINK,MKDIR,
+	OPEN,				/*打开文件*/
+	CLOSE,				/*关闭文件句柄*/
+	READ,				/*读取文件内容*/
+	WRITE,				/*写入文件*/
+	SEEK,				/*更改文件指针位置*/
+	TELL,				/*获取文件指针位置*/
+	STAT, 				/*获取文件meta信息*/							/*未实现*/
+	UNLINK,				/*删除文件*/
+	MKDIR,				/*创建空目录，非递归*/
+	RMDIR,				/*删除空目录(目录项含除了. ..之外项时报错)*/	/*未实现*/
+	MOUNT,				/*挂载文件系统*/								/*未实现*/
+	UNMOUNT,			/*卸载文件系统*/								/*未实现*/
 	//FS & TTY
-	SUSPEND_PROC,	RESUME_PROC,
+	SUSPEND_PROC,		/*挂起进程*/
+	RESUME_PROC,		/*唤醒挂起的进程*/
 	//MM
-	FORK,EXIT,WAIT,
+	FORK,				/*fork出子进程/fork文件句柄*/
+	EXIT,				/*退出进程/减少子进程中与父进程共享的文件句柄的计数*/
+	WAIT,				/*父进程等待子进程退出*/
 	//TTY, SYS, FS, MM, etc
-	SYSCALL_RET,
+	SYSCALL_RET,		/*系统调用返回*/
 	//message type for drivers
-	DEV_OPEN = 1001,
-	DEV_CLOSE,
-	DEV_READ,
-	DEV_WRITE,
-	DEV_IOCTL
+	DEV_OPEN = 1001,	/*打开硬件设备*/
+	DEV_CLOSE,			/*关闭硬件设备*/
+	DEV_READ,			/*从硬件中读取数据*/
+	DEV_WRITE,			/*写入数据到硬件设备*/
+	DEV_IOCTL			/*控制硬件设备*/
 };
 //macro for message
 /**common return value**/
