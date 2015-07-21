@@ -67,39 +67,51 @@ void task_fs()
 				break;
 			case READ:
 			case WRITE:
+				//读写文件
 				msg.CNT = do_rdwt(&msg);
 				break;
 			case STAT:
+				//获取文件状态
 				msg.RETVAL = do_stat(&msg);
 				break;
 			case SEEK:
+				//seek
 				msg.RETVAL = do_seek(&msg);
 				break;
 			case TELL:
+				//tell
 				msg.POSITION = do_tell(&msg);
 				break;
 			case UNLINK:
+				//删除普通文件
 				msg.RETVAL = do_unlink(&msg);
 				break;
 			case MKDIR:
+				//创建空目录
 				msg.RETVAL = do_mkdir(&msg);
 				break;
 			case RMDIR:
+				//删除空目录
 				msg.RETVAL = do_mkdir(&msg);
 				break;
 			case MOUNT:
+				//挂载文件系统
 				msg.RETVAL = do_mount(&msg);
 				break;
 			case UNMOUNT:
+				//卸载文件系统
 				msg.RETVAL = do_unmount(&msg);
 				break;
 			case RESUME_PROC:
+				//恢复挂起的进程
 				src = msg.PID; //恢复进程,此时将src变成TTY进程发来的消息中的PID
 				break;
 			case FORK:
+				//fork 让子进程共享父进程的文件fd
 				msg.RETVAL = fs_fork(&msg);
 				break;
 			case EXIT:
+				//子进程退出时的文件操作
 				msg.RETVAL = fs_exit(&msg);
 				break;
 			default:
@@ -719,6 +731,7 @@ int do_unlink(struct message *p_msg)
 	struct inode *pin = get_inode(dir_inode->i_dev, inode_nr);
 	if(pin->i_mode != I_REGULAR){
 		//can only remove regular files
+		//if you want remove directory  @see do_rmdir
 		printk("cannot remove file %s, because it is not a regular file.\n", pathname);
 		return -1;
 	}
