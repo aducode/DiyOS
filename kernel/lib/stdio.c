@@ -142,8 +142,14 @@ int mkdir(const char *pathname)
  */
 int rmdir(contst char *pathname)
 {
-	//TODO
-	return -1;
+	struct message msg;
+	reset_msg(&msg);
+	msg.type = RMDIR;
+	msg.PATHNAME = (void*) pathname;
+	msg.NAME_LEN = strlen(pathname);
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.RETVAL;
 }
 /**
  * @function close
