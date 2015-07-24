@@ -281,6 +281,13 @@ int unlink(const char * pathname)
  */
 int stat(const char *path, struct stat *buf)
 {
-	//TODO
-	return -1;
+	struct message msg;
+	reset_msg(&msg);
+	msg.type = STAT;
+	msg.PATHNAME = (void*)pathname;
+	msg.NAME_LEN = strlen(pathname);
+	msg.BUF = (void*)buf;
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.RETVAL;
 }

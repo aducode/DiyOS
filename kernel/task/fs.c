@@ -1413,8 +1413,42 @@ struct super_block * get_super_block(int dev)
  */
 int do_stat(struct message *p_msg)
 {
-	//TODO
-	return -1;
+	char pathname[MAX_PATH];
+	//get parameters from the message;
+	int name_len = p_msg->NAME_LEN;
+	int src = p_msg->source;
+	assert(name_len<MAX_PATH);
+	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
+	pathname[name_len]=0;
+	struct stat stat; //内核层保存结果
+	int inode_idx = search_file(pathname);
+	if(inode_idx == INVALID_INODE){
+		//file not found
+		printk("FS::do_stat():: search_file() return invalid inode: %s\n", pathname);
+		return -1;
+	}
+	
+	char filename[MAX_PATH];
+	struct inode *dir_inode;
+	strip_path(filename, pathname, &dir_inode);
+	
+	struct inode *pinode;
+	pinode = get_inode(dir_inode->i_dev, inode_idx);
+	if(!pinode){
+		printk("FS::do_stat:: get_inode() return invalid inode: %s\n", pathname);
+		return -1;
+	}
+	stat.st_dev = pinode->i_dev;
+	stat.st_ino = pinode->i_num;
+	stat.st_mode = pinode->i_mode;
+	if(pinode->i_mode == I_CHAR_SPECIAL||pinode->i_mode == I_BLOCK_SPECIAL){
+		stat.st_dev = pinode->i_start_sect;
+	} else {
+		stat.st_rdev = 0;
+	}
+	stat.st_size = pinode->i_size;
+	memcpy((void*)va2la(src, p_msg->BUF), (void*)va2la(TASK_FS, &stat), sizeof(struct stat)); //数据拷贝到用户层的buf中
+	return 0;
 }
 
 /**
