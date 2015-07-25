@@ -72,7 +72,10 @@ int set(struct map * map, void * key, void * value)
 			hashcode = 0;
 		}
 	}
-	(map->entries + hashcode)->key = key;
+	if ((map->entries + hashcode)->flag != USING){
+		(map->entries + hashcode)->key = key;
+		map->size++;
+	}
 	(map->entries + hashcode)->value = value;
 	(map->entries + hashcode)->flag = USING;
 	return 0;
@@ -88,6 +91,9 @@ int set(struct map * map, void * key, void * value)
 */
 int del(struct map * map, void * key)
 {
+	if (map->size <= 0){
+		return -1;
+	}
 	struct entry * entry = find(map, key);
 	if (entry == 0){
 		return -1;
@@ -95,6 +101,7 @@ int del(struct map * map, void * key)
 	entry->key = 0;
 	entry->value = 0;
 	entry->flag = USED;
+	map->size--;
 	return 0;
 
 }
