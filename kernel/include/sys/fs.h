@@ -78,6 +78,7 @@ struct inode {
 	int i_dev;
 	int i_cnt;	//how many procs share this inode
 	int i_num;	//inode nr
+	struct inode * i_parent; //父目录文件的inode
 };
 /**
  * @def i_mode types
@@ -222,4 +223,7 @@ struct file_desc {
  */
 #define INSTALL_START_SECT	0x8000
 #define INSTALL_SECTS_COUNT	0x800
+
+
+#define root_inode() get_inode(0, ROOT_INODE)
 #endif

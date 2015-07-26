@@ -34,10 +34,13 @@ void init()
 	assert(stdin==0);
 	int stdout = open("/dev/tty0", O_RDWT);
 	assert(stdout == 1);
+	int stderr = open("/dev/tty0", O_RDWT);
+	assert(stderr == 2);
 	//test /dev/floppy
 	//open("/dev/floppy", O_RDWT);
 	//assert(0);
-	test_fs2();
+	test_fs();
+	//test_fs2();
 	//untar("/cmd.tar");
 	int pid = fork();
 	if(pid!=0){
@@ -92,7 +95,7 @@ void test_fs()
 	mkdir("/hello/fuckyou");
 	mkdir("/hello/fuckyou/test");
 	int fd;
-	fd = open("/hello/fuckyou/test/test.txt", O_CREATE|O_RDWT);
+	fd = open("/hello/fuckyou/test/test.txt", O_CREATE);
 //	fd = open("/hello/test.txt", O_CREATE|O_RDWT);
 	assert(fd!=-1);
 	write(fd,file_content, file_content_len);
@@ -100,13 +103,13 @@ void test_fs()
 	//printf("----pos:%d\n", pos);
 	//seek(fd,0,SEEK_START);
 	//pos = tell(fd);
-	//printf("----pos:%d\n", pos);
+	//printf("----pos:%d\n", pos);	
+	close(fd);
 	char buf[50];
 	int bytes;
 	//int bytes = read(fd, buf, file_content_len);
 	//buf[bytes]=0;
 	//printf("%s\n", buf);
-	close(fd);
 	struct stat stbuf;
 	stat("/hello/fuckyou/test/test.txt", &stbuf);
 	printf("size:%d\n", stbuf.st_size);
@@ -117,19 +120,43 @@ void test_fs()
 	bytes = read(fd, buf, file_content_len);
 	printf("%d bytes\n", bytes);
 	buf[bytes]=0;
-	printf("%s\n",buf);
+	printf("-->%s\n",buf);
 	close(fd);
 }
 void test_fs2()
 {
-	int ret = mkdir("/dir");
-	printf("ret:%d\n",ret);
-	//int fd = open("/dir/hello", O_CREATE|O_RDWT);
-	//printf("fd:%d\n", fd);
-	//write(fd, "0123456789", 10);
-	//close(fd);
+	int ret, fd;
+	//1. test for mkdir
+	ret = mkdir("/dir");
+	//here is should success
+	assert(ret==0);
+	//2. test for create file
+	fd = open("/dir/yoo", O_CREATE);
+	//fd should be gt 0
+	assert(fd>0);
+	//3. test for close file	
+	ret = close(fd);
+	//ret should success
+	assert(ret == 0);
+	//4. test for delte not empty directory
 	ret = rmdir("/dir");
-	printf("ret:%d\n", ret);
-	//rmdir("/dir");	
+	//should fail, because it not empty
+	assert(ret == -1);
+	//5. test for delete file
+	ret = unlink("/dir/yoo");
+	//should success
+	assert(ret == 0);
+	//6. test open not exists file 	
+	fd = open("/dir/yoo", O_RDWT);
+	//should fail
+	assert(fd == -1);
+	//7. test remove empty directory
+	ret = rmdir("/dir");
+	//should success
+	assert(ret == 0);
+	//8. test create file in not existed directory
+	fd = open("/dir/yoo", O_CREATE);
+	//should fail
+	assert(fd == -1);
 }
 #endif
