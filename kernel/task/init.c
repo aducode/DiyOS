@@ -26,7 +26,8 @@ void init(){
 	}
 }
 #else
-void test_fs();
+static void test_fs();
+static void test_fs2();
 void init()
 {
 	int stdin = open("/dev/tty0", O_RDWT);
@@ -34,9 +35,9 @@ void init()
 	int stdout = open("/dev/tty0", O_RDWT);
 	assert(stdout == 1);
 	//test /dev/floppy
-	open("/dev/floppy", O_RDWT);
+	//open("/dev/floppy", O_RDWT);
 	//assert(0);
-	test_fs();
+	test_fs2();
 	//untar("/cmd.tar");
 	int pid = fork();
 	if(pid!=0){
@@ -106,6 +107,9 @@ void test_fs()
 	//buf[bytes]=0;
 	//printf("%s\n", buf);
 	close(fd);
+	struct stat stbuf;
+	stat("/hello/fuckyou/test/test.txt", &stbuf);
+	printf("size:%d\n", stbuf.st_size);
 	fd = open("/hello/fuckyou/test/test.txt", O_RDWT);
 	//printf("len:%d\n", file_content_len);
 	//TODO read's third param: file_content_len>file size, but the return value still equ file_content_len
@@ -115,5 +119,17 @@ void test_fs()
 	buf[bytes]=0;
 	printf("%s\n",buf);
 	close(fd);
+}
+void test_fs2()
+{
+	int ret = mkdir("/dir");
+	printf("ret:%d\n",ret);
+	//int fd = open("/dir/hello", O_CREATE|O_RDWT);
+	//printf("fd:%d\n", fd);
+	//write(fd, "0123456789", 10);
+	//close(fd);
+	ret = rmdir("/dir");
+	printf("ret:%d\n", ret);
+	//rmdir("/dir");	
 }
 #endif

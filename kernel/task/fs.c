@@ -20,6 +20,14 @@ static void init_block_dev_files(struct inode *pin);
 static void fmtfs();
 static void read_super_block(int dev);
 static struct super_block * get_super_block(int dev);
+/**
+ * @function get_inode
+ * @brief 根据inode_idx找到inode指针
+ * @param dev 设备号
+ * @param inode_idx inode表的下表
+ * 
+ * @return inode 指针
+ */
 static struct inode * get_inode(int dev, int inode_idx);
 static void put_inode(struct inode *pinode);
 static void sync_inode(struct inode *p);
@@ -809,6 +817,7 @@ int do_rmdir(struct message *p_msg)
 	if(pinode->i_cnt>1){
 		//open函数不能用于目录文件，所以目录的pinode->i_cnt一般恒为1
 		//但是考虑mount的时候可以将pinode->i_cnt 加1，所以这里也判断一下,防止删除挂载点
+		printk("pathname:%s,inode:%d,i_cnt:%d\n", pathname,pinode->i_num,pinode->i_cnt);
 		return -1;
 	}
 	//判断是否是空目录
@@ -816,6 +825,7 @@ int do_rmdir(struct message *p_msg)
 	dir_entry_count = pinode->i_size/DIR_ENTRY_SIZE;
 	if(dir_entry_count>2){
 		//目录项大于2说明包含除了. ..之外的，所以不是空目录
+		printk("7");
 		return -1;
 	}
 	//删除空目录
