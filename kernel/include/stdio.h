@@ -20,7 +20,7 @@
 #define STDOUT		1
 extern int open(const char * pathname, int flags);
 extern int mkdir(const char *pathname);
-extern int rmdir(contst char *pathname);
+extern int rmdir(const char *pathname);
 extern int close(int fd);
 extern int read(int fd, void *buf, int count);
 extern int write(int fd, const void * buf, int count);
@@ -49,9 +49,9 @@ extern int printf(const char *fmt, ...);
 /**
  * @function stat
  * @brief get file stat
- * @param path  file path
+ * @param path  file pathname
  * @param buf   for output
  * @return 0 success
  */
-extern int stat(const char *path, struct stat *buf);
+extern int stat(const char *pathname, struct stat *buf);
 #endif

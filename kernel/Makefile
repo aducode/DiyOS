@@ -118,7 +118,7 @@ init.o:task/init.c
 	
 ########################### common #########################################
 map.o:common/map.c
-	$(cc) $(CFLAGS) common/map.c -o map.o
+	$(CC) $(CFLAGS) common/map.c -o map.o
 	
 ########################### PHONY ##########################################
 lib:$(ARINFILE)

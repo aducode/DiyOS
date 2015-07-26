@@ -493,12 +493,12 @@ int do_open(struct message *p_msg)
 			send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
 			assert(driver_msg.type==SYSCALL_RET);
 			*/
-			assert(i_mode == I_BLOCK_SPECIAL);
+			assert(imode == I_BLOCK_SPECIAL);
 		} else if (imode == I_DIRECTORY) {
 			//assert(pin->i_num == ROOT_INODE);
 			assert(0); //不会到这里
 		} else {
-			assert(i_mode == I_REGULAR);
+			assert(imode == I_REGULAR);
 		}
 	} else {
 		return -1;
@@ -813,7 +813,7 @@ int do_rmdir(struct message *p_msg)
 	}
 	//判断是否是空目录
 	// 空目录是指只包含 . ..两个目录项的目录
-	dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
+	dir_entry_count = pinode->i_size/DIR_ENTRY_SIZE;
 	if(dir_entry_count>2){
 		//目录项大于2说明包含除了. ..之外的，所以不是空目录
 		return -1;
@@ -890,7 +890,7 @@ int unlink_file(struct inode *pinode, struct inode* dir_inode)
 	pinode->i_sects_count = 0;
 	sync_inode(pinode);
 	//release slot in inode_table[]
-	put_inode(pin);
+	put_inode(pinode);
 	//set the inode-nr to 0 in the directory entry
 	int dir_blk0_nr = dir_inode->i_start_sect;
 	int nr_dir_blks = (dir_inode->i_size + SECTOR_SIZE)/SECTOR_SIZE;
@@ -905,7 +905,7 @@ int unlink_file(struct inode *pinode, struct inode* dir_inode)
 		int j;	
 		for(j=0;j<SECTOR_SIZE/DIR_ENTRY_SIZE;j++,pde++){
 			if(++m>nr_dir_entries) break;
-			if(pde->inode_idx == inode_nr){
+			if(pde->inode_idx == inode_idx){
 				memset(pde, 0, DIR_ENTRY_SIZE);
 				WRITE_SECT(dir_inode->i_dev, dir_blk0_nr+i);
 				flag = 1;

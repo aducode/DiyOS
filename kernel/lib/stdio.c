@@ -140,7 +140,7 @@ int mkdir(const char *pathname)
  * @param pathname 目录
  * @return 
  */
-int rmdir(contst char *pathname)
+int rmdir(const char *pathname)
 {
 	struct message msg;
 	reset_msg(&msg);
@@ -281,11 +281,11 @@ int unlink(const char * pathname)
 /**
  * @function stat
  * @brief get file stat
- * @param path  file path
+ * @param pathname  file path
  * @param buf   for output
  * @return 0 success
  */
-int stat(const char *path, struct stat *buf)
+int stat(const char *pathname, struct stat *buf)
 {
 	struct message msg;
 	reset_msg(&msg);
