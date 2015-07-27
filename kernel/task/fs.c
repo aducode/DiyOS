@@ -62,7 +62,7 @@ static int unlink_file(struct inode * pinode, struct inode* dir_inode);
 static int alloc_imap_bit(int dev);
 static int alloc_smap_bit(int dev, int sects_count_to_alloc);
 static struct inode* new_inode(struct inode *parent, int inode_nr, u32 i_mode, u32 start_sect,u32 i_sects_count, u32 i_size);
-static void new_dir_entry(struct inode *dir_inode, int inode_nr, char *filename);
+static void new_dir_entry(struct inode *dir_inode, int inode_nr, const char *filename);
 static int strip_path(char *filename, const char *pathname, struct inode **ppinode);
 //添加参数，避免重复调用strip_path
 static int search_file(const char *path, char * filename, struct inode **ppinode);
@@ -207,7 +207,7 @@ void init_fs()
 	init_tty_files(p_dir_inode);
 	//init block device files
 	init_block_dev_files(p_dir_inode);
-	put_inode(p_dir_inode)
+	put_inode(p_dir_inode);
 }
 
 
@@ -1056,7 +1056,7 @@ struct inode * create_directory(char *path, int flags)
 {
 	char filename[MAX_PATH];
 	struct inode * dir_inode = 0;
-	struct inode * = 0;
+	struct inode * pinode= 0;
 	int inode_idx = search_file(path, filename, &dir_inode);
 	if(inode_idx!=0){
 		pinode = get_inode(dir_inode, inode_idx);
@@ -1228,7 +1228,7 @@ struct inode* new_inode(struct inode *parent, int inode_nr,u32 i_mode, u32 start
  * @param inode_nr inode nr of the new file.
  * @param filename Filename of the new file.
  */
-void new_dir_entry(struct inode *dir_inode, int inode_nr, char *filename)
+void new_dir_entry(struct inode *dir_inode, int inode_nr, const char *filename)
 {
 	//write the dir_entry
 	int dir_blk0_nr = dir_inode->i_start_sect;
@@ -1586,7 +1586,7 @@ int do_stat(struct message *p_msg)
 		//file not found
 		printk("FS::do_stat():: search_file() return invalid inode: %s\n", pathname);
 		ret = -1;
-		goto clear_inode;
+		goto label_clear_inode;
 	}
 	
 	struct inode *pinode = 0;
