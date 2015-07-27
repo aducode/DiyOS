@@ -62,6 +62,12 @@ static int strip_path(char *filename, const char *pathname, struct inode **ppino
 //添加参数，避免重复调用strip_path
 static int search_file(const char *path, char * filename, struct inode **ppinode);
 
+/**
+ * @define CLEAR_INODE
+ * @brief
+ * @param dir_inode
+ * @param inode
+ */
 #define CLEAR_INODE(dir_inode, inode)  do {	\
 	if((inode)){							\
 		put_inode((inode));					\
