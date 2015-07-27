@@ -6,6 +6,11 @@
 //	 在struct inode中添加了一个i_parent属性，用来保存父目录inode ptr , put_inode会递归的追溯i_parent进行清理
 //2. 大量地方用到了strip_path 获取文件名和目录inode指针，同时用search_file获取文件的inode idx，而search_file中也使用了strip_path函数，这会导致i_cnt多加了一次，应该重新设计一下这两个函数，避免出现这样的错误
 //	 合并search_file 和 strip_path ,统一使用search_file函数，调用完search_file后，根据具体需求调用put_inode
+//要用到search_file的函数有:
+//		do_open ：调用之后如果失败，需要CLEAR_INODE， 否则不需要CLEAR_INODE，一直保存inode直到对应fd调用do_close()
+//		do_unlink: 调用之后无论是否失败，都需要CLEAR_INODE
+//		do_rmdir : 调用之后无论失败，都需要CLEAR_INODE
+//		do_stat:	调用之后无论失败，都需要CLEAR_INODE
 #include "type.h"
 #include "syscall.h"
 #include "global.h"
@@ -202,6 +207,7 @@ void init_fs()
 	init_tty_files(p_dir_inode);
 	//init block device files
 	init_block_dev_files(p_dir_inode);
+	put_inode(p_dir_inode)
 }
 
 
@@ -823,7 +829,14 @@ int do_mkdir(struct message *p_msg)
     assert(name_len<MAX_PATH);
     memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
     pathname[name_len] = 0;
-	return create_directory(pathname, O_CREATE)!=0?0:-1;
+	struct inode *dir_inode = create_directory(pathname, O_CREATE);
+	if(dir_inode == 0){
+		//
+		return -1;
+	} else {
+		put_inode(dir_inode);
+		return 0;
+	}
 }
 
 /**
