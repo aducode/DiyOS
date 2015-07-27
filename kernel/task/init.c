@@ -84,6 +84,8 @@ void init()
 /**
  * @function test_fs
  * @brief 测试文件系统
+ *
+ * @return  void
  */
 void test_fs()
 {
@@ -123,6 +125,13 @@ void test_fs()
 	printf("-->%s\n",buf);
 	close(fd);
 }
+
+/**
+ * @function test_fs2
+ * @brief 测试用例
+ *
+ * @return void
+ */
 void test_fs2()
 {
 	int ret, fd;
