@@ -13,7 +13,7 @@
  * @default on
  */
 #define _SHOW_PANIC_
-
+#define _PANIC_N_	36
 /**
  * @define _SHOW_MSG_SEND_
  * @brief 显示进程间发送的消息

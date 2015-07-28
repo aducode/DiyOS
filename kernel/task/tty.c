@@ -300,13 +300,13 @@ int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
 		//如果是panic 或者内核级别的assert，那么执行这里
 		_disable_int();
 	#ifdef _SHOW_PANIC_
-		char *v = (char*)V_MEM_BASE;
+		char *v = (char*)V_MEM_BASE+SCR_WIDTH*_PANIC_N_;
 		const char * q = p+1;	//skip
 		while(v<(char*)(V_MEM_BASE+V_MEM_SIZE)){
 			*v++ = *q++;
 			*v++ = RED_CHAR;
 			if(!*q){
-				while(((int)v - V_MEM_BASE)%(SCR_WIDTH*16)){
+				while(((int)v - V_MEM_BASE+SCR_WIDTH*_PANIC_N_)%(SCR_WIDTH*16)){
 					v++;
 					*v++ = GRAY_CHAR;
 				}

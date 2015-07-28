@@ -73,11 +73,11 @@ static int search_file(const char *path, char * filename, struct inode **ppinode
  * @param dir_inode
  * @param inode
  */
-#define CLEAR_INODE(dir_inode, inode)  do {	\
-	if((inode)){							\
-		put_inode((inode));					\
-	} else if((dir_inode)){					\
-		put_inode((dir_inode));				\
+#define CLEAR_INODE(dir_inode, inode)  do { \
+	if((inode) != 0){ \
+		put_inode((inode)); \
+	} else if((dir_inode) != 0){ \
+		put_inode((dir_inode)); \
 	}										\
 }while(0)
 
@@ -207,7 +207,8 @@ void init_fs()
 	init_tty_files(p_dir_inode);
 	//init block device files
 	init_block_dev_files(p_dir_inode);
-	put_inode(p_dir_inode);
+	//put_inode(p_dir_inode);
+	assert(p_dir_inode->i_cnt == 0);
 }
 
 
@@ -222,10 +223,13 @@ void init_tty_files(struct inode *dir_inode)
 	char filename[MAX_PATH];
 	int i, inode_nr, free_sect_nr;
 	for(i=0;i<CONSOLE_COUNT;i++){
+		struct inode *newino = 0;
 		inode_nr = alloc_imap_bit(dir_inode->i_dev);
-        	struct inode *newino = new_inode(dir_inode, inode_nr,I_CHAR_SPECIAL, MAKE_DEV(DEV_CHAR_TTY, i),0, 0);
+        	newino = new_inode(dir_inode, inode_nr,I_CHAR_SPECIAL, MAKE_DEV(DEV_CHAR_TTY, i),0, 0);
 		sprintf(filename, "tty%d", i);
        		new_dir_entry(dir_inode, newino->i_num, filename);
+		assert(inode_nr!=0 && newino != 0);
+		put_inode(newino);
 	}
 		
 }
@@ -238,9 +242,12 @@ void init_tty_files(struct inode *dir_inode)
 void init_block_dev_files(struct inode *dir_inode)
 {
 	int inode_nr, free_sect_nr;
+	struct inode *newino = 0;
 	inode_nr = alloc_imap_bit(dir_inode->i_dev);
-	struct inode *newino = new_inode(dir_inode, inode_nr, I_BLOCK_SPECIAL, MAKE_DEV(DEV_FLOPPY, 0), 0, 0);
+	newino = new_inode(dir_inode, inode_nr, I_BLOCK_SPECIAL, MAKE_DEV(DEV_FLOPPY, 0), 0, 0);
 	new_dir_entry(dir_inode, newino->i_num, "floppy");
+	assert(inode_nr != 0 && newino != 0);
+	put_inode(newino);
 }
 
 /**
@@ -470,10 +477,13 @@ int do_open(struct message *p_msg)
 	char filename[MAX_PATH];
 	struct inode *dir_inode = 0;
 	int inode_nr = search_file(pathname, filename, &dir_inode);
+	if(inode_nr == -1){
+		goto label_fail;
+	}
 	struct inode *pin = 0;
 	if(flags & O_CREATE){
 		//创建文件
-		if(inode_nr){
+		if(inode_nr>0){
 			//printk("file exists.\n");
 			//put_inode(dir_inode);
 			//return -1;
@@ -483,7 +493,7 @@ int do_open(struct message *p_msg)
 		}
 	} else {
 		assert(flags & O_RDWT);
-		if(!inode_nr||dir_inode==0){
+		if(inode_nr==0){
 			//printk("file does not exist.\n");
 			//return -1;
 			goto label_fail;
@@ -824,13 +834,13 @@ label_fail:
 int do_mkdir(struct message *p_msg)
 {
 	char pathname[MAX_PATH];
-    int name_len = p_msg->NAME_LEN;
-    int src = p_msg->source;
-    assert(name_len<MAX_PATH);
-    memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
-    pathname[name_len] = 0;
-	struct inode *dir_inode = create_directory(pathname, O_CREATE);
-	if(dir_inode == 0){
+    	int name_len = p_msg->NAME_LEN;
+    	int src = p_msg->source;
+    	assert(name_len<MAX_PATH);
+    	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
+    	pathname[name_len] = 0;
+    	struct inode *dir_inode = create_directory(pathname, O_CREATE);
+    	if(dir_inode == 0){
 		//
 		return -1;
 	} else {
@@ -1058,6 +1068,11 @@ struct inode * create_directory(char *path, int flags)
 	struct inode * dir_inode = 0;
 	struct inode * pinode= 0;
 	int inode_idx = search_file(path, filename, &dir_inode);
+	if(inode_idx == -1){
+		//说明目录链断开
+		//创建目录的位置非法
+		goto label_fail;		
+	}
 	if(inode_idx!=0){
 		pinode = get_inode(dir_inode, inode_idx);
 		if(pinode==0 || dir_inode == 0){
@@ -1083,7 +1098,7 @@ struct inode * create_directory(char *path, int flags)
 	(++pde)->inode_idx = dir_inode->i_num ;
 	strcpy(pde->name, ".."); //..
 	//写入磁盘
-	WRITE_SECT(dir_inode->i_dev, free_sect_nr);
+	WRITE_SECT(dir_inode->i_dev, free_sect_nr);	
 	new_dir_entry(dir_inode, newino->i_num, filename);
 	return newino;
 label_fail:
@@ -1204,16 +1219,16 @@ int alloc_smap_bit(int dev, int sects_count_to_alloc)
 struct inode* new_inode(struct inode *parent, int inode_nr,u32 i_mode, u32 start_sect, u32 i_sects_count, u32 i_size)
 {
 	//get from inode array by inode_nr
-	int dev = parent->i_dev;
 	struct inode * new_inode = get_inode(parent, inode_nr);
 	new_inode->i_mode = i_mode;
 	new_inode->i_size = i_size;
 	new_inode->i_start_sect = start_sect;
 	new_inode->i_sects_count = i_sects_count;
 	
-	new_inode->i_dev = dev;
+	new_inode->i_dev = parent->i_dev;
 	new_inode->i_cnt = 1;
 	new_inode->i_num = inode_nr;
+	new_inode->i_parent = parent;
 	
 	//write4 to the inode array
 	sync_inode(new_inode);
@@ -1300,7 +1315,7 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 {
 	const char * s = pathname;
 	struct dir_entry *pde;
-	struct inode* pinode = 0;
+	struct inode* pinode;
 	char * t;
 	int i,j;
 	if(*s==0){
@@ -1316,6 +1331,7 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 	int dir_entry_count_per_sect = SECTOR_SIZE/DIR_ENTRY_SIZE;
 	int dir_entry_count, dir_entry_blocks_count;
 	while(*s!=0){
+		pinode = 0;
 		t = filename;
 		while(*s!='/' && *s!=0){
 			*t++=*s++;
@@ -1352,6 +1368,11 @@ try_to_find_next_path:
 				goto label_fail;
 			}
 			*ppinode=pinode;		
+		} else {
+			if(pinode!=0 && pinode->i_cnt>0){
+				//需要将最后一层的i_cnt还原
+				pinode->i_cnt--;
+			}
 		}
 	}
 	return 0;
@@ -1368,7 +1389,9 @@ label_fail:
  * @param[in] path the full path of the file to search
  * @param[out] filename the filename of the file to search
  * @param[out] ppinode the directory's inode ptr
- * @return Ptr to the inode of the file if successful, otherwise zero
+ * @return Ptr to the inode of the file if successful
+ *         Otherwise 0: 表示沿着目录链正确的找到dir_inode,但是目录项没有对应文件
+ *		    -1: 表示没有沿着目录链找到正确的位置
  * @ses open()
  * @ses do_open()
  */
@@ -1376,7 +1399,7 @@ int search_file(const char *path, char *filename, struct inode **ppinode)
 {
 	int i,j;
 	if(strip_path(filename, path, ppinode)!=0){
-		return 0;
+		return -1;
 	}
 	struct inode * dir_inode = *ppinode;
 	if(filename[0] == 0){//path:"/"
@@ -1435,7 +1458,7 @@ struct inode * get_inode(struct inode *parent, int inode_idx)
 	for(p= inode_table ; p<inode_table + MAX_INODE_COUNT; p++){
 		if(p->i_cnt){
 			//not a free slot
-			if((p->i_dev == dev) && (p->i_num == inode_idx)){
+			if((p->i_dev == dev) && (p->i_num == inode_idx) && p->i_parent == parent){
 				//this is the inode we want
 				p->i_cnt ++ ;
 				return p;
@@ -1478,6 +1501,11 @@ struct inode * get_inode(struct inode *parent, int inode_idx)
 void put_inode(struct inode *pinode)
 {
 	assert(pinode && pinode->i_cnt>0);	
+	/*
+	if(pinode==0 || pinode->i_cnt<=0){
+		return;
+	}
+	*/
 	pinode->i_cnt --;
 	if(pinode->i_parent && pinode->i_parent->i_cnt>0){
 		put_inode(pinode->i_parent);

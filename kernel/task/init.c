@@ -28,6 +28,7 @@ void init(){
 #else
 static void test_fs();
 static void test_fs2();
+static void test_fork();
 void init()
 {
 	int stdin = open("/dev/tty0", O_RDWT);
@@ -40,30 +41,10 @@ void init()
 	//open("/dev/floppy", O_RDWT);
 	//assert(0);
 	test_fs();
+	//TODO 测试目录操作过程中有一些问题
 	//test_fs2();
+	test_fork();
 	//untar("/cmd.tar");
-	int pid = fork();
-	if(pid!=0){
-		printf("parent is running, pid:%d child pid:%d\n", getpid(), pid);
-		//int pid2 = fork();
-		//if(pid2!=0){
-				
-		//} else {
-		//	printf("child is running, pid:%d\n", getpid());
-		//}
-		int s;
-		int cpid = wait(&s);
-		printf("child %d exit:%d\n", cpid, s);
-	} else {
-		printf("child is running, pid:%d\n", getpid());
-		//int pid3 = fork();
-		//if(pid3!=0){
-		//	printf("parent is running, pid:%d, child pid:%d\n", getpid(), pid);
-		//} else {
-		//	printf("child is running, pid:%d\n", getpid());
-		//}
-		exit(2333);
-	}
 	char buf[128];
 	while(1){
 		int status;
@@ -89,41 +70,40 @@ void init()
  */
 void test_fs()
 {
+	int ret, fd, bytes, pos;
+	char buf[50];
 	char file_content[] = "issac!@#$%^&*()_+";
 	int file_content_len = strlen(file_content);
-	mkdir("/hello");
-	//这里连续两个mkdir后，下面write就会出错
-	//HD_TASK有问题
-	mkdir("/hello/fuckyou");
-	mkdir("/hello/fuckyou/test");
-	int fd;
-	fd = open("/hello/fuckyou/test/test.txt", O_CREATE);
-//	fd = open("/hello/test.txt", O_CREATE|O_RDWT);
-	assert(fd!=-1);
-	write(fd,file_content, file_content_len);
-	//int pos = tell(fd);
-	//printf("----pos:%d\n", pos);
-	//seek(fd,0,SEEK_START);
-	//pos = tell(fd);
-	//printf("----pos:%d\n", pos);	
-	close(fd);
-	char buf[50];
-	int bytes;
-	//int bytes = read(fd, buf, file_content_len);
-	//buf[bytes]=0;
-	//printf("%s\n", buf);
-	struct stat stbuf;
-	stat("/hello/fuckyou/test/test.txt", &stbuf);
-	printf("size:%d\n", stbuf.st_size);
+	ret = mkdir("/hello");
+	assert(ret==0);
+	ret = mkdir("/hello/fuckyou");
+	assert(ret == 0);
+	ret = mkdir("/hello/fuckyou/test");
+	assert(ret == 0);
+	fd = open("/hello/fuckyou/test/test.txt", O_CREATE|O_RDWT);
+	assert(fd==3);
+	bytes = write(fd,file_content, file_content_len);
+	assert(bytes == file_content_len);
+	pos = tell(fd);
+	assert(pos == file_content_len);
+	ret = seek(fd,0,SEEK_START);
+	assert(ret == 0);
+	pos = tell(fd);
+	assert(pos == 0);
+	ret = close(fd);
+	assert(ret == 0);
 	fd = open("/hello/fuckyou/test/test.txt", O_RDWT);
-	//printf("len:%d\n", file_content_len);
-	//TODO read's third param: file_content_len>file size, but the return value still equ file_content_len
-	//This is wrong
+	assert(fd == 3);
 	bytes = read(fd, buf, file_content_len);
-	printf("%d bytes\n", bytes);
+	assert(bytes == file_content_len);
 	buf[bytes]=0;
-	printf("-->%s\n",buf);
-	close(fd);
+	assert(strcmp(buf,file_content) == 0); 
+	ret = close(fd);
+	assert(ret == 0);
+	struct stat statbuf;
+	ret = stat("/hello/fuckyou/test/test.txt", &statbuf);
+	assert(ret == 0);
+	assert(statbuf.st_size == file_content_len);
 }
 
 /**
@@ -167,5 +147,19 @@ void test_fs2()
 	fd = open("/dir/yoo", O_CREATE);
 	//should fail
 	assert(fd == -1);
+}
+
+void test_fork()
+{
+	int pid = fork();
+	assert(pid>=0);
+        if(pid!=0){
+                int s;
+                int cpid = wait(&s);
+		assert(s == 2333);
+        } else {
+                exit(2333);
+        }
+
 }
 #endif
