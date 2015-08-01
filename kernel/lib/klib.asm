@@ -27,6 +27,7 @@ _out_byte:
 	mov al, [esp + 4 + 4]	;value
 	out dx, al
 	nop
+	nop
 	nop	;一点延迟
 	nop	; 原来两个nop，在操作磁盘时会造成死锁，所以多加了一个;_in_byte有影响，所以这里只需要2个
 	ret

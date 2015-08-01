@@ -475,12 +475,15 @@ int do_open(struct message *p_msg)
 		panic("f_desc_table[] is full (PID:%d)", src);
 	}
 	char filename[MAX_PATH];
-	struct inode *dir_inode = 0;
+	struct inode *dir_inode = 0, *pin=0;
 	int inode_nr = search_file(pathname, filename, &dir_inode);
 	if(inode_nr == -1){
 		goto label_fail;
 	}
-	struct inode *pin = 0;
+	//原来这里是这样写的，但是上面inode_nr==-1的时候直接跳到label_fail
+	//而下面pin变量并没有被初始化，所以label_fail中对应的pin变量的值是未知的
+	//会产生问题
+	//struct inode *pin = 0;
 	if(flags & O_CREATE){
 		//创建文件
 		if(inode_nr>0){

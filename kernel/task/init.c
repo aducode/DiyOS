@@ -41,8 +41,7 @@ void init()
 	//open("/dev/floppy", O_RDWT);
 	//assert(0);
 	test_fs();
-	//TODO 测试目录操作过程中有一些问题
-	//test_fs2();
+	test_fs2();
 	test_fork();
 	//untar("/cmd.tar");
 	char buf[128];
