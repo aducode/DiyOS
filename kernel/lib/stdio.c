@@ -20,6 +20,7 @@ int printf(const char *fmt, ...)
  */
 int fprintf(int fd, const char *fmt, ...)
 {
+	assert(fd!=-1);
 	int i;
 	char buf[1024];
 	//开始写成下面的，导致不定参赛出错
@@ -132,6 +133,24 @@ int mkdir(const char *pathname)
 	assert(msg.type == SYSCALL_RET);
 	return msg.RETVAL;
 }
+
+/**
+ * @function rmdir
+ * @brief 删除空目录
+ * @param pathname 目录
+ * @return 
+ */
+int rmdir(const char *pathname)
+{
+	struct message msg;
+	reset_msg(&msg);
+	msg.type = RMDIR;
+	msg.PATHNAME = (void*) pathname;
+	msg.NAME_LEN = strlen(pathname);
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.RETVAL;
+}
 /**
  * @function close
  * @brief 关闭文件
@@ -142,6 +161,7 @@ int mkdir(const char *pathname)
  */
 int close(int fd)
 {
+	assert(fd!=-1);
 	struct message msg;
 	reset_msg(&msg);
 	msg.type	= CLOSE;
@@ -163,6 +183,7 @@ int close(int fd)
  */
 int read(int fd, void *buf, int count)
 {
+	assert(fd!=-1);
 	struct message msg;
 	reset_msg(&msg);
 	msg.type = READ;
@@ -186,6 +207,7 @@ int read(int fd, void *buf, int count)
  */
 int write(int fd, const void * buf, int count)
 {
+	assert(fd!=-1);
 	struct message msg;
 	reset_msg(&msg);
 	msg.type = WRITE;
@@ -207,6 +229,7 @@ int write(int fd, const void * buf, int count)
  */
 int seek(int fd, int offset, int where)
 {
+	assert(fd!=-1);
 	struct message msg;
 	reset_msg(&msg);
 	msg.type = SEEK;
@@ -226,6 +249,7 @@ int seek(int fd, int offset, int where)
  */
 long tell(int fd)
 {
+	assert(fd!=-1);
 	struct message msg;
 	reset_msg(&msg);
 	msg.type = TELL;
@@ -249,6 +273,26 @@ int unlink(const char * pathname)
 	msg.type = UNLINK;
 	msg.PATHNAME = (void*)pathname;
 	msg.NAME_LEN = strlen(pathname);
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.RETVAL;
+}
+
+/**
+ * @function stat
+ * @brief get file stat
+ * @param pathname  file path
+ * @param buf   for output
+ * @return 0 success
+ */
+int stat(const char *pathname, struct stat *buf)
+{
+	struct message msg;
+	reset_msg(&msg);
+	msg.type = STAT;
+	msg.PATHNAME = (void*)pathname;
+	msg.NAME_LEN = strlen(pathname);
+	msg.BUF = (void*)buf;
 	send_recv(BOTH, TASK_FS, &msg);
 	assert(msg.type == SYSCALL_RET);
 	return msg.RETVAL;

@@ -18,6 +18,7 @@ void task_floppy()
 		switch(msg.type){
 			case DEV_OPEN:
 				floppy_open(msg.DEVICE);
+				msg.type=SYSCALL_RET;
 				break;
 			case DEV_CLOSE:
 				floppy_close(msg.DEVICE);

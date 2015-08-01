@@ -140,7 +140,7 @@ struct dev_drv_map dd_map[]={
 u8 * fsbuf = (u8*)0x600000;
 const int FSBUF_SIZE = 0x100000;
 
-struct inode * root_inode;
+//struct inode * root_inode;
 struct file_desc f_desc_table[MAX_FILE_DESC_COUNT]; //文件描述符表
 struct inode inode_table[MAX_INODE_COUNT];
 //MAX_SUPER_BLOCK_COUNT目前是8

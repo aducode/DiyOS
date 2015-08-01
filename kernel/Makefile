@@ -8,7 +8,7 @@ KERNEL_ENTRY_OFFSET=0x0400
 CC=gcc
 #使用clang编译的时候，不定参数会出现问题
 #CC=clang
-CFLAGS=-I include/ -I include/sys/ -c -fno-builtin
+CFLAGS=-I include/ -I include/sys/ -I include/common/ -c -fno-builtin
 ASM=nasm
 ASMFLAGS=-I include/ -I include/sys/ -f elf
 LD=ld
@@ -36,7 +36,7 @@ DASM=ndisasm
 DASMFLAGS=-u -o $(KERNEL_ENTRY_POINT) -e $(KERNEL_ENTRY_OFFSET)
 DASMOUTPUT=$(KERNEL).bin.asm
 
-OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o systicks.o getpid.o fork.o exit.o wait.o tar.o assert.o clock.o keyboard.o hd.o floppy.o console.o proc.o ipc.o syscall.o tty.o hddriver.o floppydriver.o sys.o fs.o mm.o init.o
+OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o mount.o systicks.o getpid.o fork.o exit.o wait.o tar.o assert.o clock.o keyboard.o hd.o floppy.o console.o proc.o ipc.o syscall.o tty.o hddriver.o floppydriver.o sys.o fs.o mm.o init.o map.o
 #OBJECTS=$(KERNEL).o main.o global.o head.o klib.o  interrupt.o string.o stdio.o clock.o keyboard.o console.o proc.o  syscall.o tty.o test.o
 
 all:$(KERNEL).bin
@@ -66,6 +66,8 @@ string.o:lib/string.c
 	$(CC) $(CFLAGS) lib/string.c -o string.o
 stdio.o:lib/stdio.c
 	$(CC) $(CFLAGS) lib/stdio.c -o stdio.o
+mount.o:lib/mount.c
+	$(CC) $(CFLAGS) lib/mount.c -o mount.o
 tar.o:lib/tar.o
 	$(CC) $(CFLAGS) lib/tar.c -o tar.o
 assert.o:lib/assert.c
@@ -113,6 +115,10 @@ mm.o:task/mm.c
 	$(CC) $(CFLAGS) task/mm.c -o mm.o
 init.o:task/init.c
 	$(CC) $(CFLAGS) task/init.c -o init.o
+	
+########################### common #########################################
+map.o:common/map.c
+	$(CC) $(CFLAGS) common/map.c -o map.o
 	
 ########################### PHONY ##########################################
 lib:$(ARINFILE)

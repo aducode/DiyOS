@@ -80,6 +80,7 @@ void task_tty()
 		struct tty *p_tty = &tty_table[msg.DEVICE];
 		switch(msg.type){
 			case DEV_OPEN:
+				//tty开机后就已经设置好了，所以不需要真正的处理DEV_OPEN消息
 				reset_msg(&msg);
 				msg.type = SYSCALL_RET;
 				send_recv(SEND, src, &msg);
@@ -299,13 +300,13 @@ int sys_printk(int _unsed1, int _unsed2, char *s, struct process *p_proc)
 		//如果是panic 或者内核级别的assert，那么执行这里
 		_disable_int();
 	#ifdef _SHOW_PANIC_
-		char *v = (char*)V_MEM_BASE;
+		char *v = (char*)V_MEM_BASE+SCR_WIDTH*_PANIC_N_;
 		const char * q = p+1;	//skip
 		while(v<(char*)(V_MEM_BASE+V_MEM_SIZE)){
 			*v++ = *q++;
 			*v++ = RED_CHAR;
 			if(!*q){
-				while(((int)v - V_MEM_BASE)%(SCR_WIDTH*16)){
+				while(((int)v - V_MEM_BASE+SCR_WIDTH*_PANIC_N_)%(SCR_WIDTH*16)){
 					v++;
 					*v++ = GRAY_CHAR;
 				}

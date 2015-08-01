@@ -1,6 +1,16 @@
 /******************************************************/
 /*                 操作系统的文件系统                 */
 /******************************************************/
+//现在处理起来有些问题：
+//1. 最开始设计的文件系统只有 / 一级目录，所以close的时候只对文件的inode->i_cnt自减， 而如今变成多级树形目录，在open过程中会对路径上所有的目录文件的i_cnt自增，所以应该修改close函数，对所有目录文件inode->i_cnt自减
+//	 在struct inode中添加了一个i_parent属性，用来保存父目录inode ptr , put_inode会递归的追溯i_parent进行清理
+//2. 大量地方用到了strip_path 获取文件名和目录inode指针，同时用search_file获取文件的inode idx，而search_file中也使用了strip_path函数，这会导致i_cnt多加了一次，应该重新设计一下这两个函数，避免出现这样的错误
+//	 合并search_file 和 strip_path ,统一使用search_file函数，调用完search_file后，根据具体需求调用put_inode
+//要用到search_file的函数有:
+//		do_open ：调用之后如果失败，需要CLEAR_INODE， 否则不需要CLEAR_INODE，一直保存inode直到对应fd调用do_close()
+//		do_unlink: 调用之后无论是否失败，都需要CLEAR_INODE
+//		do_rmdir : 调用之后无论失败，都需要CLEAR_INODE
+//		do_stat:	调用之后无论失败，都需要CLEAR_INODE
 #include "type.h"
 #include "syscall.h"
 #include "global.h"
@@ -20,7 +30,14 @@ static void init_block_dev_files(struct inode *pin);
 static void fmtfs();
 static void read_super_block(int dev);
 static struct super_block * get_super_block(int dev);
-static struct inode * get_inode(int dev, int inode_idx);
+/**
+ * @function get_inode
+ * @brief 根据inode_idx找到inode指针
+ * @param parent 父目录inode ptr
+ * @param inode_idx inode表的下表
+ * @return inode 指针
+ */
+static struct inode * get_inode(struct inode *parent, int inode_idx);
 static void put_inode(struct inode *pinode);
 static void sync_inode(struct inode *p);
 static int do_open(struct message *p_msg);
@@ -30,16 +47,39 @@ static int do_seek(struct message *p_msg);
 static int do_tell(struct message *p_msg);
 static int do_unlink(struct message *p_msg);
 static int do_mkdir(struct message *p_msg);
+static int do_rmdir(struct message *p_msg);
+static int do_stat(struct message *p_msg);
+static int do_mount(struct message *p_msg);
+static int do_unmount(struct message *p_msg);
 static int fs_fork(struct message *msg);
 static int fs_exit(struct message *msg);
-static struct inode * create_file(char *path, int flags);
+//只有在do_open中创建文件的时候使用
+//static struct inode * create_file(char *path, int flags);
+//使用strip_path返回的结果，避免重复调用strip_path
+static struct inode * create_file(const char *filename, struct inode * dir_inode, int flags);
 static struct inode * create_directory(char *path, int flags);
+static int unlink_file(struct inode * pinode, struct inode* dir_inode);
 static int alloc_imap_bit(int dev);
 static int alloc_smap_bit(int dev, int sects_count_to_alloc);
-static struct inode* new_inode(int dev, int inode_nr, u32 i_mode, u32 start_sect,u32 i_sects_count, u32 i_size);
-static void new_dir_entry(struct inode *dir_inode, int inode_nr, char *filename);
+static struct inode* new_inode(struct inode *parent, int inode_nr, u32 i_mode, u32 start_sect,u32 i_sects_count, u32 i_size);
+static void new_dir_entry(struct inode *dir_inode, int inode_nr, const char *filename);
 static int strip_path(char *filename, const char *pathname, struct inode **ppinode);
-static int search_file(char *path);
+//添加参数，避免重复调用strip_path
+static int search_file(const char *path, char * filename, struct inode **ppinode);
+
+/**
+ * @define CLEAR_INODE
+ * @brief
+ * @param dir_inode
+ * @param inode
+ */
+#define CLEAR_INODE(dir_inode, inode)  do { \
+	if((inode) != 0){ \
+		put_inode((inode)); \
+	} else if((dir_inode) != 0){ \
+		put_inode((dir_inode)); \
+	}										\
+}while(0)
 
 /**
  * Main Loop 
@@ -63,27 +103,51 @@ void task_fs()
 				break;
 			case READ:
 			case WRITE:
+				//读写文件
 				msg.CNT = do_rdwt(&msg);
 				break;
+			case STAT:
+				//获取文件状态
+				msg.RETVAL = do_stat(&msg);
+				break;
 			case SEEK:
+				//seek
 				msg.RETVAL = do_seek(&msg);
 				break;
 			case TELL:
+				//tell
 				msg.POSITION = do_tell(&msg);
 				break;
 			case UNLINK:
+				//删除普通文件
 				msg.RETVAL = do_unlink(&msg);
 				break;
 			case MKDIR:
+				//创建空目录
 				msg.RETVAL = do_mkdir(&msg);
 				break;
+			case RMDIR:
+				//删除空目录
+				msg.RETVAL = do_rmdir(&msg);
+				break;
+			case MOUNT:
+				//挂载文件系统
+				msg.RETVAL = do_mount(&msg);
+				break;
+			case UNMOUNT:
+				//卸载文件系统
+				msg.RETVAL = do_unmount(&msg);
+				break;
 			case RESUME_PROC:
+				//恢复挂起的进程
 				src = msg.PID; //恢复进程,此时将src变成TTY进程发来的消息中的PID
 				break;
 			case FORK:
+				//fork 让子进程共享父进程的文件fd
 				msg.RETVAL = fs_fork(&msg);
 				break;
 			case EXIT:
+				//子进程退出时的文件操作
 				msg.RETVAL = fs_exit(&msg);
 				break;
 			default:
@@ -121,6 +185,10 @@ void init_fs()
 	}
 	//open the device:hard disk
 	//打开硬盘设备
+	//设定硬盘为根文件系统，所以这里给HD发送DEV_OPEN消息
+	//对于其他的存储介质，统一抽象成/dev/xxx
+	//比如软盘 /dev/floppy
+	//将来对软盘的操作由mount unmount来完成
 	struct message msg;
 	msg.type = DEV_OPEN;
 	msg.DEVICE = MINOR(ROOT_DEV);
@@ -133,13 +201,14 @@ void init_fs()
 	read_super_block(ROOT_DEV);
 	sb=get_super_block(ROOT_DEV);
 	assert(sb->magic == MAGIC_V1);
-	root_inode = get_inode(ROOT_DEV, ROOT_INODE);
 	//创建/dev目录
 	struct inode *p_dir_inode = create_directory("/dev", O_CREATE);
 	assert(p_dir_inode!=0);
 	init_tty_files(p_dir_inode);
 	//init block device files
 	init_block_dev_files(p_dir_inode);
+	//put_inode(p_dir_inode);
+	assert(p_dir_inode->i_cnt == 0);
 }
 
 
@@ -154,10 +223,13 @@ void init_tty_files(struct inode *dir_inode)
 	char filename[MAX_PATH];
 	int i, inode_nr, free_sect_nr;
 	for(i=0;i<CONSOLE_COUNT;i++){
+		struct inode *newino = 0;
 		inode_nr = alloc_imap_bit(dir_inode->i_dev);
-        	struct inode *newino = new_inode(dir_inode->i_dev, inode_nr,I_CHAR_SPECIAL, MAKE_DEV(DEV_CHAR_TTY, i),0, 0);
+        	newino = new_inode(dir_inode, inode_nr,I_CHAR_SPECIAL, MAKE_DEV(DEV_CHAR_TTY, i),0, 0);
 		sprintf(filename, "tty%d", i);
        		new_dir_entry(dir_inode, newino->i_num, filename);
+		assert(inode_nr!=0 && newino != 0);
+		put_inode(newino);
 	}
 		
 }
@@ -170,9 +242,12 @@ void init_tty_files(struct inode *dir_inode)
 void init_block_dev_files(struct inode *dir_inode)
 {
 	int inode_nr, free_sect_nr;
+	struct inode *newino = 0;
 	inode_nr = alloc_imap_bit(dir_inode->i_dev);
-	struct inode *newino = new_inode(dir_inode->i_dev, inode_nr, I_BLOCK_SPECIAL, MAKE_DEV(DEV_FLOPPY, 0), 0, 0);
+	newino = new_inode(dir_inode, inode_nr, I_BLOCK_SPECIAL, MAKE_DEV(DEV_FLOPPY, 0), 0, 0);
 	new_dir_entry(dir_inode, newino->i_num, "floppy");
+	assert(inode_nr != 0 && newino != 0);
+	put_inode(newino);
 }
 
 /**
@@ -399,26 +474,43 @@ int do_open(struct message *p_msg)
 	if(i>=MAX_FILE_DESC_COUNT){
 		panic("f_desc_table[] is full (PID:%d)", src);
 	}
-	int inode_nr = search_file(pathname);
-	struct inode *pin = 0;
+	char filename[MAX_PATH];
+	struct inode *dir_inode = 0, *pin=0;
+	int inode_nr = search_file(pathname, filename, &dir_inode);
+	if(inode_nr == -1){
+		goto label_fail;
+	}
+	//原来这里是这样写的，但是上面inode_nr==-1的时候直接跳到label_fail
+	//而下面pin变量并没有被初始化，所以label_fail中对应的pin变量的值是未知的
+	//会产生问题
+	//struct inode *pin = 0;
 	if(flags & O_CREATE){
 		//创建文件
-		if(inode_nr){
+		if(inode_nr>0){
 			//printk("file exists.\n");
-			return -1;
+			//put_inode(dir_inode);
+			//return -1;
+			goto label_fail;
 		} else {
-			pin = create_file(pathname, flags);
+			pin = create_file(filename, dir_inode, flags);
 		}
 	} else {
 		assert(flags & O_RDWT);
-		char filename[MAX_PATH];
-		struct inode *dir_inode;
-		if(strip_path(filename, pathname, &dir_inode) != 0){
-			return -1;
+		if(inode_nr==0){
+			//printk("file does not exist.\n");
+			//return -1;
+			goto label_fail;
 		}
-		pin = get_inode(dir_inode->i_dev, inode_nr);
+		pin = get_inode(dir_inode, inode_nr);
 	}
 	if(pin){
+		if(pin->i_mode == I_DIRECTORY){
+			//不能打开目录文件
+			//释放inode table中的缓存
+			//put_inode(pin);
+			//return -1;
+			goto label_fail;
+		}
 		//connects proc with file_descriptor
 		pcaller->filp[fd] = &f_desc_table[i];
 		//connects file_descriptor with inode
@@ -433,19 +525,44 @@ int do_open(struct message *p_msg)
 			driver_msg.type = DEV_OPEN;
 			int dev = pin->i_start_sect;
 			driver_msg.DEVICE=MINOR(dev);
+			//@see kernel/global.c dd_map[]
+			//4 is index of dd_map
+			//dd_map[4] = TASK_TTY
 			assert(MAJOR(dev) == 4);
 			assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
 			//printk("FS send message to %d\n", dd_map[MAJOR(dev)].driver_pid);
 			send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
+			assert(driver_msg.type==SYSCALL_RET);
+		} else if (imode == I_BLOCK_SPECIAL) {
+			//打开块设备文件
+			//之前考虑open块设备时发送DEV_OPEN消息
+			//现在改为mount时发送DEV_OPEN消息
+			/*
+			struct message driver_msg;
+			driver_msg.type = DEV_OPEN;
+			int dev = pin->i_start_sect;
+			driver_msg.DEVICE=MINOR(dev);
+			//dd_map[1] = TASK_FLOPPY
+			//assert(MAJOR(dev)==1); //可能有多个块设备
+			assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
+			send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
+			assert(driver_msg.type==SYSCALL_RET);
+			*/
+			assert(imode == I_BLOCK_SPECIAL);
 		} else if (imode == I_DIRECTORY) {
-			assert(pin->i_num == ROOT_INODE);
+			//assert(pin->i_num == ROOT_INODE);
+			assert(0); //不会到这里
 		} else {
-			assert(pin->i_mode == I_REGULAR);
+			assert(imode == I_REGULAR);
 		}
 	} else {
-		return -1;
+		//return -1;
+		goto label_fail;
 	}
 	return fd;
+label_fail:
+	CLEAR_INODE(dir_inode, pin);
+	return -1;
 }
 
 /**
@@ -470,6 +587,10 @@ int do_seek(struct message *p_msg)
         }
 	struct inode *pin = pcaller->filp[fd]->fd_inode;
 	assert(pin>=inode_table && pin<inode_table + MAX_INODE_COUNT);
+	if(pin->i_cnt == 0) {
+		//说明fd没有对应的inode
+		return -1;
+	}
 	int imode = pin->i_mode & I_TYPE_MASK;
 	if(imode!=I_REGULAR){
 		return -1;//只对普通文件有效
@@ -507,13 +628,17 @@ int do_tell(struct message *p_msg)
 	int fd= p_msg->FD;
 	int src = p_msg->source;
 	struct process *pcaller = proc_table + src;
-        assert((pcaller->filp[fd]>=f_desc_table) & (pcaller->filp[fd] < f_desc_table + MAX_FILE_DESC_COUNT));
-        if(!(pcaller->filp[fd]->fd_mode & O_RDWT)){
-                return -1;
-        }
+    assert((pcaller->filp[fd]>=f_desc_table) & (pcaller->filp[fd] < f_desc_table + MAX_FILE_DESC_COUNT));
+    if(!(pcaller->filp[fd]->fd_mode & O_RDWT)){
+        return -1;
+    }
 	struct inode * pin = pcaller->filp[fd]->fd_inode;
-        assert(pin>= inode_table && pin<inode_table + MAX_INODE_COUNT);
-        int imode = pin->i_mode & I_TYPE_MASK;
+    assert(pin>= inode_table && pin<inode_table + MAX_INODE_COUNT);
+	if(pin->i_cnt == 0) {
+		//说明fd没有对应的inode
+		return -1;
+	}
+    int imode = pin->i_mode & I_TYPE_MASK;
 	if(imode!=I_REGULAR){
 		//只能对普通文件进行操作
 		return -1;
@@ -534,6 +659,10 @@ int do_close(struct message *p_msg)
 	int fd = p_msg->FD;
 	int src = p_msg->source;
 	struct process *pcaller = proc_table + src;
+	if(pcaller->filp[fd]->fd_inode->i_cnt == 0) {
+		//说明fd没有对应的inode
+		return -1;
+	}
 	//释放inode 资源
 	put_inode(pcaller->filp[fd]->fd_inode);
 	if(--pcaller->filp[fd]->fd_cnt == 0){
@@ -584,7 +713,18 @@ int do_rdwt(struct message *p_msg)
 		//assert(p_msg->type == SYSCALL_RET);
 		//收到的消息不是都是SYSCALL_RET类型的，TTY read返回SUSPEND_PROC
 		return p_msg->CNT;
-	} else {
+	} else if(imode == I_BLOCK_SPECIAL){
+		//读写块设备
+		//这里设定可以读块设备内的raw数据
+		//if(p_msg->type == READ) {
+			//read函数理论上可以直接读取软盘
+			//但是这没什么意义，而且read传入的count可以是任意Byte，而我们floppy的DEV_OPEN处理函数一般要求512Byte为单位
+			//所以当对BLOCK 文件read/write时，直接忽略，不错操作
+		//} else {
+			//write函数中不可以直接写入软盘
+		//}
+		return 0; //直接返回0byte
+	}else {
 		assert(pin->i_mode == I_REGULAR || pin->i_mode == I_DIRECTORY);
 		assert((p_msg->type == READ)||(p_msg->type == WRITE));
 		int pos_end;
@@ -653,49 +793,156 @@ int do_unlink(struct message *p_msg)
 		printk("FS:do_unlink():: cannot unlink the root\n");
 		return -1;
 	}
-	int inode_nr = search_file(pathname);
-	if(inode_nr == INVALID_INODE){
+	
+	char filename[MAX_PATH];
+	struct inode *dir_inode = 0;
+	struct inode *pin = 0;
+	int inode_nr = search_file(pathname, filename, &dir_inode);
+	if(inode_nr == INVALID_INODE || dir_inode == 0){
 		//file not found
 		printk("FS::do_unlink():: search_file() return invalid inode: %s\n", pathname);
-		return -1;
+		//return -1;
+		goto label_fail;
 	}
-	char filename[MAX_PATH];
-	struct inode* dir_inode;
-	//printk("line:821\n");
-	if(strip_path(filename, pathname, &dir_inode)!=0){
-		return -1;
-	}
-	struct inode *pin = get_inode(dir_inode->i_dev, inode_nr);
+	pin = get_inode(dir_inode, inode_nr);
 	if(pin->i_mode != I_REGULAR){
 		//can only remove regular files
+		//if you want remove directory  @see do_rmdir
 		printk("cannot remove file %s, because it is not a regular file.\n", pathname);
-		return -1;
+		//return -1;
+		goto label_fail;
 	}
 	if(pin->i_cnt>1){
 		//thie file was opened
 		printk("cannot remove file %s, because pin->i_cnt is %d.\n", pathname, pin->i_cnt);
-		return -1;
+		//return -1;
+		goto label_fail;
 	}
+	//这里pin->i_cnt应该是1
+	assert(pin->i_cnt == 1);
+	//unlink_file内部会进行put_inode操作
+	return unlink_file(pin, dir_inode);
+label_fail:
+	CLEAR_INODE(dir_inode, pin);
+	return -1;
+}
 
-	struct super_block *sb = get_super_block(pin->i_dev);
+
+/**
+ * @function do_mkdir
+ * @brief 创建目录
+ * @param p_msg
+ * @return
+ */
+int do_mkdir(struct message *p_msg)
+{
+	char pathname[MAX_PATH];
+    	int name_len = p_msg->NAME_LEN;
+    	int src = p_msg->source;
+    	assert(name_len<MAX_PATH);
+    	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
+    	pathname[name_len] = 0;
+    	struct inode *dir_inode = create_directory(pathname, O_CREATE);
+    	if(dir_inode == 0){
+		//
+		return -1;
+	} else {
+		put_inode(dir_inode);
+		return 0;
+	}
+}
+
+/**
+ * @function do_rmdir
+ * @brief 删除空目录
+ * @param p_msg
+ * @return
+ */
+int do_rmdir(struct message *p_msg)
+{
+	char pathname[MAX_PATH];
+	int src = p_msg->source;
+	int name_len = p_msg->NAME_LEN;
+	assert(name_len<MAX_PATH);
+	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
+	pathname[name_len] = 0;
+	if(strcmp(pathname, "/") == 0){
+		return -1;//根目录不能删除
+	}
+	//只有这里使用的逻辑就不单独提出一个函数了
+	char filename[MAX_PATH];
+	struct inode *dir_inode = 0; //父目录inode指针
+	int dir_entry_count; //目录项数量
+	int inode_idx = search_file(pathname, filename, &dir_inode);
+	if(inode_idx == INVALID_INODE || dir_inode == 0){
+		//file not found
+		//return -1;
+		goto label_fail;
+	}
+	struct inode *pinode = get_inode(dir_inode, inode_idx);
+	if(!pinode){
+		//return -1;
+		goto label_fail;
+	}
+	if(pinode->i_mode != I_DIRECTORY){
+		//不是目录文件
+		//return -1;
+		goto label_fail;
+	}
+	if(pinode->i_cnt>1){
+		//open函数不能用于目录文件，所以目录的pinode->i_cnt一般恒为1
+		//但是考虑mount的时候可以将pinode->i_cnt 加1，所以这里也判断一下,防止删除挂载点
+		printk("pathname:%s,inode:%d,i_cnt:%d\n", pathname,pinode->i_num,pinode->i_cnt);
+		//return -1;
+		goto label_fail;
+	}
+	//判断是否是空目录
+	// 空目录是指只包含 . ..两个目录项的目录
+	dir_entry_count = pinode->i_size/DIR_ENTRY_SIZE;
+	if(dir_entry_count>2){
+		//目录项大于2说明包含除了. ..之外的，所以不是空目录
+		//return -1;
+		goto label_fail;
+	}
+	//删除空目录
+	//unlink_file 内部会进行put_inode 操作
+	return unlink_file(pinode, dir_inode);
+label_fail:
+	CLEAR_INODE(dir_inode, pinode);
+	return -1;
+}
+	
+	
+/**
+ * @function unlink_file
+ * @brief 清除文件/目录
+ * @param pinode  文件inode指针
+ * @param dir_inode 文件所在目录的inode指针
+ * 
+ * @return 0 successful
+ */
+int unlink_file(struct inode *pinode, struct inode* dir_inode)
+{
+	int inode_idx = pinode->i_num;
+	struct super_block *sb = get_super_block(pinode->i_dev);
 	//free the bit in imap
-	int byte_idx = inode_nr/8;
-	int bit_idx = inode_nr % 8;
+	int byte_idx = inode_idx/8;
+	int bit_idx = inode_idx % 8;
 	assert(byte_idx<SECTOR_SIZE);//we have only one imap sector
 	//read sector 2 (skip bootsect and superblk):
-	READ_SECT(pin->i_dev, 2);
+	READ_SECT(pinode->i_dev, 2);
 	assert(fsbuf[byte_idx%SECTOR_SIZE]&(1<<bit_idx));
 	fsbuf[byte_idx % SECTOR_SIZE] &= ~(1<<bit_idx);
-	WRITE_SECT(pin->i_dev, 2);
+	WRITE_SECT(pinode->i_dev, 2);
 	//free the bits in smap
-	bit_idx = pin->i_start_sect - sb->first_sect + 1;
+	bit_idx = pinode->i_start_sect - sb->first_sect + 1;
 	byte_idx = bit_idx/8;
-	int bits_left = pin->i_sects_count;
+	int bits_left = pinode->i_sects_count;
 	int byte_cnt = (bits_left - (8-(bit_idx % 8)))/8; 
 	
 	//current sector nr
 	int s= 2 + sb->imap_sects_count + byte_idx/SECTOR_SIZE;//2:bootsect + superblk
-	READ_SECT(pin->i_dev, s);
+	READ_SECT(pinode->i_dev, s);
 	int i;
 	//clear the first byte
 	for(i=bit_idx % 8;(i<8)&&bits_left;i++,bits_left--){
@@ -708,8 +955,8 @@ int do_unlink(struct message *p_msg)
 	for(k=0;k<byte_cnt;k++,i++,bits_left-=8){
 		if(i==SECTOR_SIZE){
 			i=0;
-			WRITE_SECT(pin->i_dev, s);
-			READ_SECT(pin->i_dev, ++s);
+			WRITE_SECT(pinode->i_dev, s);
+			READ_SECT(pinode->i_dev, ++s);
 		}
 		assert(fsbuf[i]==0xFF);
 		fsbuf[i] = 0;
@@ -718,22 +965,22 @@ int do_unlink(struct message *p_msg)
 	//clear the last byte
 	if(i==SECTOR_SIZE){
 		i=0;
-		WRITE_SECT(pin->i_dev, s);
-		READ_SECT(pin->i_dev, ++s);
+		WRITE_SECT(pinode->i_dev, s);
+		READ_SECT(pinode->i_dev, ++s);
 	}
 	unsigned char mask = ~((unsigned char)(~0)<<bits_left);
 	assert((fsbuf[i]&mask)==mask);
 	fsbuf[i] &= (~0)<<bits_left;
-	WRITE_SECT(pin->i_dev, s);
+	WRITE_SECT(pinode->i_dev, s);
 
 	//clear the inode itself
-	pin->i_mode = 0;
-	pin->i_size = 0;
-	pin->i_start_sect = 0;
-	pin->i_sects_count = 0;
-	sync_inode(pin);
+	pinode->i_mode = 0;
+	pinode->i_size = 0;
+	pinode->i_start_sect = 0;
+	pinode->i_sects_count = 0;
+	sync_inode(pinode);
 	//release slot in inode_table[]
-	put_inode(pin);
+	put_inode(pinode);
 	//set the inode-nr to 0 in the directory entry
 	int dir_blk0_nr = dir_inode->i_start_sect;
 	int nr_dir_blks = (dir_inode->i_size + SECTOR_SIZE)/SECTOR_SIZE;
@@ -748,7 +995,7 @@ int do_unlink(struct message *p_msg)
 		int j;	
 		for(j=0;j<SECTOR_SIZE/DIR_ENTRY_SIZE;j++,pde++){
 			if(++m>nr_dir_entries) break;
-			if(pde->inode_idx == inode_nr){
+			if(pde->inode_idx == inode_idx){
 				memset(pde, 0, DIR_ENTRY_SIZE);
 				WRITE_SECT(dir_inode->i_dev, dir_blk0_nr+i);
 				flag = 1;
@@ -770,28 +1017,6 @@ int do_unlink(struct message *p_msg)
 	}
 	return 0;
 }
-
-
-/**
- * @function do_mkdir
- * @brief 创建目录
- * @param p_msg
- * @return
- */
-int do_mkdir(struct message *p_msg)
-{
-	struct inode *pinode;
-	char pathname[MAX_PATH];
-        int flags = p_msg->FLAGS;
-        int name_len = p_msg->NAME_LEN;
-        int src = p_msg->source;
-        struct process *pcaller = proc_table + src;
-        assert(name_len<MAX_PATH);
-        memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
-        pathname[name_len] = 0;
-	return create_directory(pathname, O_CREATE)!=0?0:-1;
-}
-
 /**
  * @function fs_fork
  * @brief Perform the aspects of fork() that relate to files
@@ -837,32 +1062,36 @@ int fs_exit(struct message *msg)
  * @function create_directory
  * @brief 创建新的目录inode, 并设置磁盘上的数据
  * @param path 目录
- * @param  flags
+ * @param  flags 预留
  * @return inode指针
  */
 struct inode * create_directory(char *path, int flags)
 {
 	char filename[MAX_PATH];
-	struct inode * dir_inode;
-	if(strip_path(filename, path, &dir_inode)!=0){
-		return 0;
+	struct inode * dir_inode = 0;
+	struct inode * pinode= 0;
+	int inode_idx = search_file(path, filename, &dir_inode);
+	if(inode_idx == -1){
+		//说明目录链断开
+		//创建目录的位置非法
+		goto label_fail;		
 	}
-	struct inode *pinode;
-	int inode_idx = search_file(path);
 	if(inode_idx!=0){
-		pinode = get_inode(dir_inode->i_dev, inode_idx);
-		if(pinode==0){
-			return 0;
+		pinode = get_inode(dir_inode, inode_idx);
+		if(pinode==0 || dir_inode == 0){
+			//return 0;
+			goto label_fail;
 		}
 		if(pinode->i_mode == I_DIRECTORY){
 			return pinode; //说明已经存在目录
 		} else {
-			return 0; //父目录下有同名文件
+			//return 0; //父目录下有同名文件
+			goto label_fail;
 		}
 	}
 	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
 	int free_sect_nr = alloc_smap_bit(dir_inode->i_dev, DEFAULT_FILE_SECTS_COUNT);
-	struct inode * newino = new_inode(dir_inode->i_dev, inode_nr, I_DIRECTORY, free_sect_nr, DEFAULT_FILE_SECTS_COUNT, 2*DIR_ENTRY_SIZE);
+	struct inode * newino = new_inode(dir_inode, inode_nr, I_DIRECTORY, free_sect_nr, DEFAULT_FILE_SECTS_COUNT, 2*DIR_ENTRY_SIZE);
 	//写入directory文件数据 . ..
 	memset(fsbuf, 0, SECTOR_SIZE);
 	struct dir_entry *pde;
@@ -872,29 +1101,28 @@ struct inode * create_directory(char *path, int flags)
 	(++pde)->inode_idx = dir_inode->i_num ;
 	strcpy(pde->name, ".."); //..
 	//写入磁盘
-	WRITE_SECT(dir_inode->i_dev, free_sect_nr);
+	WRITE_SECT(dir_inode->i_dev, free_sect_nr);	
 	new_dir_entry(dir_inode, newino->i_num, filename);
 	return newino;
+label_fail:
+	CLEAR_INODE(dir_inode, pinode);
+	return 0;
 }
 /**
  * @function create_file
  * @brief 创建新的inode，并设置磁盘上的数据
- * @param path 文件路径
+ * @param filename 文件名
+ * @param dir_inode 文件所处目录inode
  * @param flags
  * 
  * @return 新inode指针，失败返回0
  */
 //struct inode * create_file(char *path, int type,  int flags, int start_sect, int sect_count)
-struct inode * create_file(char *path, int flags)
+struct inode * create_file(const char *filename, struct inode *dir_inode , int flags)
 {
-	char filename[MAX_PATH];
-	struct inode * dir_inode;
-	if(strip_path(filename, path, &dir_inode) != 0){
-		return 0;
-	}
 	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
 	int free_sect_nr = alloc_smap_bit(dir_inode->i_dev, DEFAULT_FILE_SECTS_COUNT);
-	struct inode *newino = new_inode(dir_inode->i_dev, inode_nr,I_REGULAR, free_sect_nr, DEFAULT_FILE_SECTS_COUNT, 0);
+	struct inode *newino = new_inode(dir_inode, inode_nr,I_REGULAR, free_sect_nr, DEFAULT_FILE_SECTS_COUNT, 0);
 	new_dir_entry(dir_inode, newino->i_num, filename);
 	return newino;
 }
@@ -986,22 +1214,24 @@ int alloc_smap_bit(int dev, int sects_count_to_alloc)
  * @param inode_nr
  * @param i_mode
  * @param start_sect
+ * @param i_sects_count
  * @param i_size 
  *
  * @return ptr of the new inode
  */
-struct inode* new_inode(int dev, int inode_nr,u32 i_mode, u32 start_sect, u32 i_sects_count, u32 i_size)
+struct inode* new_inode(struct inode *parent, int inode_nr,u32 i_mode, u32 start_sect, u32 i_sects_count, u32 i_size)
 {
 	//get from inode array by inode_nr
-	struct inode * new_inode = get_inode(dev, inode_nr);
+	struct inode * new_inode = get_inode(parent, inode_nr);
 	new_inode->i_mode = i_mode;
 	new_inode->i_size = i_size;
 	new_inode->i_start_sect = start_sect;
 	new_inode->i_sects_count = i_sects_count;
 	
-	new_inode->i_dev = dev;
+	new_inode->i_dev = parent->i_dev;
 	new_inode->i_cnt = 1;
 	new_inode->i_num = inode_nr;
+	new_inode->i_parent = parent;
 	
 	//write4 to the inode array
 	sync_inode(new_inode);
@@ -1016,7 +1246,7 @@ struct inode* new_inode(int dev, int inode_nr,u32 i_mode, u32 start_sect, u32 i_
  * @param inode_nr inode nr of the new file.
  * @param filename Filename of the new file.
  */
-void new_dir_entry(struct inode *dir_inode, int inode_nr, char *filename)
+void new_dir_entry(struct inode *dir_inode, int inode_nr, const char *filename)
 {
 	//write the dir_entry
 	int dir_blk0_nr = dir_inode->i_start_sect;
@@ -1076,6 +1306,8 @@ void new_dir_entry(struct inode *dir_inode, int inode_nr, char *filename)
  *
  * Filenames may contain any character except '/' and '\\0'
  *
+ * It can work correctlly when path contains "." or ".."
+ *
  * @param[out] filename the string for the result
  * @param[in] pathname the full pathname.
  * @param[out] ppinode the ptr of the dir's inode will be stored here.
@@ -1090,16 +1322,19 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 	char * t;
 	int i,j;
 	if(*s==0){
+		//空字符串非法
 		return -1;
 	}
 	if(*s!='/'){
+		//必须是绝对路径
 		return -1;
 	}
 	s++;
-	*ppinode=root_inode;
+	*ppinode=root_inode();
 	int dir_entry_count_per_sect = SECTOR_SIZE/DIR_ENTRY_SIZE;
 	int dir_entry_count, dir_entry_blocks_count;
 	while(*s!=0){
+		pinode = 0;
 		t = filename;
 		while(*s!='/' && *s!=0){
 			*t++=*s++;
@@ -1115,7 +1350,7 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 			int step = min(dir_entry_count_per_sect, dir_entry_count);
 			for(j=0;j<step;j++, pde++){
 				if(strcmp(pde->name, filename)==0){
-					pinode=get_inode((*ppinode)->i_dev, pde->inode_idx);
+					pinode=get_inode(*ppinode, pde->inode_idx);
 					goto try_to_find_next_path;		
 				}
 			}
@@ -1125,17 +1360,28 @@ try_to_find_next_path:
 		if(*s!=0){
 			//不是最后一级目录
 			if(pinode==0){
-				//目录不存在
-				return -1;
+				//1.目录不存在get_inode返回
+				//2.没进入循环 初始值即为0
+				//return -1;
+				goto label_fail;
 			}
 			if(pinode->i_mode!=I_DIRECTORY){
 				//不是目录
-				return -1;
+				//return -1;
+				goto label_fail;
 			}
 			*ppinode=pinode;		
+		} else {
+			if(pinode!=0 && pinode->i_cnt>0){
+				//需要将最后一层的i_cnt还原
+				pinode->i_cnt--;
+			}
 		}
 	}
 	return 0;
+label_fail:
+	//put_inode(*ppinode); 不在这里清理，最外层函数统一清理
+	return -1;
 }
 
 
@@ -1144,19 +1390,21 @@ try_to_find_next_path:
  * @function search_file
  * @brief Search the file and return the inode_idx
  * @param[in] path the full path of the file to search
- * @return Ptr to the inode of the file if successful, otherwise zero
+ * @param[out] filename the filename of the file to search
+ * @param[out] ppinode the directory's inode ptr
+ * @return Ptr to the inode of the file if successful
+ *         Otherwise 0: 表示沿着目录链正确的找到dir_inode,但是目录项没有对应文件
+ *		    -1: 表示没有沿着目录链找到正确的位置
  * @ses open()
  * @ses do_open()
  */
-int search_file(char *path)
+int search_file(const char *path, char *filename, struct inode **ppinode)
 {
 	int i,j;
-	char filename[MAX_PATH];
-	memset(filename, 0, MAX_FILENAME_LEN);
-	struct inode* dir_inode;
-	if(strip_path(filename, path, &dir_inode)!=0){
-		return 0;
+	if(strip_path(filename, path, ppinode)!=0){
+		return -1;
 	}
+	struct inode * dir_inode = *ppinode;
 	if(filename[0] == 0){//path:"/"
 		return dir_inode->i_num;
 	}
@@ -1171,7 +1419,7 @@ int search_file(char *path)
 		READ_SECT(dir_inode->i_dev, dir_blk0_nr + i);
 		pde = (struct dir_entry*)fsbuf;
 		for(j=0;j<SECTOR_SIZE/DIR_ENTRY_SIZE;j++,pde++){
-			if(memcmp(filename, pde->name, MAX_FILENAME_LEN)==0){
+			if(strcmp(filename, pde->name)==0){
 				return pde->inode_idx;
 			}
 			if(++m>nr_dir_entries){
@@ -1191,22 +1439,29 @@ int search_file(char *path)
  * @function get_inode
  * @brief 根据inode号从inode array中返回inode指针
  * 
- * @param dev device
+ * @param parent
  * @param inode_idx inode号
  *
  * @return The inode ptr requested
  */
-struct inode * get_inode(int dev, int inode_idx)
+struct inode * get_inode(struct inode *parent, int inode_idx)
 {
 	if(inode_idx==0){//0号inode没有使用
 		return 0;
+	}
+	int dev;
+	if(!parent){
+		//root
+		dev = ROOT_DEV;
+	} else {
+		dev = parent->i_dev;
 	}
 	struct inode * p;
 	struct inode * q = 0;
 	for(p= inode_table ; p<inode_table + MAX_INODE_COUNT; p++){
 		if(p->i_cnt){
 			//not a free slot
-			if((p->i_dev == dev) && (p->i_num == inode_idx)){
+			if((p->i_dev == dev) && (p->i_num == inode_idx) && p->i_parent == parent){
 				//this is the inode we want
 				p->i_cnt ++ ;
 				return p;
@@ -1226,6 +1481,7 @@ struct inode * get_inode(int dev, int inode_idx)
 	q->i_dev = dev;
 	q->i_num = inode_idx;
 	q->i_cnt = 1;
+	q->i_parent = parent;
 	struct super_block * sb = get_super_block(dev);
 	int blk_nr = 1 + 1 + sb->imap_sects_count + sb->smap_sects_count + ((inode_idx-1)/(SECTOR_SIZE/INODE_SIZE));
 	READ_SECT(dev, blk_nr);
@@ -1248,7 +1504,15 @@ struct inode * get_inode(int dev, int inode_idx)
 void put_inode(struct inode *pinode)
 {
 	assert(pinode && pinode->i_cnt>0);	
+	/*
+	if(pinode==0 || pinode->i_cnt<=0){
+		return;
+	}
+	*/
 	pinode->i_cnt --;
+	if(pinode->i_parent && pinode->i_parent->i_cnt>0){
+		put_inode(pinode->i_parent);
+	}
 }
 
 /**
@@ -1327,4 +1591,82 @@ struct super_block * get_super_block(int dev)
 	}
 	panic("super block of devie %d not found.\n", dev);
 	return 0;
+}
+
+/**
+ * @function do_stat
+ * @brief 处理stat消息
+ * @param p_msg 消息体
+ * @return 
+ */
+int do_stat(struct message *p_msg)
+{
+	int ret = -1;
+	char pathname[MAX_PATH];
+	//get parameters from the message;
+	int name_len = p_msg->NAME_LEN;
+	int src = p_msg->source;
+	assert(name_len<MAX_PATH);
+	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
+	pathname[name_len]=0;
+	char filename[MAX_PATH];
+	struct inode *dir_inode = 0;
+	struct stat stat; //内核层保存结果
+	int inode_idx = search_file(pathname,filename, &dir_inode);
+	if(inode_idx == INVALID_INODE || dir_inode == 0){
+		//file not found
+		printk("FS::do_stat():: search_file() return invalid inode: %s\n", pathname);
+		ret = -1;
+		goto label_clear_inode;
+	}
+	
+	struct inode *pinode = 0;
+	//TODO 这里get_inode有点问题，每次都是i_cnt==0导致每次都从磁盘重新load出来
+	//inode_table[] 只是一个缓存，就算重新load，也不会影响i_size
+	//而且奇怪的是随后的read还是可以读出数据的
+	pinode = get_inode(dir_inode, inode_idx);
+	if(!pinode){
+		printk("FS::do_stat:: get_inode() return invalid inode: %s\n", pathname);
+		ret = -1;
+		goto label_clear_inode;
+	}
+	stat.st_dev = pinode->i_dev;
+	stat.st_ino = pinode->i_num;
+	stat.st_mode = pinode->i_mode;
+	if(pinode->i_mode == I_CHAR_SPECIAL||pinode->i_mode == I_BLOCK_SPECIAL){
+		stat.st_dev = pinode->i_start_sect;
+	} else {
+		stat.st_rdev = 0;
+	}
+	stat.st_size = pinode->i_size;
+	memcpy((void*)va2la(src, p_msg->BUF), (void*)va2la(TASK_FS, &stat), sizeof(struct stat)); //数据拷贝到用户层的buf中
+	ret = 0;
+label_clear_inode:
+	CLEAR_INODE(dir_inode, pinode);
+	return ret;
+}
+
+/**
+ * @function do_mount
+ * @brief 处理MOUNT消息
+ * @param p_msg
+ * @return 
+ */
+int do_mount(struct message *p_msg)
+{
+	//TODO
+	return -1;
+}
+
+
+/**
+ * @function do_unmount
+ * @brief 处理UNMOUNT消息
+ * @param p_msg
+ * @return 
+ */
+int do_unmount(struct message *p_msg)
+{
+	//TODO
+	return -1;
 }
