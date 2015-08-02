@@ -226,4 +226,7 @@ struct file_desc {
 
 
 #define root_inode() get_inode(0, ROOT_INODE)
+
+//挂载点
+#include "map.h"
 #endif
