@@ -1654,8 +1654,20 @@ label_clear_inode:
  */
 int do_mount(struct message *p_msg)
 {
-	//TODO
-	return -1;
+	char pathname[MAX_PATH];
+	int path_name_len = p_msg->NAME_LEN;
+	assert(path_name_len < MAX_PATH);
+	char devname[MAX_PATH];
+	int dev_name_len = p_msg->DEVNAME_LEN;	
+	assert(dev_name_len < MAX_PATH);
+	int src = p_msg->source;
+	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), path_name_len);
+	pathname[path_name_len] = 0;
+	memcpy((void*)va2la(TASK_FS, devname), (void*)va2la(src, p_msg->DEVNAME), dev_name_len);
+	devname[dev_name_len] = 0;
+	printk("source:%s\n", devname);
+	printk("target:%s\n", pathname);
+	return 0;
 }
 
 
@@ -1667,6 +1679,12 @@ int do_mount(struct message *p_msg)
  */
 int do_unmount(struct message *p_msg)
 {
-	//TODO
-	return -1;
+	char pathname[MAX_PATH];
+	int name_len = p_msg->NAME_LEN;
+	assert(name_len < MAX_PATH);
+	int src = p_msg->source;
+	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
+	pathname[name_len] = 0;
+	printk("target:%s\n", pathname);
+	return 0;
 }

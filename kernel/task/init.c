@@ -1,11 +1,12 @@
 #include "type.h"
 #include "stdio.h"
+#include "mount.h"
 #include "assert.h"
 #include "fork.h"
 #include "getpid.h"
 #include "tar.h"
 
-//#define _FOR_TEST_
+#define _FOR_TEST_
 #ifndef _FOR_TEST_
 void init(){
 	int stdin = open("/dev/tty0", O_RDWT);
@@ -29,6 +30,7 @@ void init(){
 static void test_fs();
 static void test_fs2();
 static void test_fork();
+static void test_mount();
 void init()
 {
 	int stdin = open("/dev/tty0", O_RDWT);
@@ -43,6 +45,7 @@ void init()
 	test_fs();
 	test_fs2();
 	test_fork();
+	test_mount();
 	//untar("/cmd.tar");
 	char buf[128];
 	while(1){
@@ -160,5 +163,15 @@ void test_fork()
                 exit(2333);
         }
 
+}
+
+void test_mount()
+{
+	printf("test\n");
+	int ret;
+	ret = mount("/dev/floppy", "/tmp");
+	printf("ret=%d\n", ret);
+	ret = unmount("/tmp");
+	printf("ret=%d\n", ret);
 }
 #endif

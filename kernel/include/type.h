@@ -154,6 +154,9 @@ enum msgtype {
 #define OFFSET		u.m3.m3i2
 #define WHERE		u.m3.m3i3
 
+#define DEVNAME		u.m3.m3p2
+#define DEVNAME_LEN	u.m3.m3i4
+
 //about process
 //#define MAX_PROCESS_COUNT     32      //最多32个进程
 #define TASKS_COUNT             7       //系统进程个数
