@@ -5,8 +5,8 @@
 #include "getpid.h"
 #include "tar.h"
 
-//#define _FOR_TEST_
-#ifndef _FOR_TEST_
+#define _WITH_TEST_
+#ifndef _WITH_TEST_
 void init(){
 	int stdin = open("/dev/tty0", O_RDWT);
 	assert(stdin==0);
