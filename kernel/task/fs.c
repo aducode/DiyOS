@@ -1610,7 +1610,7 @@ int do_stat(struct message *p_msg)
 	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
 	pathname[name_len]=0;
 	char filename[MAX_PATH];
-	struct inode *dir_inode = 0;
+	struct inode *dir_inode = 0, *pinode = 0;
 	struct stat stat; //内核层保存结果
 	int inode_idx = search_file(pathname,filename, &dir_inode);
 	if(inode_idx == INVALID_INODE || dir_inode == 0){
@@ -1619,8 +1619,6 @@ int do_stat(struct message *p_msg)
 		ret = -1;
 		goto label_clear_inode;
 	}
-	
-	struct inode *pinode = 0;
 	//TODO 这里get_inode有点问题，每次都是i_cnt==0导致每次都从磁盘重新load出来
 	//inode_table[] 只是一个缓存，就算重新load，也不会影响i_size
 	//而且奇怪的是随后的read还是可以读出数据的
@@ -1654,7 +1652,10 @@ label_clear_inode:
  */
 int do_mount(struct message *p_msg)
 {
+	int inode_idx = 0;
+	char filename[MAX_PATH];
 	char pathname[MAX_PATH];
+	struct inode *target_pinode = 0, *target_dir_inode = 0, *source_pinode = 0, *source_dir_inode = 0;
 	int path_name_len = p_msg->NAME_LEN;
 	assert(path_name_len < MAX_PATH);
 	char devname[MAX_PATH];
@@ -1663,11 +1664,47 @@ int do_mount(struct message *p_msg)
 	int src = p_msg->source;
 	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), path_name_len);
 	pathname[path_name_len] = 0;
+	//step1  判断挂载目录是否是目录
+	inode_idx = search_file(pathname, filename, &target_dir_inode);
+	if(inode_idx == INVALID_INODE || target_dir_inode == 0){
+		//target的目录不对
+		goto label_fail;
+	}
+	target_pinode = get_inode(target_dir_inode, inode_idx);
+	if(!target_pinode){
+		//target 文件不存在
+		goto label_fail;
+	}
+	if(target_pinode->i_mode != I_DIRECTORY){
+		//不是目录文件
+		goto label_fail;
+	}
+	//step2 判断是否已经挂载
+	//TODO 
 	memcpy((void*)va2la(TASK_FS, devname), (void*)va2la(src, p_msg->DEVNAME), dev_name_len);
 	devname[dev_name_len] = 0;
-	printk("source:%s\n", devname);
-	printk("target:%s\n", pathname);
+	//step3 判断是否是设备文件
+	inode_idx = search_file(devname, filename, &source_dir_inode);
+	if(inode_idx == INVALID_INODE || source_dir_inode == 0){
+		//dev 路径无效
+		goto label_fail;
+	}
+	source_pinode = get_inode(source_dir_inode, inode_idx);
+	if(!source_pinode){
+		//无效dev文件
+		goto label_fail;
+	}
+	if(source_pinode->i_mode != I_BLOCK_SPECIAL){
+		//不是设备文件
+		goto label_fail;
+	}
+	
+	//validate
 	return 0;
+label_fail:
+	CLEAR_INODE(target_dir_inode, target_pinode);
+	CLEAR_INODE(source_dir_inode, source_pinode);
+	return -1;
 }
 
 
@@ -1685,6 +1722,27 @@ int do_unmount(struct message *p_msg)
 	int src = p_msg->source;
 	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
 	pathname[name_len] = 0;
-	printk("target:%s\n", pathname);
+	//验证
+	//step1
+	struct inode *dir_inode = 0, *pinode = 0;
+	char filename[MAX_PATH];
+	int inode_idx = search_file(pathname, filename, &dir_inode);
+	if(inode_idx == INVALID_INODE || dir_inode == 0){
+		//路径无效
+		goto label_fail;
+	}
+	pinode = get_inode(dir_inode, inode_idx);
+	if(!pinode){
+		//无效文件
+		goto label_fail;
+	}
+	if(pinode->i_mode != I_DIRECTORY){
+		//卸载不是目录
+		goto label_fail;
+	}
+	//TODO 判断是否被挂载过
 	return 0;
+label_fail:
+	CLEAR_INODE(dir_inode, pinode);
+	return -1;
 }
