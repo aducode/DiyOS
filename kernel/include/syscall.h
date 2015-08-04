@@ -7,6 +7,9 @@
 #define SEND		1
 #define RECEIVE		2
 #define BOTH		3
+/**
+ * 进程间通信
+ */
 extern int send_recv(int function, int dest_src, struct message *msg);
 extern int sendrec(int function, int dest_src, struct message *msg);
 extern void printk0(char *s);
