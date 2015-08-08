@@ -53,5 +53,10 @@ extern struct inode inode_table[];
 extern struct super_block super_block[];
 
 extern int key_pressed;
+
+//粗粒度的不可重入锁，全局内核锁
+//只提供给内核级进程(TASK)使用
+//进程内调用lock_kernel之后独占CPU时间片
+extern int kernel_lock;
 #endif
 #endif

@@ -148,4 +148,17 @@ extern void inform_int(int task_idx);
 //
 extern void interrupt_wait();
 extern int waitfor(int reg_port, int mask, int val, int timeout);
+
+/**
+ * @function lock_kernel
+ * @brief  锁内核 不可重入
+ *  		粗粒度全局内核锁，系统进程(TASK)调用后会独占CPU时间片(clock中断中会skip掉schedule)
+ */
+void lock_kernel();
+
+/**
+ * @function unlock_kernel
+ * @brief 解锁内核
+ */
+void unlock_kernel();
 #endif

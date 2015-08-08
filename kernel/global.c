@@ -152,4 +152,12 @@ struct super_block super_block[MAX_SUPER_BLOCK_COUNT];
  * @brief 用于判断案件是否被按下
  */
 int key_pressed = 0;
+
+/**
+ * kernel_lock
+ * @brief 内核锁
+ * 		0	表示没有进程独占CPU时间片
+ * 		1	表示某一进程独占CPU时间片
+ */
+int kernel_lock = 0;
 #endif
