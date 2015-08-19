@@ -9,6 +9,8 @@
 #define _WITH_TEST_
 #ifndef _WITH_TEST_
 void init(){
+	//为了简化，这里stdin  stdout stderr只是简单的作为FD
+	//真正的linux中stdin stdout stderr 是作为FILE *类型存在的
 	int stdin = open("/dev/tty0", O_RDWT);
 	assert(stdin==0);
 	int stdout = open("/dev/tty0", O_RDWT);
