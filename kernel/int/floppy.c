@@ -1,6 +1,7 @@
 /*****************************************************************/
-/*                      软盘中断                                 */
+/*                   软盘中断&软盘寄存器操作                     */
 /*****************************************************************/
+// 这里的操作与最开始boot不同，boot使用的是BIOS软盘中断，这里需要直接操作软盘寄存器地址，进行控制
 #include "type.h"
 #include "string.h"
 #include "global.h"
@@ -80,7 +81,8 @@ void floppy_close(int device)
 		//disable irq
 		_disable_irq(FLOPPY_IRQ);
 		//rest irq handler
-		irq_handler_table[FLOPPY_IRQ] = default_irq_handler;	
+		irq_handler_table[FLOPPY_IRQ] = default_irq_handler;
+		//TODO 关闭软盘设备
 	} else {
 		//说用还有其他位置mount floppy
 	}

@@ -69,7 +69,7 @@ static int search_file(const char *path, char * filename, struct inode **ppinode
 
 /**
  * @define CLEAR_INODE
- * @brief
+ * @brief 清理目录树路径上的inode
  * @param dir_inode
  * @param inode
  */
@@ -1700,6 +1700,22 @@ int do_mount(struct message *p_msg)
 	}
 	
 	//validate
+	//首先打开设备文件
+	struct message driver_msg;
+	driver_msg.type = DEV_OPEN;
+	int dev = pin->i_start_sect;
+	driver_msg.DEVICE=MINOR(dev);
+	//dd_map[1] = TASK_FLOPPY
+	//assert(MAJOR(dev)==1); //可能有多个块设备
+	assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
+	send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
+	assert(driver_msg.type==SYSCALL_RET);
+	//dev已经被打开了
+	//将target_pinode->i_dev改成挂在的设备文件dev
+	//注意i_dev并不会持久化到磁盘
+	//但是mount操作后，由于目录inode->i_cnt会增加，目标目录的inode会被缓存在内存中
+	//所以可以在这里进行修改dev的操作
+	target_pinode->i_dev = dev; //下次再打开挂在目录下的文件的时候，文件的dev就会因为从父目录中获取，从而改编成挂在的dev了
 	return 0;
 label_fail:
 	CLEAR_INODE(target_dir_inode, target_pinode);
@@ -1741,6 +1757,24 @@ int do_unmount(struct message *p_msg)
 		goto label_fail;
 	}
 	//TODO 判断是否被挂载过
+	if(pinode->i_dev == ROOT_DEV){
+		//目录dev是ROOT_DEV ,说明没有被挂在过
+		goto label_fail;
+	}
+	//关闭设备文件
+	struct message driver_msg;
+	driver_msg.type = DEV_CLOSE;
+	int dev = pin->i_start_sect; //dev设备号存储在磁盘的i_start_sect区域
+	driver_msg.DEVICE=MINOR(dev);
+	//dd_map[1] = TASK_FLOPPY
+	//assert(MAJOR(dev)==1); //可能有多个块设备
+	assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
+	send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
+	assert(driver_msg.type==SYSCALL_RET);
+	//设备关闭成功
+	pinode->i_dev = ROOT_DEV; //这步操作不是不要的，因为下面就要关闭pinode了，下次再打开的目录下的文件时候，就会从新从/打开，从而i_dev会变成ROOT_DEV
+	//清理pinode
+	CLEAR_INODE(dir_inode, pinode);
 	return 0;
 label_fail:
 	CLEAR_INODE(dir_inode, pinode);
