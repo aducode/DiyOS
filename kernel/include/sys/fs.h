@@ -105,11 +105,13 @@ struct inode {
 #define DEFAULT_FILE_SECTS_COUNT	2048
 /**
  * @def	INODE MACROs
- * @brief invalid inode
- *	  the root inode
+ * @brief invalid inode 0 表示文件在硬盘上不存在
+ *	  the root inode    1 root_inode
+ *	  invalid_path     -1 表示文件所在的路径是错误的
  */
+#define INVALID_PATH	-1
 #define INVALID_INODE	0
-#define ROOT_INODE	1
+#define ROOT_INODE		1
 /**
  * @def INODE_SIZE
  * @brief The size of i-node stored \b in \b the \b device.

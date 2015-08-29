@@ -102,10 +102,11 @@ enum msgtype {
 	WRITE,				/*写入文件*/
 	SEEK,				/*更改文件指针位置*/
 	TELL,				/*获取文件指针位置*/
-	STAT, 				/*获取文件meta信息*/							/*未实现*/
+	STAT, 				/*获取文件meta信息*/
+	RENAME,				/*重命名文件*/
 	UNLINK,				/*删除文件*/
 	MKDIR,				/*创建空目录，非递归*/
-	RMDIR,				/*删除空目录(目录项含除了. ..之外项时报错)*/	/*未实现*/
+	RMDIR,				/*删除空目录(目录项含除了. ..之外项时报错)*/
 	MOUNT,				/*挂载文件系统*/								/*未实现*/
 	UNMOUNT,			/*卸载文件系统*/								/*未实现*/
 	//FS & TTY
@@ -156,6 +157,12 @@ enum msgtype {
 
 #define DEVNAME		u.m3.m3p2
 #define DEVNAME_LEN	u.m3.m3i4
+
+/** for  rename **/
+#define OLDNAME		u.m3.m3p1
+#define OLDNAME_LEN	u.m3.m3i1
+#define NEWNAME		u.m3.m3p2
+#define NEWNAME_LEN	u.m3.m3i2
 
 //about process
 //#define MAX_PROCESS_COUNT     32      //最多32个进程

@@ -40,17 +40,23 @@ static struct super_block * get_super_block(int dev);
 static struct inode * get_inode(struct inode *parent, int inode_idx);
 static void put_inode(struct inode *pinode);
 static void sync_inode(struct inode *p);
+/** 文件操作 **/
 static int do_open(struct message *p_msg);
 static int do_close(struct message *p_msg);
 static int do_rdwt(struct message *p_msg);
 static int do_seek(struct message *p_msg);
 static int do_tell(struct message *p_msg);
 static int do_unlink(struct message *p_msg);
+static int do_stat(struct message *p_msg);
+static int do_rename(struct message *p_msg);
+/** 目录操作 **/
 static int do_mkdir(struct message *p_msg);
 static int do_rmdir(struct message *p_msg);
-static int do_stat(struct message *p_msg);
+static int do_
+/** 挂载操作 **/
 static int do_mount(struct message *p_msg);
 static int do_unmount(struct message *p_msg);
+/** 辅助process fork **/
 static int fs_fork(struct message *msg);
 static int fs_exit(struct message *msg);
 //只有在do_open中创建文件的时候使用
@@ -122,6 +128,9 @@ void task_fs()
 				//删除普通文件
 				msg.RETVAL = do_unlink(&msg);
 				break;
+			case RENAME:
+				//重命名文件
+				msg.RETVAL = do_rename(&msg);
 			case MKDIR:
 				//创建空目录
 				msg.RETVAL = do_mkdir(&msg);
@@ -798,7 +807,9 @@ int do_unlink(struct message *p_msg)
 	struct inode *dir_inode = 0;
 	struct inode *pin = 0;
 	int inode_nr = search_file(pathname, filename, &dir_inode);
-	if(inode_nr == INVALID_INODE || dir_inode == 0){
+	//if(inode_nr == INVALID_INODE || dir_inode == 0){ //dir_inode == 0的时候一定是返回INVALID_PATH的时候
+	// 这里为了判断的统一，采用以下形式
+	if(inode_nr == INVALID_INODE || inode_nr == INVALID_PATH){
 		//file not found
 		printk("FS::do_unlink():: search_file() return invalid inode: %s\n", pathname);
 		//return -1;
@@ -874,7 +885,8 @@ int do_rmdir(struct message *p_msg)
 	struct inode *dir_inode = 0; //父目录inode指针
 	int dir_entry_count; //目录项数量
 	int inode_idx = search_file(pathname, filename, &dir_inode);
-	if(inode_idx == INVALID_INODE || dir_inode == 0){
+	//if(inode_idx == INVALID_INODE || dir_inode == 0){
+	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
 		//file not found
 		//return -1;
 		goto label_fail;
@@ -1393,8 +1405,8 @@ label_fail:
  * @param[out] filename the filename of the file to search
  * @param[out] ppinode the directory's inode ptr
  * @return Ptr to the inode of the file if successful
- *         Otherwise 0: 表示沿着目录链正确的找到dir_inode,但是目录项没有对应文件
- *		    -1: 表示没有沿着目录链找到正确的位置
+ * 			Otherwise INVAID_INODE (0): 表示沿着目录链正确的找到dir_inode,但是目录项没有对应文件
+ * 					  INVALID_PATH (-1): 表示没有沿着目录链找到正确的位置
  * @ses open()
  * @ses do_open()
  */
@@ -1402,7 +1414,7 @@ int search_file(const char *path, char *filename, struct inode **ppinode)
 {
 	int i,j;
 	if(strip_path(filename, path, ppinode)!=0){
-		return -1;
+		return INVALID_PATH;
 	}
 	struct inode * dir_inode = *ppinode;
 	if(filename[0] == 0){//path:"/"
@@ -1430,7 +1442,7 @@ int search_file(const char *path, char *filename, struct inode **ppinode)
 			break;
 		}
 	}
-	return 0;//file not found
+	return INVALID_INODE;//file not found
 }
 
 
@@ -1613,7 +1625,8 @@ int do_stat(struct message *p_msg)
 	struct inode *dir_inode = 0, *pinode = 0;
 	struct stat stat; //内核层保存结果
 	int inode_idx = search_file(pathname,filename, &dir_inode);
-	if(inode_idx == INVALID_INODE || dir_inode == 0){
+	//if(inode_idx == INVALID_INODE || dir_inode == 0){
+	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
 		//file not found
 		printk("FS::do_stat():: search_file() return invalid inode: %s\n", pathname);
 		ret = -1;
@@ -1645,6 +1658,58 @@ label_clear_inode:
 }
 
 /**
+ * @function do_rename
+ * @brief 重命名文件
+ * @param p_msg 消息体
+ * @return 0 if success
+ */
+int do_rename(struct message *p_msg)
+{
+	int inode_idx = 0;
+	struct inode *old_pinode = 0, *old_dir_inode = 0, *new_pinode = 0, *new_dir_inode = 0;
+	char filename[MAX_PATH]; //作为search_file 出参使用
+	char oldname[MAX_PATH]; //内核进程空间内
+	int oldname_len = p_msg->OLDNAME_LEN;
+	assert(oldname_len < MAX_PATH);
+	char newname[MAX_PATH]; //内核进程空间内
+	int newname_len = p_msg->NEWNAME_LEN;
+	assert(newname_len < MAX_PATH);
+	//将数据从用户态复制到内核态
+	int src = p_msg->source;
+	memcpy((void*)va2la(TASK_FS, oldname), (void*)va2la(src, p_msg->OLDNAME), oldname_len);
+	oldname[oldname_len] = 0;
+	
+	//判断oldname是否存在
+	inode_idx = search_file(oldname, filename,&old_dir_inode);
+	//if(inode_idx == INVALID_INODE || old_dir_inode == 0){
+	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
+		//oldname的目录存在错误
+		goto label_fail;
+	}
+	old_pinode = get_inode(old_dir_inode , inode_idx);
+	if(!old_pinode){
+		//oldname不存在
+		goto label_fail;
+	}
+	//判断是否是目录或者普通文件类型
+	if(old_pinode->i_mode != I_DIRECTORY && old_pinode->i_mode != I_REGULAR){
+		//不是目录也不是普通文件
+		goto label_fail;
+	}
+	
+	//判断newname目录是否正确，并且newname不存在
+	memcpy((void*)va2la(TASK_FS, newname), (void*)va2la(src, p_msg->NEWNAME), newname_len);
+	newname[newname_len] = 0;
+	inode_idx = search_file(newname, filename, &new_dir_inode);
+	if(inode_idx != INVALID_INODE){
+		//newname目录错误 inode_idx == INVALID_PATH
+		//或者 已经存在同名的文件 inode_idx >0
+		goto label_fail;
+	}
+	// 修改文件名(移动树形目录的子树节点)
+}
+
+/**
  * @function do_mount
  * @brief 处理MOUNT消息
  * @param p_msg
@@ -1666,7 +1731,8 @@ int do_mount(struct message *p_msg)
 	pathname[path_name_len] = 0;
 	//step1  判断挂载目录是否是目录
 	inode_idx = search_file(pathname, filename, &target_dir_inode);
-	if(inode_idx == INVALID_INODE || target_dir_inode == 0){
+	//if(inode_idx == INVALID_INODE || target_dir_inode == 0){
+	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
 		//target的目录不对
 		goto label_fail;
 	}
@@ -1685,7 +1751,8 @@ int do_mount(struct message *p_msg)
 	devname[dev_name_len] = 0;
 	//step3 判断是否是设备文件
 	inode_idx = search_file(devname, filename, &source_dir_inode);
-	if(inode_idx == INVALID_INODE || source_dir_inode == 0){
+	//if(inode_idx == INVALID_INODE || source_dir_inode == 0){
+	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
 		//dev 路径无效
 		goto label_fail;
 	}
@@ -1702,6 +1769,7 @@ int do_mount(struct message *p_msg)
 	//validate
 	//首先打开设备文件
 	struct message driver_msg;
+	reset_msg(&driver_msg);
 	driver_msg.type = DEV_OPEN;
 	int dev = pin->i_start_sect;
 	driver_msg.DEVICE=MINOR(dev);
@@ -1743,7 +1811,8 @@ int do_unmount(struct message *p_msg)
 	struct inode *dir_inode = 0, *pinode = 0;
 	char filename[MAX_PATH];
 	int inode_idx = search_file(pathname, filename, &dir_inode);
-	if(inode_idx == INVALID_INODE || dir_inode == 0){
+	//if(inode_idx == INVALID_INODE || dir_inode == 0){
+	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
 		//路径无效
 		goto label_fail;
 	}
@@ -1763,6 +1832,7 @@ int do_unmount(struct message *p_msg)
 	}
 	//关闭设备文件
 	struct message driver_msg;
+	reset_msg(&driver_msg);
 	driver_msg.type = DEV_CLOSE;
 	int dev = pin->i_start_sect; //dev设备号存储在磁盘的i_start_sect区域
 	driver_msg.DEVICE=MINOR(dev);

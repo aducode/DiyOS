@@ -150,4 +150,13 @@ extern int printf(const char *fmt, ...);
  * @return 0 success
  */
 extern int stat(const char *pathname, struct stat *buf);
+
+/**
+ * @function rename
+ * @brief 重命名文件，可以用来实现移动文件功能
+ * @param oldname 旧文件名
+ * @param newname 新文件名
+ * @return 0 if success
+ */
+extern int rename(const char *oldname, struct char *newname);
 #endif

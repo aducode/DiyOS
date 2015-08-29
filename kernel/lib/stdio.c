@@ -297,3 +297,24 @@ int stat(const char *pathname, struct stat *buf)
 	assert(msg.type == SYSCALL_RET);
 	return msg.RETVAL;
 }
+
+/**
+ * @function rename
+ * @brief 重命名文件，可以用来实现移动文件功能
+ * @param oldname 旧文件名
+ * @param newname 新文件名
+ * @return 0 if success
+ */
+int rename(const char *oldname, const char *newname)
+{
+	struct message msg;
+	reset_msg(&msg);
+	msg.type = RENAME;
+	msg.OLDNAME = (void*)oldname;
+	msg.OLDNAME_LEN = strlen(oldname);
+	msg.NEWNAME = (void*)newname;
+	msg.NEWNAME_LEN = strlen(newname);
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.RETVAL;
+}
