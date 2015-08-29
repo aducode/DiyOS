@@ -52,7 +52,6 @@ static int do_rename(struct message *p_msg);
 /** 目录操作 **/
 static int do_mkdir(struct message *p_msg);
 static int do_rmdir(struct message *p_msg);
-static int do_
 /** 挂载操作 **/
 static int do_mount(struct message *p_msg);
 static int do_unmount(struct message *p_msg);
@@ -68,7 +67,10 @@ static int unlink_file(struct inode * pinode, struct inode* dir_inode);
 static int alloc_imap_bit(int dev);
 static int alloc_smap_bit(int dev, int sects_count_to_alloc);
 static struct inode* new_inode(struct inode *parent, int inode_nr, u32 i_mode, u32 start_sect,u32 i_sects_count, u32 i_size);
+// 新建dir entry 
 static void new_dir_entry(struct inode *dir_inode, int inode_nr, const char *filename);
+// 删除 dir entry
+static void rm_dir_entry(struct inode *dir_inode, int inode_nr);
 static int strip_path(char *filename, const char *pathname, struct inode **ppinode);
 //添加参数，避免重复调用strip_path
 static int search_file(const char *path, char * filename, struct inode **ppinode);
@@ -994,39 +996,7 @@ int unlink_file(struct inode *pinode, struct inode* dir_inode)
 	//release slot in inode_table[]
 	put_inode(pinode);
 	//set the inode-nr to 0 in the directory entry
-	int dir_blk0_nr = dir_inode->i_start_sect;
-	int nr_dir_blks = (dir_inode->i_size + SECTOR_SIZE)/SECTOR_SIZE;
-	int nr_dir_entries = dir_inode->i_size /DIR_ENTRY_SIZE;
-	int m = 0;
-	struct dir_entry *pde = 0;
-	int flag = 0;
-	int dir_size = 0;
-	for(i=0;i<nr_dir_blks;i++){
-		READ_SECT(dir_inode->i_dev, dir_blk0_nr + i);
-		pde=(struct dir_entry*)fsbuf;
-		int j;	
-		for(j=0;j<SECTOR_SIZE/DIR_ENTRY_SIZE;j++,pde++){
-			if(++m>nr_dir_entries) break;
-			if(pde->inode_idx == inode_idx){
-				memset(pde, 0, DIR_ENTRY_SIZE);
-				WRITE_SECT(dir_inode->i_dev, dir_blk0_nr+i);
-				flag = 1;
-				break;
-			}
-			if(pde->inode_idx != INVALID_INODE){
-				dir_size += DIR_ENTRY_SIZE;
-			}
-		}
-		if(m>nr_dir_entries||flag){
-			break;
-		}
-	}
-	assert(flag);
-	if(m==nr_dir_entries){
-		//the file is the last one in the dir
-		dir_inode->i_size = dir_size;
-		sync_inode(dir_inode);
-	}
+	rm_dir_entry(dir_inode, inode_idx);
 	return 0;
 }
 /**
@@ -1268,6 +1238,7 @@ void new_dir_entry(struct inode *dir_inode, int inode_nr, const char *filename)
 	struct dir_entry * pde;
 	struct dir_entry * new_de = 0;
 	int i,j;
+	int need_sync = 0;
 	for(i=0;i<nr_dir_blks;i++){
 		READ_SECT(dir_inode->i_dev, dir_blk0_nr + i);
 		pde = (struct dir_entry*)fsbuf;
@@ -1281,23 +1252,68 @@ void new_dir_entry(struct inode *dir_inode, int inode_nr, const char *filename)
 				break;
 			}
 		}
-		 if(m>nr_dir_entries||new_de){//all entries have been iterated or free slot is fount
+		if(m>nr_dir_entries||new_de){//all entries have been iterated or free slot is fount
 			break;
-       		 }
+		}
 	}
 	if(!new_de){//reached the end of the dir
 		new_de = pde;
 		dir_inode->i_size += DIR_ENTRY_SIZE;
+		need_sync = 1;
 	}
 	new_de->inode_idx = inode_nr;
 	strcpy(new_de->name, filename);
 	//write dir block 
 	WRITE_SECT(dir_inode->i_dev, dir_blk0_nr + i);
 	
-	//update dir inode
-	sync_inode(dir_inode);
+	if(need_sync){
+		//update dir inode
+		sync_inode(dir_inode); //只有在dir_inode->size改变的时候才需要sync_inode
+	}
 }
 
+/**
+ * @function rm_dir_entry
+ * @brief 清理inode_nr所在目录的目录项
+ * @param dir_inode 所在目录的inode指针
+ * @param inode_nr 文件的inode
+ */
+void rm_dir_entry(struct inode *dir_inode, int inode_nr)
+{
+	int dir_blk0_nr = dir_inode->i_start_sect;
+	int nr_dir_blks = (dir_inode->i_size + SECTOR_SIZE)/SECTOR_SIZE;
+	int nr_dir_entries = dir_inode->i_size /DIR_ENTRY_SIZE;
+	int m = 0;
+	struct dir_entry *pde = 0;
+	int flag = 0;
+	int dir_size = 0;
+	for(i=0;i<nr_dir_blks;i++){
+		READ_SECT(dir_inode->i_dev, dir_blk0_nr + i);
+		pde=(struct dir_entry*)fsbuf;
+		int j;	
+		for(j=0;j<SECTOR_SIZE/DIR_ENTRY_SIZE;j++,pde++){
+			if(++m>nr_dir_entries) break;
+			if(pde->inode_idx == inode_nr){
+				memset(pde, 0, DIR_ENTRY_SIZE);
+				WRITE_SECT(dir_inode->i_dev, dir_blk0_nr+i);
+				flag = 1;
+				break;
+			}
+			if(pde->inode_idx != INVALID_INODE){
+				dir_size += DIR_ENTRY_SIZE;
+			}
+		}
+		if(m>nr_dir_entries||flag){
+			break;
+		}
+	}
+	assert(flag);
+	if(m==nr_dir_entries){
+		//the file is the last one in the dir
+		dir_inode->i_size = dir_size;
+		sync_inode(dir_inode);
+	}
+}
 
 /**
  * @function strip_path
@@ -1545,7 +1561,7 @@ void sync_inode(struct inode *p)
 	pinode->i_size = p->i_size;
 	pinode->i_start_sect = p->i_start_sect;
 	pinode->i_sects_count = p->i_sects_count;
-	WRITE_SECT(p->i_dev, blk_nr);
+	WRITE_SECT(p->i_dev, blk_nr); // READ_SECT 已经将pinode数据结构拷贝到fsbuf里了，这里将fsbuf写回磁盘
 }
 
 
@@ -1665,9 +1681,10 @@ label_clear_inode:
  */
 int do_rename(struct message *p_msg)
 {
-	int inode_idx = 0;
+	int inode_idx = 0, ret = -1;
 	struct inode *old_pinode = 0, *old_dir_inode = 0, *new_pinode = 0, *new_dir_inode = 0;
-	char filename[MAX_PATH]; //作为search_file 出参使用
+	char oldfilename[MAX_PATH]; //作为search_file 出参使用
+	char newfilename[MAX_PATH]; //作为search_file 出参使用
 	char oldname[MAX_PATH]; //内核进程空间内
 	int oldname_len = p_msg->OLDNAME_LEN;
 	assert(oldname_len < MAX_PATH);
@@ -1680,7 +1697,7 @@ int do_rename(struct message *p_msg)
 	oldname[oldname_len] = 0;
 	
 	//判断oldname是否存在
-	inode_idx = search_file(oldname, filename,&old_dir_inode);
+	inode_idx = search_file(oldname, oldfilename,&old_dir_inode);
 	//if(inode_idx == INVALID_INODE || old_dir_inode == 0){
 	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
 		//oldname的目录存在错误
@@ -1696,17 +1713,37 @@ int do_rename(struct message *p_msg)
 		//不是目录也不是普通文件
 		goto label_fail;
 	}
-	
+	// 考虑并发？TASK_FS 一次只能处理一个其他进程来的消息，所以对于文件的操作是串行化的，所以不需要考虑并发加锁
+	// 但是要考虑已有其他进程打开过oldname文件的情况，这种情况应该立刻返回错误
+	if(old_pinode->i_cnt>1){
+		//说明已经有其他进程打开oldname文件了，不能修改文件名
+		goto label_fail;
+	}
 	//判断newname目录是否正确，并且newname不存在
 	memcpy((void*)va2la(TASK_FS, newname), (void*)va2la(src, p_msg->NEWNAME), newname_len);
 	newname[newname_len] = 0;
-	inode_idx = search_file(newname, filename, &new_dir_inode);
+	inode_idx = search_file(newname, newfilename, &new_dir_inode);
 	if(inode_idx != INVALID_INODE){
 		//newname目录错误 inode_idx == INVALID_PATH
 		//或者 已经存在同名的文件 inode_idx >0
 		goto label_fail;
 	}
 	// 修改文件名(移动树形目录的子树节点)
+	// 由于TASK_FS一次只处理其他进程的单个消息，所以以下操作是原子的
+	//修改的时候，也要修改pinode的parent链
+	// 先在newname所在目录下创建目录项
+	new_dir_entry(new_dir_inode, old_pinode->i_num, newfilename);
+	// 再将oldname所在目录的目录项删除
+	rm_dir_entry(old_dir_inode, old_pinode->i_num);
+	//修改parent inode指针, 否则下面CLEAR_INODE的时候会出错
+	new_pinode = old_pinode;
+	new_pinode->parent = new_dir_inode;
+	old_pinode = 0;
+	ret = 0;
+label_fail:
+	CLEAR_INODE(old_dir_inode, old_pinode);
+	CLEAR_INODE(new_dir_inode, new_pinode);
+	return ret;
 }
 
 /**
