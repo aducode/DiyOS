@@ -52,6 +52,7 @@ static int do_rename(struct message *p_msg);
 /** 目录操作 **/
 static int do_mkdir(struct message *p_msg);
 static int do_rmdir(struct message *p_msg);
+static int do_chdir(struct message *p_msg);
 /** 挂载操作 **/
 static int do_mount(struct message *p_msg);
 static int do_unmount(struct message *p_msg);
@@ -140,6 +141,10 @@ void task_fs()
 			case RMDIR:
 				//删除空目录
 				msg.RETVAL = do_rmdir(&msg);
+				break;
+			case CHDIR:
+				//修改进程所在目录
+				msg.RETVAL = do_chdir(&msg);
 				break;
 			case MOUNT:
 				//挂载文件系统
@@ -925,8 +930,48 @@ label_fail:
 	CLEAR_INODE(dir_inode, pinode);
 	return -1;
 }
-	
-	
+
+/**
+ * @function do_chdir
+ * @brief 修改进程所在目录
+ * @param p_msg
+ * @return 0 if success
+ */
+int do_chdir(struct message *p_msg)
+{
+	char pathname[MAX_PATH];
+	int src = p_msg->source;
+	int name_len = p_msg->NAME_LEN;
+	assert(name_len<MAX_PATH);
+	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
+	pathname[name_len] = 0;
+	//
+	char filename[MAX_PATH]; //出参参数
+	struct inode *dir_inode = 0; //父目录inode指针
+	int inode_idx;
+	inode_idx = search_file(pathname, filename, &dir_inode);
+	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
+		//无效的目录
+		goto label_fail;
+	}
+	struct inode *pinode = get_inode(dir_inode, inode_idx);
+	if(!pinode){
+		goto label_fail;
+	}
+	if(pinode->i_mode != I_DIRECTORY){
+		//不是目录
+		goto label_fail;
+	}
+	//是一个合法目录
+	struct process *pcaller = proc_table + src;
+	//清空原来的current_path_inode
+	if(!pcaller->current_path_inode){
+		put_inode(pcaller->current_path_inode);
+	}
+	pcaller->current_path_inode = pinode; //设置新的进程目录
+	return 0;
+}
+
 /**
  * @function unlink_file
  * @brief 清除文件/目录
@@ -1009,6 +1054,14 @@ int fs_fork(struct message *msg)
 {
 	int i;
 	struct process *child = &proc_table[msg->PID];
+	//current_path_inode 也需要fork
+	struct inode * pinode = child->current_path_inode;
+	//init进程会保证设置current_path_inode,所以所有子进程都会有current_path_inode
+	assert(pinode!=0)
+	while(pinode != 0){
+		pinode->i_cnt ++;
+		pinode = pinode->parent;
+	}
 	for(i=0;i<MAX_FILE_COUNT;i++){
 		if(child->filp[i]){
 			child->filp[i]->fd_cnt++;
@@ -1028,6 +1081,9 @@ int fs_exit(struct message *msg)
 {
 	int i;
 	struct process *p = &proc_table[msg->PID];
+	//current_path_inode 也需要修改
+	put_inode(p->current_path_inode);
+	p->current_path_inode = 0;
 	for(i=0;i<MAX_FILE_COUNT;i++){
 		//release the inode
 		p->filp[i]->fd_inode->i_cnt--;
@@ -1701,23 +1757,23 @@ int do_rename(struct message *p_msg)
 	//if(inode_idx == INVALID_INODE || old_dir_inode == 0){
 	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
 		//oldname的目录存在错误
-		goto label_fail;
+		goto label_clear_inode;
 	}
 	old_pinode = get_inode(old_dir_inode , inode_idx);
 	if(!old_pinode){
 		//oldname不存在
-		goto label_fail;
+		goto label_clear_inode;
 	}
 	//判断是否是目录或者普通文件类型
 	if(old_pinode->i_mode != I_DIRECTORY && old_pinode->i_mode != I_REGULAR){
 		//不是目录也不是普通文件
-		goto label_fail;
+		goto label_clear_inode;
 	}
 	// 考虑并发？TASK_FS 一次只能处理一个其他进程来的消息，所以对于文件的操作是串行化的，所以不需要考虑并发加锁
 	// 但是要考虑已有其他进程打开过oldname文件的情况，这种情况应该立刻返回错误
 	if(old_pinode->i_cnt>1){
 		//说明已经有其他进程打开oldname文件了，不能修改文件名
-		goto label_fail;
+		goto label_clear_inode;
 	}
 	//判断newname目录是否正确，并且newname不存在
 	memcpy((void*)va2la(TASK_FS, newname), (void*)va2la(src, p_msg->NEWNAME), newname_len);
@@ -1726,7 +1782,7 @@ int do_rename(struct message *p_msg)
 	if(inode_idx != INVALID_INODE){
 		//newname目录错误 inode_idx == INVALID_PATH
 		//或者 已经存在同名的文件 inode_idx >0
-		goto label_fail;
+		goto label_clear_inode;
 	}
 	// 修改文件名(移动树形目录的子树节点)
 	// 由于TASK_FS一次只处理其他进程的单个消息，所以以下操作是原子的
@@ -1740,7 +1796,7 @@ int do_rename(struct message *p_msg)
 	new_pinode->parent = new_dir_inode;
 	old_pinode = 0;
 	ret = 0;
-label_fail:
+label_clear_inode:
 	CLEAR_INODE(old_dir_inode, old_pinode);
 	CLEAR_INODE(new_dir_inode, new_pinode);
 	return ret;

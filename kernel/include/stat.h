@@ -37,4 +37,12 @@ extern int rmdir(const char *pathname);
  * @return 0 if Successful
  */
 extern int mkdir(const char *pathname);
+
+/**
+ * @function chdir
+ * @brief 修改进程所在目录
+ * @param pathname 目录名
+ * @return 0 if success
+ */
+extern int chdir(const char *pathname);
 #endif

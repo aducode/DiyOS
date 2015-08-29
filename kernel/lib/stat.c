@@ -58,3 +58,22 @@ int stat(const char *pathname, struct stat *buf)
 	assert(msg.type == SYSCALL_RET);
 	return msg.RETVAL;
 }
+
+
+/**
+ * @function chdir
+ * @brief 修改进程所在目录
+ * @param pathname 目录名
+ * @return 0 if success
+ */
+extern int chdir(const char *pathname)
+{
+	struct message msg;
+	reset_msg(&msg);
+	msg.TYPE = CHDIR;
+	msg.PATHNAME = (void*)pathname;
+	msg.NAME_LEN = strlen(pathname);
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.RETVAL;
+}

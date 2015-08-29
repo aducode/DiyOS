@@ -18,6 +18,11 @@ void init(){
 	assert(stdout==1);
 	int stderr = open("/dev/tty0", O_RDWT);
 	assert(stderr==2);
+	//创建/root 作为进程目录
+	mkdir("/root");
+	//设置进程目录
+	chdir("/root");
+	//由于init进程设置了进程运行时目录，所以所有用户态的进程都会继承这个目录值
 	char buf[81];
 	int bytes;
 	while(1){
@@ -42,6 +47,10 @@ void init()
 	assert(stdout == 1);
 	int stderr = open("/dev/tty0", O_RDWT);
 	assert(stderr == 2);
+	//创建/root 作为进程目录
+	mkdir("/root");
+	//设置进程目录
+	chdir("/root");
 	//test /dev/floppy
 	//open("/dev/floppy", O_RDWT);
 	//assert(0);
