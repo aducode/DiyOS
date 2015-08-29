@@ -1,5 +1,6 @@
 #include "type.h"
 #include "stdio.h"
+#include "stat.h"
 #include "mount.h"
 #include "assert.h"
 #include "fork.h"

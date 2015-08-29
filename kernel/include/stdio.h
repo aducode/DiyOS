@@ -1,5 +1,3 @@
-#include "type.h"
-#include "syscall.h"
 #ifndef _DIYOS_STDIO_H
 #define _DIYOS_STDIO_H
 /**
@@ -27,14 +25,6 @@
 extern int open(const char * pathname, int flags);
 
 /**
- * @function mkdir
- * @brief 创建目录
- * @param pathname 目录
- * @return 0 if Successful
- */
-extern int mkdir(const char *pathname);
-
-/**
  * @function close
  * @brief 关闭文件
  * 
@@ -43,15 +33,6 @@ extern int mkdir(const char *pathname);
  * @return zero if successful, otherwise -1.
  */
 extern int close(int fd);
-
-/**
- * @function rmdir
- * @brief 删除空目录
- * @param pathname 目录名
- *
- * @return 0 if successful
- */
-extern int rmdir(const char *pathname);
 
 /**
  * @function read
@@ -130,26 +111,6 @@ extern int fprintf(int fd, const char *fmt, ...);
  * @return
  */
 extern int printf(const char *fmt, ...);
-//stat函数 获取文件信息
-/**
- * @struct stat
- * @brief 文件信息
- */
- struct stat {
-	int st_dev;			/* major/minor device number */
-	int st_ino;			/* i-node number */
-	int st_mode;		/* file mode, protection bits, etc. */
-	int st_rdev;		/* device ID (if special file) */
-	int st_size;		/* file size */
-};
-/**
- * @function stat
- * @brief get file stat
- * @param path  file pathname
- * @param buf   for output
- * @return 0 success
- */
-extern int stat(const char *pathname, struct stat *buf);
 
 /**
  * @function rename
