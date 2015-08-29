@@ -129,8 +129,8 @@ int close(int fd)
 	assert(fd!=-1);
 	struct message msg;
 	reset_msg(&msg);
-	msg.type	= CLOSE;
-	msg.FD		= fd;
+	msg.type = CLOSE;
+	msg.FD = fd;
 	send_recv(BOTH, TASK_FS, &msg);
 	return msg.RETVAL;
 }
