@@ -1838,6 +1838,10 @@ int do_mount(struct message *p_msg)
 		//不是目录文件
 		goto label_fail;
 	}
+	if(target_pinode->i_cnt > 1){
+		//该目录下有文件被打开或该目录是某进程的运行时目录
+		goto label_fail;
+	}
 	//step2 判断是否已经挂载
 	//TODO 
 	memcpy((void*)va2la(TASK_FS, devname), (void*)va2la(src, p_msg->DEVNAME), dev_name_len);
@@ -1864,7 +1868,7 @@ int do_mount(struct message *p_msg)
 	struct message driver_msg;
 	reset_msg(&driver_msg);
 	driver_msg.type = DEV_OPEN;
-	int dev = pin->i_start_sect;
+	int dev = source_pinode->i_start_sect;
 	driver_msg.DEVICE=MINOR(dev);
 	//dd_map[1] = TASK_FLOPPY
 	//assert(MAJOR(dev)==1); //可能有多个块设备
@@ -1877,6 +1881,8 @@ int do_mount(struct message *p_msg)
 	//但是mount操作后，由于目录inode->i_cnt会增加，目标目录的inode会被缓存在内存中
 	//所以可以在这里进行修改dev的操作
 	target_pinode->i_dev = dev; //下次再打开挂在目录下的文件的时候，文件的dev就会因为从父目录中获取，从而改编成挂在的dev了
+	//设备文件没必要占用inode table ,这里可以清空了
+	CLEAR_INODE(source_dir_inode, source_pinode);
 	return 0;
 label_fail:
 	CLEAR_INODE(target_dir_inode, target_pinode);
