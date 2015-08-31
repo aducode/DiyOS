@@ -78,11 +78,12 @@ void floppy_close(int device)
 	//floppy_mount_count 为0表示可以disable中断
 	floppy_mount_count -= 1;
 	if(floppy_mount_count==0){
+		//TODO 关闭软盘设备
+		
 		//disable irq
 		_disable_irq(FLOPPY_IRQ);
 		//rest irq handler
 		irq_handler_table[FLOPPY_IRQ] = default_irq_handler;
-		//TODO 关闭软盘设备
 	} else {
 		//说用还有其他位置mount floppy
 	}

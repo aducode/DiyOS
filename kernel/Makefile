@@ -104,17 +104,17 @@ floppy.o:int/floppy.c
 
 ########################### TASKS ##########################################
 tty.o:task/tty.c
-	$(CC) $(CFLAGS) task/tty.c -o tty.o
+	$(CC) $(CFLAGS) task/tty/tty.c -o tty.o
 hddriver.o:task/hddriver.c
-	$(CC) $(CFLAGS) task/hddriver.c -o hddriver.o
+	$(CC) $(CFLAGS) task/driver/hddriver.c -o hddriver.o
 floppydriver.o:task/floppydriver.c
-	$(CC) $(CFLAGS) task/floppydriver.c -o floppydriver.o
+	$(CC) $(CFLAGS) task/driver/floppydriver.c -o floppydriver.o
 sys.o:task/sys.c
-	$(CC) $(CFLAGS) task/sys.c -o sys.o
+	$(CC) $(CFLAGS) task/sys/sys.c -o sys.o
 fs.o:task/fs.c
-	$(CC) $(CFLAGS) task/fs.c -o fs.o
+	$(CC) $(CFLAGS) task/fs/fs.c -o fs.o
 mm.o:task/mm.c
-	$(CC) $(CFLAGS) task/mm.c -o mm.o
+	$(CC) $(CFLAGS) task/mm/mm.c -o mm.o
 init.o:task/init.c
 	$(CC) $(CFLAGS) task/init.c -o init.o
 	

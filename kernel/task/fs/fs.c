@@ -236,6 +236,7 @@ void init_fs()
 void init_tty_files(struct inode *dir_inode)
 {
 	//step 1 创建tty0 tty1 tty2三个tty设备文件
+	//tty字符设备一定存在，所以不需要检测
 	char filename[MAX_PATH];
 	int i, inode_nr, free_sect_nr;
 	for(i=0;i<CONSOLE_COUNT;i++){
@@ -257,6 +258,8 @@ void init_tty_files(struct inode *dir_inode)
  */
 void init_block_dev_files(struct inode *dir_inode)
 {
+	//软盘驱动设备也是一定存在的
+	//软盘是否存在，要在挂载的时候判断
 	int inode_nr, free_sect_nr;
 	struct inode *newino = 0;
 	inode_nr = alloc_imap_bit(dir_inode->i_dev);
@@ -1887,7 +1890,9 @@ int do_mount(struct message *p_msg)
 	target_pinode->i_dev = dev; //下次再打开挂在目录下的文件的时候，文件的dev就会因为从父目录中获取，从而改编成挂在的dev了
 	//target_pinode的其他属性也要修改，如所在设备开始扇区号
 	
-	//TODO
+	//TODO 获取目录所在扇区及大小
+	//FAT12软盘中存储的结构与硬盘中的结构不同，所以需要在inode_table中开辟一个inode节点，虚拟的表示floppy中的文件
+	
 	
 	//////
 	//下次再进入target目录后，发现i_dev != ROOT_DEV，说明被挂载了其他设备
