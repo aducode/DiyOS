@@ -1880,7 +1880,21 @@ int do_mount(struct message *p_msg)
 	//注意i_dev并不会持久化到磁盘
 	//但是mount操作后，由于目录inode->i_cnt会增加，目标目录的inode会被缓存在内存中
 	//所以可以在这里进行修改dev的操作
+	//////////////////
+	//这里的逻辑有问题
+	//直接修改i_dev是错误的，因为挂载的设备跟我们的硬盘格式不同
+	//////////////////
 	target_pinode->i_dev = dev; //下次再打开挂在目录下的文件的时候，文件的dev就会因为从父目录中获取，从而改编成挂在的dev了
+	//target_pinode的其他属性也要修改，如所在设备开始扇区号
+	
+	//TODO
+	
+	//////
+	//下次再进入target目录后，发现i_dev != ROOT_DEV，说明被挂载了其他设备
+	//就不能再按现有的方式读取directory_entry，进而获取目录下的文件了
+	//而是应该按照设备（比如软盘）的格式，读取根目录项
+	//所以 strip_path  search_file 等地方都要修改，根据dev进行不同的操作
+	//////
 	//设备文件没必要占用inode table ,这里可以清空了
 	CLEAR_INODE(source_dir_inode, source_pinode);
 	return 0;
@@ -1942,6 +1956,7 @@ int do_unmount(struct message *p_msg)
 	assert(driver_msg.type==SYSCALL_RET);
 	//设备关闭成功
 	pinode->i_dev = ROOT_DEV; //这步操作不是不要的，因为下面就要关闭pinode了，下次再打开的目录下的文件时候，就会从新从/打开，从而i_dev会变成ROOT_DEV
+	//其他属性由于没有记录，所以不能还原了，只能依靠CLEAR_INODE之后，下次再打开的时候从硬盘还原
 	//清理pinode
 	CLEAR_INODE(dir_inode, pinode);
 	return 0;
