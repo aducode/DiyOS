@@ -17,6 +17,7 @@
 #include "assert.h"
 #include "hd.h"
 #include "fs.h"
+#include "fat12.h"
 #include "stdio.h"
 #include "proc.h"
 static void init_fs();
@@ -263,7 +264,7 @@ void init_block_dev_files(struct inode *dir_inode)
 	int inode_nr, free_sect_nr;
 	struct inode *newino = 0;
 	inode_nr = alloc_imap_bit(dir_inode->i_dev);
-	newino = new_inode(dir_inode, inode_nr, I_BLOCK_SPECIAL, MAKE_DEV(DEV_FLOPPY, 0), 0, 0);
+	newino = new_inode(dir_inode, inode_nr, I_BLOCK_SPECIAL, FLOPPYA_DEV, 0, 0);
 	new_dir_entry(dir_inode, newino->i_num, "floppy");
 	assert(inode_nr != 0 && newino != 0);
 	put_inode(newino);
@@ -1405,6 +1406,7 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 {
 	const char * s = pathname;
 	struct dir_entry *pde;
+	struct fat12_dir_entry *fat12pde;
 	struct inode* pinode;
 	char * t;
 	int i,j;
@@ -1417,7 +1419,7 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 		return -1;
 	}
 	s++;
-	*ppinode=root_inode();
+	*ppinode=root_inode(); //从root inode开始寻找
 	int dir_entry_count_per_sect = SECTOR_SIZE/DIR_ENTRY_SIZE;
 	int dir_entry_count, dir_entry_blocks_count;
 	while(*s!=0){
@@ -1428,20 +1430,44 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 		}
 		*t=0;
 		if(*s!=0) s++; //skip /
-		dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
-		dir_entry_blocks_count = (*ppinode)->i_size/SECTOR_SIZE + (*ppinode)->i_size%SECTOR_SIZE==0?0:1;
-		for(i=0;i<dir_entry_blocks_count;i++){ 
-			READ_SECT((*ppinode)->i_dev, (*ppinode)->i_start_sect + i);
-			pde=(struct dir_entry*)fsbuf;
-			int dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
-			int step = min(dir_entry_count_per_sect, dir_entry_count);
-			for(j=0;j<step;j++, pde++){
-				if(strcmp(pde->name, filename)==0){
-					pinode=get_inode(*ppinode, pde->inode_idx);
-					goto try_to_find_next_path;		
+		switch(*ppinode->i_dev){
+		case ROOT_DEV:
+			dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
+			dir_entry_blocks_count = (*ppinode)->i_size/SECTOR_SIZE + (*ppinode)->i_size%SECTOR_SIZE==0?0:1;
+			for(i=0;i<dir_entry_blocks_count;i++){ 
+				READ_SECT((*ppinode)->i_dev, (*ppinode)->i_start_sect + i);
+				pde=(struct dir_entry*)fsbuf;
+				//int dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
+				int step = min(dir_entry_count_per_sect, dir_entry_count);
+				for(j=0;j<step;j++, pde++){
+					if(strcmp(pde->name, filename)==0){
+						pinode=get_inode(*ppinode, pde->inode_idx);
+						goto try_to_find_next_path;		
+					}
 				}
+				dir_entry_count -= dir_entry_count_per_sect;	
 			}
-			dir_entry_count -= dir_entry_count_per_sect;	
+			break;
+		case FLOPPYA_DEV:
+			//fat12遍历目录的方式，与我们定义的文件系统不同，所以需要分开处理
+			//到了floppy文件系统下
+			//TODO
+			//READ_SECT floppy的READ_SECT是按簇读取（一般情况下一簇就是一个软盘扇区）
+			//fat12 的文件大小是保存在上层目录中的，这里好难与自己的硬盘文件系统统一（我们的文件大小单独存放在inode中，目录只存文件名称）
+			//dir_entry_count = (*ppinode)->i_size/sizeof(struct fat12_dir_entry);
+			for(i=0;i<(*ppinode)->i_sects_count;i++){ //循环根目录扇区
+				READ_SECT((*ppinode)->i_dev, (*ppinode)->i_start_sect+i);
+				fat12pde = (struct fat12_dir_entry*)fsbuf;
+				//循环，每个跟目录扇区有多少个根目录项
+				//for(j=0;j<16;j++,fat12pde++){
+					//先写死，每个扇区16个目录项
+					//fat12的文件名
+				//}
+			}
+			break;
+		default:
+			assert(0); //不会到这里
+			break;
 		}
 try_to_find_next_path:
 		if(*s!=0){
@@ -1461,6 +1487,9 @@ try_to_find_next_path:
 		} else {
 			if(pinode!=0 && pinode->i_cnt>0){
 				//需要将最后一层的i_cnt还原
+				//因为只有在search_file中会调用strip_path方法
+				//而search_file最后还要对最后一级的文件进行cnt++操作
+				//所以这里先还原
 				pinode->i_cnt--;
 			}
 		}
@@ -1495,27 +1524,37 @@ int search_file(const char *path, char *filename, struct inode **ppinode)
 	if(filename[0] == 0){//path:"/"
 		return dir_inode->i_num;
 	}
-	//search the dir for the file
-	int dir_blk0_nr = dir_inode->i_start_sect;
-	int nr_dir_blks = (dir_inode->i_size + SECTOR_SIZE-1)/SECTOR_SIZE;
-	int nr_dir_entries = dir_inode->i_size/DIR_ENTRY_SIZE;
-	
-	int m = 0;
-	struct dir_entry *pde;
-	for(i=0;i<nr_dir_blks;i++){
-		READ_SECT(dir_inode->i_dev, dir_blk0_nr + i);
-		pde = (struct dir_entry*)fsbuf;
-		for(j=0;j<SECTOR_SIZE/DIR_ENTRY_SIZE;j++,pde++){
-			if(strcmp(filename, pde->name)==0){
-				return pde->inode_idx;
+	switch(dir_inode->i_dev){
+	case ROOT_DEV:
+		//search the dir for the file
+		int dir_blk0_nr = dir_inode->i_start_sect;
+		int nr_dir_blks = (dir_inode->i_size + SECTOR_SIZE-1)/SECTOR_SIZE;
+		int nr_dir_entries = dir_inode->i_size/DIR_ENTRY_SIZE;
+		
+		int m = 0;
+		struct dir_entry *pde;
+		for(i=0;i<nr_dir_blks;i++){
+			READ_SECT(dir_inode->i_dev, dir_blk0_nr + i);
+			pde = (struct dir_entry*)fsbuf;
+			for(j=0;j<SECTOR_SIZE/DIR_ENTRY_SIZE;j++,pde++){
+				if(strcmp(filename, pde->name)==0){
+					return pde->inode_idx;
+				}
+				if(++m>nr_dir_entries){
+					break;
+				}
 			}
-			if(++m>nr_dir_entries){
+			if(m>nr_dir_entries){
 				break;
 			}
 		}
-		if(m>nr_dir_entries){
-			break;
-		}
+		break;
+	case FLOPPYA_DEV:
+		//TODO floppy格式匹配文件名
+		break;
+	default:
+		assert(0);
+		break;
 	}
 	return INVALID_INODE;//file not found
 }
@@ -1892,7 +1931,11 @@ int do_mount(struct message *p_msg)
 	
 	//TODO 获取目录所在扇区及大小
 	//FAT12软盘中存储的结构与硬盘中的结构不同，所以需要在inode_table中开辟一个inode节点，虚拟的表示floppy中的文件
+	//为了简化起见，fat12只允许一级目录，根目录下的目录将会被忽略
 	
+	//target_pinode->i_start_sect = 【BPB结构中的(rsvd_sec_cnt + hidd_sec + num_fats* (fat_sz16>0?fat_sz16:tot_sec32))】 //root目录开始扇区
+	//target_pinode->i_sects_count = 【root_ent_cnt*sizeof(struct RootEntry)/bytes_per_sec】 //根目录最大文件数*每个目录项所占字节数/每个扇区的字节数=占用扇区数
+	//target_pinode->i_size = 【root_ent_cnt*sizeof(struct RootEntry)】
 	
 	//////
 	//下次再进入target目录后，发现i_dev != ROOT_DEV，说明被挂载了其他设备

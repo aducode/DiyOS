@@ -35,7 +35,7 @@ struct BPB {
 //#define SIZE_OF_BPB			25
 
 //根目录条目  
-struct RootEntry {
+struct fat12_dir_entry {
 	char name[11];			//文件名8字节，扩展名3字节
 	u8   attr;				//文件属性  
 	char reserved[10];		//保留位
@@ -45,7 +45,7 @@ struct RootEntry {
 	u32  file_size;			//文件大小
 };
 
-//1字节对齐的时候struct RootEntry大小
+//1字节对齐的时候struct fat12_dir_entry大小
 //#define SIZE_OF_ROOTENTRY	32
 #pragma pack () /*取消指定对齐，恢复缺省对齐*/ 
 /**
@@ -53,4 +53,15 @@ struct RootEntry {
  * @brief dump出bpb的值
  */
 extern void dump_bpb(struct BPB * bpb_ptr);
+/**
+ * @function dump_entry
+ * @brief dump出entry的值
+ */
+extern void dump_entry(struct fat12_dir_entry * entry_ptr);
+
+/**
+ * @define is_dir
+ * @brief 是否是fat12目录
+ */
+#define is_dir(entry_ptr)	((entry_ptr)->attr & 0x10) != 0
 #endif

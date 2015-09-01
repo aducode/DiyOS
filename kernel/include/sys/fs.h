@@ -72,7 +72,9 @@ struct inode {
 	u32	i_size;		//File size	文件大小
 	u32	i_start_sect;	//1.Normal The first sector of the data 起始扇区
 				//2.Dev	   The dev number for special file like tty
+				//floppy下，表示起始簇号
 	u32	i_sects_count;	//How man sectors the file occupies 文件所占扇区数
+				//floppy下，无用
 	u8	_unused[16];	//对齐 相当于4个u32
 	//the following items are only present in memory
 	int i_dev;
