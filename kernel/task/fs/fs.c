@@ -1455,6 +1455,7 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 			//READ_SECT floppy的READ_SECT是按簇读取（一般情况下一簇就是一个软盘扇区）
 			//fat12 的文件大小是保存在上层目录中的，这里好难与自己的硬盘文件系统统一（我们的文件大小单独存放在inode中，目录只存文件名称）
 			//dir_entry_count = (*ppinode)->i_size/sizeof(struct fat12_dir_entry);
+			//(*ppinode)->i_num == ROOT_INODE 则说明是floppy的根目录
 			for(i=0;i<(*ppinode)->i_sects_count;i++){ //循环根目录扇区
 				READ_SECT((*ppinode)->i_dev, (*ppinode)->i_start_sect+i);
 				fat12pde = (struct fat12_dir_entry*)fsbuf;
@@ -1936,6 +1937,10 @@ int do_mount(struct message *p_msg)
 	//target_pinode->i_start_sect = 【BPB结构中的(rsvd_sec_cnt + hidd_sec + num_fats* (fat_sz16>0?fat_sz16:tot_sec32))】 //root目录开始扇区
 	//target_pinode->i_sects_count = 【root_ent_cnt*sizeof(struct RootEntry)/bytes_per_sec】 //根目录最大文件数*每个目录项所占字节数/每个扇区的字节数=占用扇区数
 	//target_pinode->i_size = 【root_ent_cnt*sizeof(struct RootEntry)】
+	target_pinode->i_num = ROOT_INODE;		//【说明】本来预计floppy文件的inode值就设置成第一个簇号
+											//但是为了与硬盘的根目录统一，这里就设置成ROOT_INODE也就是1了
+											//其他floppy文件可以设置成开始簇号
+											//inode_table可以看作一个map (dev, inode)->pinode  所以不同的dev下，可以用相同的inode号
 	
 	//////
 	//下次再进入target目录后，发现i_dev != ROOT_DEV，说明被挂载了其他设备
