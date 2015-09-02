@@ -13,6 +13,10 @@
 
 ![img](http://aducode.github.io/images/2015-09-02/kernel.png)
 
+###文件系统结构图
+
+![img](http://aducode.github.io/images/2015-09-02/fs.png)
+
 ###目前进度:
 
 1. boot loader 完成
