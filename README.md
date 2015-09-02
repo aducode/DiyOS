@@ -11,7 +11,7 @@
 
 ###kernel架构图
 
-![img](http://aducode.github.io/images/2015-09-02/kernel_architecture.png)
+![img](http://aducode.github.io/images/2015-09-02/kernel.png)
 
 ###目前进度:
 
