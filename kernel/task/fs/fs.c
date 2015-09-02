@@ -226,6 +226,10 @@ void init_fs()
 	init_block_dev_files(p_dir_inode);
 	//put_inode(p_dir_inode);
 	assert(p_dir_inode->i_cnt == 0);
+	
+	//fat12
+	//初始化全局fat12 BPB表
+	init_fat12();
 }
 
 
@@ -1928,6 +1932,8 @@ int do_mount(struct message *p_msg)
 	//直接修改i_dev是错误的，因为挂载的设备跟我们的硬盘格式不同
 	//////////////////
 	target_pinode->i_dev = dev; //下次再打开挂在目录下的文件的时候，文件的dev就会因为从父目录中获取，从而改编成挂在的dev了
+	//挂载同时还需要读取软盘BPB
+	init_fat12_bpb(dev);
 	//target_pinode的其他属性也要修改，如所在设备开始扇区号
 	
 	//TODO 获取目录所在扇区及大小
@@ -2010,6 +2016,7 @@ int do_unmount(struct message *p_msg)
 	//设备关闭成功
 	pinode->i_dev = ROOT_DEV; //这步操作不是不要的，因为下面就要关闭pinode了，下次再打开的目录下的文件时候，就会从新从/打开，从而i_dev会变成ROOT_DEV
 	//其他属性由于没有记录，所以不能还原了，只能依靠CLEAR_INODE之后，下次再打开的时候从硬盘还原
+	clear_fat12_bpb(dev);
 	//清理pinode
 	CLEAR_INODE(dir_inode, pinode);
 	return 0;

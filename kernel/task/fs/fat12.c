@@ -2,8 +2,47 @@
 /*                   fat12文件系统                    */
 /******************************************************/
 //主要供fs.c使用，用来将fat12格式的文件系统，适配到自己的文件系统
+#include "hd.h"
 #include "fat12.h"
 #include "assert.h"
+#include "string.h"
+
+/**
+ * 缓存软盘BPB
+ * 一般只允许fs.c和fat12.c使用
+ */
+struct BPB FAT12_BPB[MAX_FAT12_NUM];
+
+void init_fat12(int dev)
+{
+	//唯一要做的就是初始化全局BPB表
+	memset(FAT12_BPB, 0, sizeof(FAT12_BPB));
+}
+
+void init_fat12_bpb(int dev)
+{
+	int idx = MINOR(dev);
+	assert(idx == 0||idx==1); //floppya floppyb
+	if(FAT12_BPB[idx].i_cnt == 0){
+		//TODO 读取软盘BPB
+		
+		//i_cnt会被软盘数据覆盖
+		//需要重新置为1
+		FAT12_BPB[idx].i_cnt = 1;
+	} else {
+		//说明已经挂载过了
+		FAT12_BPB[idx].i_cnt++;
+	}
+}
+
+void clear_fat12_bpb(int dev)
+{
+	int idx = MINOR(dev);
+	assert(idx == 0||idx == 1);
+	if(FAT12_BPB[idx].i_cnt > 0){
+		FAT12_BPB[idx].i_cnt--;
+	}
+}
 
 void dump_bpb(struct BPB *bpb_ptr)
 {

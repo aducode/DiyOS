@@ -29,6 +29,8 @@ struct BPB {
 	u16 num_heads;			//磁头数
 	u32 hidd_sec;			//隐藏扇区数
 	u32 tot_sec32;			//如果BPB_FATSz16为0，该值为FAT扇区数  
+	//以下数据不需要持久化到软盘
+	int i_cnt;				//引用次数
 };
 
 //1字节对齐的时候struct BPB大小
@@ -48,6 +50,38 @@ struct fat12_dir_entry {
 //1字节对齐的时候struct fat12_dir_entry大小
 //#define SIZE_OF_ROOTENTRY	32
 #pragma pack () /*取消指定对齐，恢复缺省对齐*/ 
+
+//最多只有两个软盘设备
+#define MAX_FAT12_NUM		2
+
+extern struct BPB FAT12_BPB[];
+
+/**
+ * @define FAT12_BPB_PTR
+ * @breif 获取dev对应的BPB指针
+ */
+#define FAT12_BPB_PTR(dev) &(FAT12_BPB[MINOR(dev)])
+/**
+ * @function init_fat12
+ * @brief 初始化
+ */
+extern void init_fat12();
+
+/**
+ * @function init_fat12_bpb
+ * @brief 根据设备号获取软盘的BPB
+ *			有缓存功能
+ * @param dev
+ */
+extern void init_fat12_bpb(int dev);
+
+/**
+ * @function clear_fat12_bpb
+ * @brief 清空bpb缓存
+ * @param  dev 设备号
+ * @return
+ */
+extern void clear_fat12_bpb(int dev);
 /**
  * @function dump_bpb
  * @brief dump出bpb的值
