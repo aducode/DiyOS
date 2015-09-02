@@ -9,6 +9,10 @@
 * 运行环境：bochs release 2.6.7
 * bochs调试断点：1.0x7c00 boot.bin入口地址；2.0x90100 loader.bin入口地址；3.0x400 kernel.bin入口地址
 
+###kernel架构图
+
+![img](http://aducode.github.io/images/2015-09-02/kernel.png)
+
 ###目前进度:
 
 1. boot loader 完成
