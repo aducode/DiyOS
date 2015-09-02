@@ -1436,6 +1436,11 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 		if(*s!=0) s++; //skip /
 		switch(*ppinode->i_dev){
 		case ROOT_DEV:
+			//下面的代码也可以抽出两个方法
+			//1. get_inode_idx_from_dir(struct inode *dir_inode, const char *filename)  :从目录项中获取文件获取filename文件的inode idx
+			//2. get_inode
+			// 两个函数组合起来的运行效率比下面的代码要慢一些(因为目录项要循环完再获取inode)
+			// 但是可以与fat12的统一起来
 			dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
 			dir_entry_blocks_count = (*ppinode)->i_size/SECTOR_SIZE + (*ppinode)->i_size%SECTOR_SIZE==0?0:1;
 			for(i=0;i<dir_entry_blocks_count;i++){ 
@@ -1446,28 +1451,19 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 				for(j=0;j<step;j++, pde++){
 					if(strcmp(pde->name, filename)==0){
 						pinode=get_inode(*ppinode, pde->inode_idx);
-						goto try_to_find_next_path;		
+						goto try_to_find_next_path;
 					}
 				}
-				dir_entry_count -= dir_entry_count_per_sect;	
+				dir_entry_count -= dir_entry_count_per_sect;
 			}
 			break;
 		case FLOPPYA_DEV:
-			//fat12遍历目录的方式，与我们定义的文件系统不同，所以需要分开处理
-			//到了floppy文件系统下
-			//TODO
-			//READ_SECT floppy的READ_SECT是按簇读取（一般情况下一簇就是一个软盘扇区）
-			//fat12 的文件大小是保存在上层目录中的，这里好难与自己的硬盘文件系统统一（我们的文件大小单独存放在inode中，目录只存文件名称）
-			//dir_entry_count = (*ppinode)->i_size/sizeof(struct fat12_dir_entry);
-			//(*ppinode)->i_num == ROOT_INODE 则说明是floppy的根目录
-			for(i=0;i<(*ppinode)->i_sects_count;i++){ //循环根目录扇区
-				READ_SECT((*ppinode)->i_dev, (*ppinode)->i_start_sect+i);
-				fat12pde = (struct fat12_dir_entry*)fsbuf;
-				//循环，每个跟目录扇区有多少个根目录项
-				//for(j=0;j<16;j++,fat12pde++){
-					//先写死，每个扇区16个目录项
-					//fat12的文件名
-				//}
+			//get_inode_idx_from_dir_fat12 和 get_inode_fat12中，都会从软盘中读取目录项，并循环寻找文件
+			//效率比较地下
+			//但是为了代码重用，就先这样吧。。。
+			int fat12_inode_idx = get_inode_idx_from_dir_fat12(*ppinode, filename);
+			if(fat12_inode_idx != INVALID_INODE){
+				pinode = get_inode_fat12(*ppinode, fat12_inode_idx);
 			}
 			break;
 		default:
@@ -1555,7 +1551,7 @@ int search_file(const char *path, char *filename, struct inode **ppinode)
 		}
 		break;
 	case FLOPPYA_DEV:
-		//TODO floppy格式匹配文件名
+		return get_inode_idx_from_dir_fat12(dir_inode, filename);
 		break;
 	default:
 		assert(0);
@@ -1592,7 +1588,10 @@ struct inode * get_inode(struct inode *parent, int inode_idx)
 	for(p= inode_table ; p<inode_table + MAX_INODE_COUNT; p++){
 		if(p->i_cnt){
 			//not a free slot
-			if((p->i_dev == dev) && (p->i_num == inode_idx) && p->i_parent == parent){
+			//遇到挂载点会有问题，挂载过的目录的inode->i_dev已经被改变过了
+			//这里暂时采用如下办法判断dev(目录dev) != inode->dev的情况：
+			//		被挂载的目录，一定是根目录，那么根目录的inode idx值，就一定是ROOT_INODE
+			if((p->i_dev == dev || parent->i_num == ROOT_INODE) && (p->i_num == inode_idx) && (p->i_parent == parent)){
 				//this is the inode we want
 				p->i_cnt ++ ;
 				return p;
@@ -1939,15 +1938,16 @@ int do_mount(struct message *p_msg)
 	//TODO 获取目录所在扇区及大小
 	//FAT12软盘中存储的结构与硬盘中的结构不同，所以需要在inode_table中开辟一个inode节点，虚拟的表示floppy中的文件
 	//为了简化起见，fat12只允许一级目录，根目录下的目录将会被忽略
-	
-	//target_pinode->i_start_sect = 【BPB结构中的(rsvd_sec_cnt + hidd_sec + num_fats* (fat_sz16>0?fat_sz16:tot_sec32))】 //root目录开始扇区
-	//target_pinode->i_sects_count = 【root_ent_cnt*sizeof(struct RootEntry)/bytes_per_sec】 //根目录最大文件数*每个目录项所占字节数/每个扇区的字节数=占用扇区数
-	//target_pinode->i_size = 【root_ent_cnt*sizeof(struct RootEntry)】
+	struct BPB * bpb_ptr = FAT12_BPB_PTR(dev);
+	target_pinode->i_start_sect = bpb_ptr->rsvd_sec_cnt + bpb_ptr->hidd_sec + bpb_ptr->num_fats * (bpb_ptr->fat_sz16>0 ? bpb_ptr->fat_sz16 : bpb_ptr->tot_sec32);//【BPB结构中的(rsvd_sec_cnt + hidd_sec + num_fats* (fat_sz16>0?fat_sz16:tot_sec32))】 //root目录开始扇区
+	//target_pinode->i_sects_count = bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry)/bpb_ptr->bytes_per_sec; //【root_ent_cnt*sizeof(struct RootEntry)/bytes_per_sec】 //根目录最大文件数*每个目录项所占字节数/每个扇区的字节数=占用扇区数
+	target_pinode->i_size = bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry); //【root_ent_cnt*sizeof(struct RootEntry)】
+	target_pinode->i_sects_count = target_pinode->i_size / bpb_ptr->bytes_per_sec;
 	target_pinode->i_num = ROOT_INODE;		//【说明】本来预计floppy文件的inode值就设置成第一个簇号
 											//但是为了与硬盘的根目录统一，这里就设置成ROOT_INODE也就是1了
 											//其他floppy文件可以设置成开始簇号
 											//inode_table可以看作一个map (dev, inode)->pinode  所以不同的dev下，可以用相同的inode号
-	
+											//另外挂载点的i_num设置成ROOT_INODE,在 @function get_inode 方法中也可以用来做【正确】的判断
 	//////
 	//下次再进入target目录后，发现i_dev != ROOT_DEV，说明被挂载了其他设备
 	//就不能再按现有的方式读取directory_entry，进而获取目录下的文件了

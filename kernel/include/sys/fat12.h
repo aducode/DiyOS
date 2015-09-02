@@ -61,6 +61,12 @@ extern struct BPB FAT12_BPB[];
  * @breif 获取dev对应的BPB指针
  */
 #define FAT12_BPB_PTR(dev) &(FAT12_BPB[MINOR(dev)])
+
+/**
+ * @define is_dir
+ * @brief 是否是fat12目录
+ */
+#define is_dir(entry_ptr)	((entry_ptr)->attr & 0x10) != 0
 /**
  * @function init_fat12
  * @brief 初始化
@@ -94,8 +100,22 @@ extern void dump_bpb(struct BPB * bpb_ptr);
 extern void dump_entry(struct fat12_dir_entry * entry_ptr);
 
 /**
- * @define is_dir
- * @brief 是否是fat12目录
+ * @function get_inode_fat12
+ * @breif adapter get_inode function in FAT12 File System
+ * @param parent 父目录inode指针
+ * @param inode_idx inode idx(fat12 file system下，除了根目录(1)以外，其他值为文件开始簇号)
+ * @return inode ptr
  */
-#define is_dir(entry_ptr)	((entry_ptr)->attr & 0x10) != 0
+extern struct inode * get_inode_fat12(struct inode *parent, int inode_idx);
+
+/**
+ * @function get_inode_idx_from_dir_fat12
+ * @brief 从目录项中得到inode idx
+ *			inode idx在fat12中就是文件起始簇号
+ * @param parent 父目录的inode指针
+ * @param filename 文件名
+ * @return 返回inode idx
+ */
+extern int get_inode_idx_from_dir_fat12(struct inode *parent,  const char * filename);
+
 #endif

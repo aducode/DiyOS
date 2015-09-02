@@ -44,6 +44,53 @@ void clear_fat12_bpb(int dev)
 	}
 }
 
+struct inode * get_inode_fat12(struct *parent, int inode_idx)
+{
+	if(inode_idx==0){//0号inode没有使用
+		return 0;
+	}
+	//step1 先判读inode table中是否已经存在
+	struct inode * p;
+	struct inode * q = 0;
+	for(p= inode_table ; p<inode_table + MAX_INODE_COUNT; p++){
+		if(p->i_cnt){
+			if((p->i_dev == parent->i_dev) && (p->i_num == inode_idx) && (p->i_parent == parent)){
+				p->i_cnt++;
+				return p;
+			}
+		} else {
+			//a free slot
+			if(!q){
+				q = p;
+			}
+		}
+	}
+	if(!q){
+		panic("the inode able is full");
+	}
+	//inode table之前没有缓存inode， 需要初始化这个inode
+	//fat12的文件大小信息保存在目录项里面，所以还需要先从软盘中读取目录信息
+	//TODO step 2 读取目录信息到BUF
+	//
+	//struct fat12_dir_entry * dir_entry_ptr;
+	//loop
+	//if(dir_entry_ptr->fst_clus == inode_idx); //不同的文件对应的开始簇号是唯一的
+	//int file_size = dir_entry_ptr->file_size; //得到文件大小
+	//q->i_mode = is_dir(dir_entry)? I_DIRECTORY:I_REGULAR  //软盘中的，暂时使用这两种吧
+	return q;
+}
+
+int get_inode_idx_from_dir_fat12(struct inode *parent,  const char * filename)
+{
+	assert(parent != 0);
+	assert(filename[0] != 0);
+	//读取目录项
+	//loop
+	//	if(dir_entry->name)
+	//return dir_entry->fst_clus;
+	return INVALID_INODE;
+}
+
 void dump_bpb(struct BPB *bpb_ptr)
 {
 	assert(bpb_ptr != 0);
