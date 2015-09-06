@@ -162,7 +162,7 @@ struct dir_entry{
  * @param io_type       DEV_READ or DEV_WRITE
  * @param dev           device number
  * @param pos           Byte offset from/to where to r/w
- * @param size		How many bytes
+ * @param size          How many bytes
  * @param pid           To whom the buffer belongs.
  * @param buf           r/w buffer.
  *

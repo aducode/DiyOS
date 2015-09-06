@@ -91,6 +91,46 @@ int get_inode_idx_from_dir_fat12(struct inode *parent,  const char * filename)
 	return INVALID_INODE;
 }
 
+int do_rdwt_fat12(struct inode *pinode, void * buf, int pos, int len, int src_pid)
+{
+	int bytes_rdwt = 0; //已读写字节数
+	struct inode *dir_inode = pinode->parent; //得到父目录的inode
+	//TODO从fat12中得到目录项
+	//loop 遍历目录项，得到匹配文件，进而得到文件开始簇号 和 fat12表项所指向的下一个簇号
+	//根据pos len 读写数据
+	//同步文件变化
+	return 0;
+	
+}
+
+int unlink_file_fat12(struct inode *pinode)
+{
+	struct inode *dir_inode = pinode->parent;
+	//1.清空目录项
+	//2.清空fat表链
+	return 0;
+}
+
+
+struct inode * create_directory_fat12(struct inode *parent, const char * filename)
+{
+	int fst_clus;
+	//找到空的簇号，作为目录第一个簇号
+	//创建新的目录项
+	struct inode *pinode = get_inode_fat12(parent, fst_clus);
+	return pinode;
+}
+
+int is_dir_emtpy(struct inode *pinode)
+{
+	struct inode *dir_inode = pinode->parent;
+	//fat12 目录文件的size字段为0，没办法简单的经过计算得到目录项个数
+	// 读取目录项，遍历判断是否是空目录
+	// 是空目录返回1
+	// 否则返回0
+	return 0;
+}
+
 void dump_bpb(struct BPB *bpb_ptr)
 {
 	assert(bpb_ptr != 0);

@@ -118,4 +118,40 @@ extern struct inode * get_inode_fat12(struct inode *parent, int inode_idx);
  */
 extern int get_inode_idx_from_dir_fat12(struct inode *parent,  const char * filename);
 
+/**
+ * @function do_rdwt_fat12
+ * @breif 适配rootfs的do_rdwt
+ * @param pinode  inode指针
+ * @param buf 输出的缓冲
+ * @param pos 当前文件偏移
+ * @param len读写的字节数
+ * @param src_pid 输出的进程ID
+ * @return 读写的字节数
+ */
+extern int do_rdwt_fat12(struct inode *pinode, void * buf, int pos,  int len, int src_pid);
+
+/**
+ * @function unlink_file_fat12
+ * @brief 适配rootfs的unlink_file
+ * @param pinode
+ * @return 0 if success
+ */
+extern int unlink_file_fat12(struct inode *pinode);
+
+/**
+ * @function create_directory_fat12
+ * @brief 创建目录
+ * @param parent
+ * @param filename
+ * @return inode ptr
+ */
+extern struct inode * create_directory_fat12(struct inode *parent, const char * filename);
+
+/**
+ * @function is_dir_empty
+ * @brief 判读pinode指向的目录是否是空目录
+ * @param pinode
+ * @return 0 false 1 true
+ */
+extern int is_dir_emtpy(struct inode *pinode);
 #endif

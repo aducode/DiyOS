@@ -65,7 +65,7 @@ static int fs_exit(struct message *msg);
 //使用strip_path返回的结果，避免重复调用strip_path
 static struct inode * create_file(const char *filename, struct inode * dir_inode, int flags);
 static struct inode * create_directory(char *path, int flags);
-static int unlink_file(struct inode * pinode, struct inode* dir_inode);
+static int unlink_file(struct inode * pinode);
 static int alloc_imap_bit(int dev);
 static int alloc_smap_bit(int dev, int sects_count_to_alloc);
 static struct inode* new_inode(struct inode *parent, int inode_nr, u32 i_mode, u32 start_sect,u32 i_sects_count, u32 i_size);
@@ -105,55 +105,55 @@ void task_fs()
 		switch(msg.type){
 			case OPEN:
 				//open 要返回FD
-				msg.FD = do_open(&msg);
+				msg.FD = do_open(&msg);					//已经适配fat12
 				break;
 			case CLOSE:
 				//返回是否成功
-				msg.RETVAL = do_close(&msg);
+				msg.RETVAL = do_close(&msg);			//不需要适配fat12
 				break;
 			case READ:
 			case WRITE:
 				//读写文件
-				msg.CNT = do_rdwt(&msg);
+				msg.CNT = do_rdwt(&msg);				//已经适配fat12
 				break;
 			case STAT:
 				//获取文件状态
-				msg.RETVAL = do_stat(&msg);
+				msg.RETVAL = do_stat(&msg);				//不需要适配fat12
 				break;
 			case SEEK:
 				//seek
-				msg.RETVAL = do_seek(&msg);
+				msg.RETVAL = do_seek(&msg);				//不需要适配fat12
 				break;
 			case TELL:
 				//tell
-				msg.POSITION = do_tell(&msg);
+				msg.POSITION = do_tell(&msg);			//不需要适配fat12
 				break;
 			case UNLINK:
 				//删除普通文件
-				msg.RETVAL = do_unlink(&msg);
+				msg.RETVAL = do_unlink(&msg);			//已经适配fat12
 				break;
 			case RENAME:
 				//重命名文件
-				msg.RETVAL = do_rename(&msg);
+				msg.RETVAL = do_rename(&msg);			//TODO
 			case MKDIR:
 				//创建空目录
-				msg.RETVAL = do_mkdir(&msg);
+				msg.RETVAL = do_mkdir(&msg);			//已经适配fat12
 				break;
 			case RMDIR:
 				//删除空目录
-				msg.RETVAL = do_rmdir(&msg);
+				msg.RETVAL = do_rmdir(&msg);			//已经适配fat12
 				break;
 			case CHDIR:
 				//修改进程所在目录
-				msg.RETVAL = do_chdir(&msg);
+				msg.RETVAL = do_chdir(&msg);			//不需要适配fat12
 				break;
 			case MOUNT:
 				//挂载文件系统
-				msg.RETVAL = do_mount(&msg);
+				msg.RETVAL = do_mount(&msg);			//因为只有rootfs和fat12两个文件系统，不存在嵌套挂载， 暂时不需要适配fat12
 				break;
 			case UNMOUNT:
 				//卸载文件系统
-				msg.RETVAL = do_unmount(&msg);
+				msg.RETVAL = do_unmount(&msg);			//因为只有rootfs和fat12两个文件系统，不存在嵌套挂载， 暂时不需要适配fat12
 				break;
 			case RESUME_PROC:
 				//恢复挂起的进程
@@ -749,6 +749,9 @@ int do_rdwt(struct message *p_msg)
 		//}
 		return 0; //直接返回0byte
 	}else {
+		if(pin->i_dev == FLOPPYA_DEV){
+			return do_rdwt_fat12(pin, buf, pos, len, src);
+		}
 		assert(pin->i_mode == I_REGULAR || pin->i_mode == I_DIRECTORY);
 		assert((p_msg->type == READ)||(p_msg->type == WRITE));
 		int pos_end;
@@ -847,7 +850,7 @@ int do_unlink(struct message *p_msg)
 	//这里pin->i_cnt应该是1
 	assert(pin->i_cnt == 1);
 	//unlink_file内部会进行put_inode操作
-	return unlink_file(pin, dir_inode);
+	return unlink_file(pin);
 label_fail:
 	CLEAR_INODE(dir_inode, pin);
 	return -1;
@@ -863,14 +866,13 @@ label_fail:
 int do_mkdir(struct message *p_msg)
 {
 	char pathname[MAX_PATH];
-    	int name_len = p_msg->NAME_LEN;
-    	int src = p_msg->source;
-    	assert(name_len<MAX_PATH);
-    	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
-    	pathname[name_len] = 0;
-    	struct inode *dir_inode = create_directory(pathname, O_CREATE);
-    	if(dir_inode == 0){
-		//
+	int name_len = p_msg->NAME_LEN;
+	int src = p_msg->source;
+	assert(name_len<MAX_PATH);
+	memcpy((void*)va2la(TASK_FS, pathname), (void*)va2la(src, p_msg->PATHNAME), name_len);
+	pathname[name_len] = 0;
+	struct inode *dir_inode = create_directory(pathname, O_CREATE);
+	if(dir_inode == 0){
 		return -1;
 	} else {
 		put_inode(dir_inode);
@@ -923,17 +925,34 @@ int do_rmdir(struct message *p_msg)
 		//return -1;
 		goto label_fail;
 	}
-	//判断是否是空目录
-	// 空目录是指只包含 . ..两个目录项的目录
-	dir_entry_count = pinode->i_size/DIR_ENTRY_SIZE;
-	if(dir_entry_count>2){
-		//目录项大于2说明包含除了. ..之外的，所以不是空目录
-		//return -1;
-		goto label_fail;
+	//由于判读按目录是否为空在rootfs和fat12下的方法是不同的，所以即使在unlink_file中已经适配过fat12了，
+	//还是要额外在这里判读一下是否是空目录
+	//HOOK POINT
+	switch(pinode->i_dev){
+	case ROOT_DEV:
+		//判断是否是空目录
+		// 空目录是指只包含 . ..两个目录项的目录
+		dir_entry_count = pinode->i_size/DIR_ENTRY_SIZE;
+		if(dir_entry_count>2){
+			//目录项大于2说明包含除了. ..之外的，所以不是空目录
+			//return -1;
+			goto label_fail;
+		}
+		break;
+	case FLOPPYA_DEV:
+		//fat12判读是否是空目录
+		if(!is_dir_empty_fat12(pinode)){
+			//不是空目录
+			goto label_fail;
+		}
+		break;
+	default:
+		assert(0);
+		break;
 	}
 	//删除空目录
 	//unlink_file 内部会进行put_inode 操作
-	return unlink_file(pinode, dir_inode);
+	return unlink_file(pinode);
 label_fail:
 	CLEAR_INODE(dir_inode, pinode);
 	return -1;
@@ -984,12 +1003,15 @@ int do_chdir(struct message *p_msg)
  * @function unlink_file
  * @brief 清除文件/目录
  * @param pinode  文件inode指针
- * @param dir_inode 文件所在目录的inode指针
  * 
  * @return 0 successful
  */
-int unlink_file(struct inode *pinode, struct inode* dir_inode)
+int unlink_file(struct inode *pinode)
 {
+	//hook  for adapt fat12
+	if(pinode->i_dev == FLOPPYA_DEV){
+		return unlink_file_fat12(pinode); //fat12文件系统的unlink
+	}
 	int inode_idx = pinode->i_num;
 	struct super_block *sb = get_super_block(pinode->i_dev);
 	//free the bit in imap
@@ -1049,7 +1071,7 @@ int unlink_file(struct inode *pinode, struct inode* dir_inode)
 	//release slot in inode_table[]
 	put_inode(pinode);
 	//set the inode-nr to 0 in the directory entry
-	rm_dir_entry(dir_inode, inode_idx);
+	rm_dir_entry(pinode->parent, inode_idx);
 	return 0;
 }
 /**
@@ -1117,12 +1139,12 @@ struct inode * create_directory(char *path, int flags)
 	struct inode * dir_inode = 0;
 	struct inode * pinode= 0;
 	int inode_idx = search_file(path, filename, &dir_inode);
-	if(inode_idx == -1){
+	if(inode_idx == INVALID_PATH){
 		//说明目录链断开
 		//创建目录的位置非法
 		goto label_fail;		
 	}
-	if(inode_idx!=0){
+	if(inode_idx!=INVALID_INODE){
 		pinode = get_inode(dir_inode, inode_idx);
 		if(pinode==0 || dir_inode == 0){
 			//return 0;
@@ -1134,6 +1156,11 @@ struct inode * create_directory(char *path, int flags)
 			//return 0; //父目录下有同名文件
 			goto label_fail;
 		}
+	}
+	//HOOK POINT
+	if(dir_inode->i_dev == FLOPPYA_DEV){
+		//adapt for fat12
+		return create_directory_fat12(dir_inode, filename);
 	}
 	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
 	int free_sect_nr = alloc_smap_bit(dir_inode->i_dev, DEFAULT_FILE_SECTS_COUNT);
@@ -1458,12 +1485,12 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 			}
 			break;
 		case FLOPPYA_DEV:
-			//get_inode_idx_from_dir_fat12 和 get_inode_fat12中，都会从软盘中读取目录项，并循环寻找文件
+			//get_inode_idx_from_dir_fat12 和 get_inode中，都会从软盘中读取目录项，并循环寻找文件
 			//效率比较地下
 			//但是为了代码重用，就先这样吧。。。
 			int fat12_inode_idx = get_inode_idx_from_dir_fat12(*ppinode, filename);
 			if(fat12_inode_idx != INVALID_INODE){
-				pinode = get_inode_fat12(*ppinode, fat12_inode_idx);
+				pinode = get_inode(*ppinode, fat12_inode_idx);
 			}
 			break;
 		default:
@@ -1835,18 +1862,30 @@ int do_rename(struct message *p_msg)
 		//或者 已经存在同名的文件 inode_idx >0
 		goto label_clear_inode;
 	}
-	// 修改文件名(移动树形目录的子树节点)
-	// 由于TASK_FS一次只处理其他进程的单个消息，所以以下操作是原子的
-	//修改的时候，也要修改pinode的parent链
-	// 先在newname所在目录下创建目录项
-	new_dir_entry(new_dir_inode, old_pinode->i_num, newfilename);
-	// 再将oldname所在目录的目录项删除
-	rm_dir_entry(old_dir_inode, old_pinode->i_num);
-	//修改parent inode指针, 否则下面CLEAR_INODE的时候会出错
-	new_pinode = old_pinode;
-	new_pinode->parent = new_dir_inode;
-	old_pinode = 0;
-	ret = 0;
+	//HOOK POINT
+	//考虑挂载fat12文件系统的情况下的rename比较复杂
+	//1. 同一个文件系统下，可以简单的修改目录项
+	//2. 不同文件系统下，需要移动文件数据
+	if(old_pinode->i_dev == ROOT_DEV && new_dir_inode->i_dev == ROOT_DEV){
+		// 同在rootfs
+		// 修改文件名(移动树形目录的子树节点)
+		// 由于TASK_FS一次只处理其他进程的单个消息，所以以下操作是原子的
+		//修改的时候，也要修改pinode的parent链
+		// 先在newname所在目录下创建目录项
+		new_dir_entry(new_dir_inode, old_pinode->i_num, newfilename);
+		// 再将oldname所在目录的目录项删除
+		rm_dir_entry(old_dir_inode, old_pinode->i_num);
+		//修改parent inode指针, 否则下面CLEAR_INODE的时候会出错
+		new_pinode = old_pinode;
+		new_pinode->parent = new_dir_inode;
+		old_pinode = 0;
+		ret = 0;
+	} else if(old_pinode->i_dev == FLOPPYA_DEV && new_dir_inode->i_dev == FLOPPYA_DEV){
+		//同在fat12
+	} /*else if()  //同在其他文件系统{}*/ else {
+		//不同文件
+		//需要移动数据
+	}
 label_clear_inode:
 	CLEAR_INODE(old_dir_inode, old_pinode);
 	CLEAR_INODE(new_dir_inode, new_pinode);
