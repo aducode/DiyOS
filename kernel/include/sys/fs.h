@@ -8,54 +8,6 @@ struct dev_drv_map
 {
 	int driver_pid;	//pid of driver task
 };
-/**
- * @def MAGIC_V1
- * @brief Magic number of FS v1.0
- */
-#define MAGIC_V1	0x111 
-/**
- * @struct super_block fs.h
- * @brief The 2nd sector of the FS
- * 文件系统是在硬盘分区之上的由操作系统定义的持久化数据组织格式
- * super_block相当于我们文件系统的目录
- * 超级块在分区的第一个扇区上(512B)
- * Remember to change SUPER_BOLCK_SIZE if the members are changed
- */
-struct super_block{
-	u32	magic;		//文件系统的魔数
-	u32	inodes_count;	//inode count
-	u32	sects_count;	//sector count 
-	u32 	imap_sects_count;//inode-map sectors count
-	u32	smap_sects_count;//sector-map sectors count
-	u32	first_sect;	//Number of the first data sector
-	u32	inode_sects_count;//inode sectors count
-	u32	root_inode;	//inode number of root directory
-	u32	inode_size;	//INODE_SIZE
-	u32	inode_isize_off;//offset of struct inode::i_size
-	u32	inode_start_off;//offset of struct inode::i_start_sect
-	u32	dir_ent_size;	//DIR_ENTRY_SIZE
-	u32	dir_ent_inode_off;//Offset of struct dir_entry::inode_idx
-	u32	dir_ent_fname_off;//Offset of struct dir_entry::name
-	//the following item(s) are only present in memory
-	
-	int sb_dev;		//the super block's home device
-};
-
-
-/**
- * @def SUPER_BLOCK_SIZE
- * @brief The size of super block \b in \b the \b device
- *
- * Note that this is the size of the struct in the device, \b NOT in memory.
- * The size in memory is larger because of some more members.
- * 就是上面的结构体持久化到硬盘所用的大小（sb_dev不需要持久化），上面结构体除去sb_dev外共有14个u32类型成员，所以14*4byte = 56byte
- */
-#define SUPER_BLOCK_SIZE	56
-/**
- * @def MAX_SUPER_BLOCK_COUNT
- * @brief 
- */
-#define MAX_SUPER_BLOCK_COUNT	8
 
 /**
  * @struct inode
@@ -100,12 +52,6 @@ struct inode {
  */
 #define is_special(m) ((((m) & TYPE_MASK) == I_BLOCK_SPECIAL) || (((m) & I_TYPE_MASK) == I_CHAR_SPECIAL))
 /**
- * @def DEFAULT_FILE_SECTS_COUNT
- * @brief 每个文件默认占用的扇区数量
- * 2048（扇区数）* 512B（每个扇区数据大小） = 1MB(每个文件默认占用磁盘空间1MB）
- */
-#define DEFAULT_FILE_SECTS_COUNT	2048
-/**
  * @def	INODE MACROs
  * @brief invalid inode 0 表示文件在硬盘上不存在
  *	  the root inode    1 root_inode
@@ -114,20 +60,7 @@ struct inode {
 #define INVALID_PATH	-1
 #define INVALID_INODE	0
 #define ROOT_INODE		1
-/**
- * @def INODE_SIZE
- * @brief The size of i-node stored \b in \b the \b device.
- *
- * Note that this is the size of the struct in the device,\b NOT in memory.
- * The size in memory is larger because of some more members.
- */
-#define INODE_SIZE	32
 
-/**
- * @def MAX_INODE_COUNT
- * @brief 系统支持的的最大inode数量
- */
-#define MAX_INODE_COUNT	64
 
 /**
  * @def MAX_FILENAME_LEN
@@ -135,23 +68,6 @@ struct inode {
  * @see dir_entry
  */
 #define MAX_FILENAME_LEN	12
-
-/**
- * @struct dir_entry
- * @brief Directory Entry
- */
-struct dir_entry{
-	int inode_idx;	//inode_idx
-	char name[MAX_FILENAME_LEN];	//file name
-};
-
-/**
- * @def DIR_ENTRY_SIZE
- * @brief The size of directory entry in the device.
- *
- * It is as same as the size in memory
- */
-#define DIR_ENTRY_SIZE sizeof(struct dir_entry)
 
 
 //functions
@@ -225,12 +141,66 @@ struct file_desc {
  * @brief Some sector are reserved for us (the gods of the os) to copy a tar file
  *	there, which will be extracted and used by the os.
  */
-#define INSTALL_START_SECT	0x8000
-#define INSTALL_SECTS_COUNT	0x800
+//#define INSTALL_START_SECT	0x8000
+//#define INSTALL_SECTS_COUNT	0x800
 
 
 #define root_inode() get_inode(0, ROOT_INODE)
 
 //挂载点
-#include "map.h"
+//#include "map.h"
+
+
+////////////////////////  文件系统层通用函数  ////////////////////////////////////
+//解耦inode与持久化数据，便于不同类型文件系统分层
+
+//初始化
+typedef void (*init_fs_func)(int dev);
+//获取inode
+typedef struct inode * (*get_inode_func)(struct inode *parent, int inode_idx);
+//同步inode到磁盘
+typedef void (* sync_inode_func)(struct inode *pinode);
+//从目录中获取inode number
+typedef int (* get_inode_num_from_dir_func)(struct inode *parent,  const char * filename);
+//读写
+typedef int (* rdwt_func)(struct inode *pinode, void * buf, int pos,  int len, int src_pid);
+//创建文件
+typedef struct inode * (* create_file_func)(struct inode *parent, const char * filename, int type, int flags);
+//用于创建设备文件
+typedef struct inode * (* create_special_file_func)(struct inode *parent, const char * filename, int type, int flags, int dev);
+//删除文件
+typedef int (* unlink_file_func)(struct inode *pinode);
+//判断目录是否为空
+typedef int (* is_dir_emtpy_func)(struct inode *pinode);
+//新建目录项
+typedef void (* new_dir_entry_func)(struct inode *dir_inode, int inode, const char *filename);
+//删除目录项
+typedef void (* rm_dir_entry_func)(struct inode *dir_inode, int fst_clus);
+//mount
+typedef void (* mount_func)(struct inode *pinode, int dev);
+//磁盘格式化
+typedef void (* format_func)();
+
+/**
+ * @struct abstract_file_system
+ * @brief 文件系统抽象层
+ */
+struct abstract_file_system{
+	int							dev;					//设备号
+	int							is_root;				//是否是根设备1是 0 否
+	init_fs_func				init_fs;				//初始化文件系统
+	get_inode_func				get_inode;				//从持久化数据获取inode
+	//sync_inode_func 			sync_inode;				//同步inode
+	get_inode_num_from_dir_func	get_inode_num_from_dir;	//从目录中获取inode number
+	rdwt_func					rdwt;					//读写
+	create_file_func			create_file,			//创建文件
+	create_special_file_func	create_special_file,	//创建设备文件
+	unlink_file_func			unlink_file;			//删除文件
+	is_dir_emtpy_func			is_dir_empty;			//是否是空目录
+	//new_dir_entry_func			new_dir_entry;			//新建目录项
+	//rm_dir_entry_func			rm_dir_entry;			//删除目录项
+	mount_func					mount;					//mount
+	//unmount_func				unmount;				//unmount
+	format_func					format;					//格式化
+};
 #endif

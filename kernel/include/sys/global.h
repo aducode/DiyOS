@@ -50,7 +50,6 @@ extern const int FSBUF_SIZE;
 extern struct inode *root_inode;
 extern struct file_desc f_desc_table[];
 extern struct inode inode_table[];
-extern struct super_block super_block[];
 
 extern int key_pressed;
 

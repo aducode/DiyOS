@@ -1,6 +1,11 @@
 #include "type.h"
 #ifndef _DIYOS_FLOPPY_H
 #define _DIYOS_FLOPPY_H
+
+//软盘设备号
+#define MINOR_flda		0x00			//A盘
+#define FLOPPYA_DEV		MAKE_DEV(DEV_FLOPPY, MINOR_flda)	//只有一个软盘
+
 /**
  * @function init_floppy
  * @brief 初始化floppy 中断
