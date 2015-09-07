@@ -36,14 +36,6 @@ static void init_fs();
 static void init_tty_files(struct abstract_file_system * afs, struct inode *pin);
 static void init_block_dev_files(struct abstract_file_system * afs, struct inode *pin);
 
-/**
- * @function get_inode
- * @brief 根据inode_idx找到inode指针
- * @param parent 父目录inode ptr
- * @param inode_idx inode表的下表
- * @return inode 指针
- */
-static struct inode * get_inode(struct inode *parent, int inode_idx);
 static void put_inode(struct inode *pinode);
 
 /** 文件操作 **/
@@ -1096,43 +1088,11 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 		}
 		*t=0;
 		if(*s!=0) s++; //skip /
-		switch(*ppinode->i_dev){
-		case ROOT_DEV:
-			//下面的代码也可以抽出两个方法
-			//1. get_inode_idx_from_dir(struct inode *dir_inode, const char *filename)  :从目录项中获取文件获取filename文件的inode idx
-			//2. get_inode
-			// 两个函数组合起来的运行效率比下面的代码要慢一些(因为目录项要循环完再获取inode)
-			// 但是可以与fat12的统一起来
-			dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
-			dir_entry_blocks_count = (*ppinode)->i_size/SECTOR_SIZE + (*ppinode)->i_size%SECTOR_SIZE==0?0:1;
-			for(i=0;i<dir_entry_blocks_count;i++){ 
-				READ_SECT((*ppinode)->i_dev, (*ppinode)->i_start_sect + i);
-				pde=(struct dir_entry*)fsbuf;
-				//int dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
-				int step = min(dir_entry_count_per_sect, dir_entry_count);
-				for(j=0;j<step;j++, pde++){
-					if(strcmp(pde->name, filename)==0){
-						pinode=get_inode(*ppinode, pde->inode_idx);
-						goto try_to_find_next_path;
-					}
-				}
-				dir_entry_count -= dir_entry_count_per_sect;
-			}
-			break;
-		case FLOPPYA_DEV:
-			//get_inode_idx_from_dir_fat12 和 get_inode中，都会从软盘中读取目录项，并循环寻找文件
-			//效率比较地下
-			//但是为了代码重用，就先这样吧。。。
-			int fat12_inode_idx = get_inode_idx_from_dir_fat12(*ppinode, filename);
-			if(fat12_inode_idx != INVALID_INODE){
-				pinode = get_inode(*ppinode, fat12_inode_idx);
-			}
-			break;
-		default:
-			assert(0); //不会到这里
-			break;
+		struct abstract_file_system * afs = get_afs((*ppinode)->i_dev);
+		int inode_idx = afs->get_inode_num_from_dir(*ppinode, filename);
+		if(inode_idx != INVALID_INODE){
+			pinode = afs->get_inode(*ppinode, inode_idx);
 		}
-try_to_find_next_path:
 		if(*s!=0){
 			//不是最后一级目录
 			if(pinode==0){
@@ -1187,109 +1147,8 @@ int search_file(const char *path, char *filename, struct inode **ppinode)
 	if(filename[0] == 0){//path:"/"
 		return dir_inode->i_num;
 	}
-	switch(dir_inode->i_dev){
-	case ROOT_DEV:
-		//search the dir for the file
-		int dir_blk0_nr = dir_inode->i_start_sect;
-		int nr_dir_blks = (dir_inode->i_size + SECTOR_SIZE-1)/SECTOR_SIZE;
-		int nr_dir_entries = dir_inode->i_size/DIR_ENTRY_SIZE;
-		
-		int m = 0;
-		struct dir_entry *pde;
-		for(i=0;i<nr_dir_blks;i++){
-			READ_SECT(dir_inode->i_dev, dir_blk0_nr + i);
-			pde = (struct dir_entry*)fsbuf;
-			for(j=0;j<SECTOR_SIZE/DIR_ENTRY_SIZE;j++,pde++){
-				if(strcmp(filename, pde->name)==0){
-					return pde->inode_idx;
-				}
-				if(++m>nr_dir_entries){
-					break;
-				}
-			}
-			if(m>nr_dir_entries){
-				break;
-			}
-		}
-		break;
-	case FLOPPYA_DEV:
-		return get_inode_idx_from_dir_fat12(dir_inode, filename);
-		break;
-	default:
-		assert(0);
-		break;
-	}
-	return INVALID_INODE;//file not found
+	return get_afs(dir_inode->i_dev)->get_inode_num_from_dir(dir_inode, filename);
 }
-
-
-
-/**
- * @function get_inode
- * @brief 根据inode号从inode array中返回inode指针
- * 
- * @param parent
- * @param inode_idx inode号
- *
- * @return The inode ptr requested
- */
-struct inode * get_inode(struct inode *parent, int inode_idx)
-{
-	if(inode_idx==0){//0号inode没有使用
-		return 0;
-	}
-	int dev;
-	if(!parent){
-		//root
-		dev = ROOT_DEV;
-	} else {
-		dev = parent->i_dev;
-	}
-	if(dev == FLOPPYA_DEV){
-		//处理fat12
-		return get_inode_fat12(parent, inode_idx);
-	}
-	//处理自己的文件系统
-	struct inode * p;
-	struct inode * q = 0;
-	for(p= inode_table ; p<inode_table + MAX_INODE_COUNT; p++){
-		if(p->i_cnt){
-			//not a free slot
-			//遇到挂载点会有问题，挂载过的目录的inode->i_dev已经被改变过了
-			//这里暂时采用如下办法判断dev(目录dev) != inode->dev的情况：
-			//		被挂载的目录，一定是根目录，那么根目录的inode idx值，就一定是ROOT_INODE
-			if((p->i_dev == dev || parent->i_num == ROOT_INODE /* 只有挂载点会出现这种情况 */) && (p->i_num == inode_idx) && (p->i_parent == parent)){
-				//this is the inode we want
-				p->i_cnt ++ ;
-				return p;
-			}
-		} else {
-			//a free slot
-			if(!q){
-				//q hasn;t been assigned yet
-				q=p;//q<-the 1st free slot
-			}
-		}
-	}
-
-	if(!q){
-		panic("the inode able is full");
-	}
-	q->i_dev = dev;
-	q->i_num = inode_idx;
-	q->i_cnt = 1;
-	q->i_parent = parent;
-	struct super_block * sb = get_super_block(dev);
-	int blk_nr = 1 + 1 + sb->imap_sects_count + sb->smap_sects_count + ((inode_idx-1)/(SECTOR_SIZE/INODE_SIZE));
-	READ_SECT(dev, blk_nr);
-	struct inode * pinode = (struct inode*)((u8*)fsbuf + ((inode_idx-1)%(SECTOR_SIZE/INODE_SIZE))*INODE_SIZE);
-	q->i_mode = pinode->i_mode;
-	q->i_size = pinode->i_size;
-	q->i_start_sect = pinode->i_start_sect;
-	q->i_sects_count = pinode->i_sects_count;
-	return q;
-}
-
 
 
 /**

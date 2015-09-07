@@ -33,6 +33,14 @@ static struct super_block * get_super_block(int dev);
 static int alloc_imap_bit(int dev);
 static int alloc_smap_bit(int dev, int sects_count_to_alloc);
 static struct inode* new_inode(struct inode *parent, int inode_nr, u32 i_mode, u32 start_sect,u32 i_sects_count, u32 i_size);
+/**
+ * @function get_inode
+ * @brief 根据inode_idx找到inode指针
+ * @param parent 父目录inode ptr
+ * @param inode_idx inode表的下表
+ * @return inode 指针
+ */
+static struct inode * get_inode(struct inode *parent, int inode_idx);
 static void sync_inode(struct inode *p);
 
 static struct inode * create_file(const char *filename, struct inode *dir_inode , int flags);
@@ -43,13 +51,15 @@ static void new_dir_entry(struct inode *dir_inode, int inode_nr, const char *fil
 // 删除 dir entry
 static void rm_dir_entry(struct inode *dir_inode, int inode_nr);
 
+static int get_inode_num_from_dir(struct inode *parent,  const char * filename);
+
 struct abstract_file_system tortoise = {
 	ROOT_DEV,						//dev
 	1,								//is_root
 	init_tortoise_fs,				//init_fs_func
-	get_inode_fat12,				//get_inode_func
+	get_inode,				//get_inode_func
 	//sync_inode_fat12,				//sync_inode_func
-	get_inode_idx_from_dir_fat12,	//get_inode_num_from_dir_func
+	get_inode_idx_from_dir,	//get_inode_num_from_dir_func
 	do_rdwt_fat12,					//rdwt_func
 	create_file,					//create_file_func
 	create_special_file,			//create_special_file_func
@@ -414,6 +424,69 @@ struct inode* new_inode(struct inode *parent, int inode_nr,u32 i_mode, u32 start
 	return new_inode;
 }
 
+
+/**
+ * @function get_inode
+ * @brief 根据inode号从inode array中返回inode指针
+ * 
+ * @param parent
+ * @param inode_idx inode号
+ *
+ * @return The inode ptr requested
+ */
+struct inode * get_inode(struct inode *parent, int inode_idx)
+{
+	if(inode_idx==0){//0号inode没有使用
+		return 0;
+	}
+	int dev;
+	if(!parent){
+		//root
+		dev = ROOT_DEV;
+	} else {
+		dev = parent->i_dev;
+	}
+	//处理自己的文件系统
+	struct inode * p;
+	struct inode * q = 0;
+	for(p= inode_table ; p<inode_table + MAX_INODE_COUNT; p++){
+		if(p->i_cnt){
+			//not a free slot
+			//遇到挂载点会有问题，挂载过的目录的inode->i_dev已经被改变过了
+			//这里暂时采用如下办法判断dev(目录dev) != inode->dev的情况：
+			//		被挂载的目录，一定是根目录，那么根目录的inode idx值，就一定是ROOT_INODE
+			if((p->i_dev == dev || parent->i_num == ROOT_INODE /* 只有挂载点会出现这种情况 */) && (p->i_num == inode_idx) && (p->i_parent == parent)){
+				//this is the inode we want
+				p->i_cnt ++ ;
+				return p;
+			}
+		} else {
+			//a free slot
+			if(!q){
+				//q hasn;t been assigned yet
+				q=p;//q<-the 1st free slot
+			}
+		}
+	}
+
+	if(!q){
+		panic("the inode able is full");
+	}
+	q->i_dev = dev;
+	q->i_num = inode_idx;
+	q->i_cnt = 1;
+	q->i_parent = parent;
+	struct super_block * sb = get_super_block(dev);
+	int blk_nr = 1 + 1 + sb->imap_sects_count + sb->smap_sects_count + ((inode_idx-1)/(SECTOR_SIZE/INODE_SIZE));
+	READ_SECT(dev, blk_nr);
+	struct inode * pinode = (struct inode*)((u8*)fsbuf + ((inode_idx-1)%(SECTOR_SIZE/INODE_SIZE))*INODE_SIZE);
+	q->i_mode = pinode->i_mode;
+	q->i_size = pinode->i_size;
+	q->i_start_sect = pinode->i_start_sect;
+	q->i_sects_count = pinode->i_sects_count;
+	return q;
+}
+
 /**
  * @function syn_inode
  * @brief write the inode block to the disk.
@@ -572,4 +645,27 @@ void rm_dir_entry(struct inode *dir_inode, int inode_nr)
 		dir_inode->i_size = dir_size;
 		sync_inode(dir_inode);
 	}
+}
+
+
+int get_inode_num_from_dir(struct inode *parent,  const char * filename)
+{
+	int i;
+	struct dir_entry *pde;
+	int dir_entry_count_per_sect = SECTOR_SIZE/DIR_ENTRY_SIZE;
+	int dir_entry_count = parent->i_size/DIR_ENTRY_SIZE;
+	int dir_entry_blocks_count = parent->i_size/SECTOR_SIZE + parent->i_size%SECTOR_SIZE==0?0:1;
+	for(i=0;i<dir_entry_blocks_count;i++){ 
+		READ_SECT(parent->i_dev, parent->i_start_sect + i);
+		pde=(struct dir_entry*)fsbuf;
+		//int dir_entry_count = (*ppinode)->i_size/DIR_ENTRY_SIZE;
+		int step = min(dir_entry_count_per_sect, dir_entry_count);
+		for(j=0;j<step;j++, pde++){
+			if(strcmp(pde->name, filename)==0){
+				return pde->inode_idx;
+			}
+		}
+		dir_entry_count -= dir_entry_count_per_sect;
+	}
+	return INVALID_INODE;
 }
