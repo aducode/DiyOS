@@ -163,9 +163,11 @@ typedef void (* sync_inode_func)(struct inode *pinode);
 //从目录中获取inode number
 typedef int (* get_inode_num_from_dir_func)(struct inode *parent,  const char * filename);
 //读写
-typedef int (* rdwt_func)(struct inode *pinode, void * buf, int pos,  int len, int src_pid);
+typedef int (* rdwt_func)(int io_type, struct inode *pinode, void * buf, int pos,  int len);
 //创建文件
-typedef struct inode * (* create_file_func)(struct inode *parent, const char * filename, int type, int flags);
+typedef struct inode * (* create_file_func)(struct inode *parent, const char * filename, int flags);
+
+typedef struct inode * (* create_directory_func)(struct inode *parent, const char * filename, int flags);
 //用于创建设备文件
 typedef struct inode * (* create_special_file_func)(struct inode *parent, const char * filename, int type, int flags, int dev);
 //删除文件
@@ -175,9 +177,11 @@ typedef int (* is_dir_emtpy_func)(struct inode *pinode);
 //新建目录项
 typedef void (* new_dir_entry_func)(struct inode *dir_inode, int inode, const char *filename);
 //删除目录项
-typedef void (* rm_dir_entry_func)(struct inode *dir_inode, int fst_clus);
+typedef void (* rm_dir_entry_func)(struct inode *dir_inode, int inode);
 //mount
 typedef void (* mount_func)(struct inode *pinode, int dev);
+//卸载
+typedef void (* unmount_func)(struct inode *pinode, int newdev);
 //磁盘格式化
 typedef void (* format_func)();
 
@@ -195,12 +199,13 @@ struct abstract_file_system{
 	rdwt_func					rdwt;					//读写
 	create_file_func			create_file,			//创建文件
 	create_special_file_func	create_special_file,	//创建设备文件
+	create_directory_func		create_file,			//创建目录
 	unlink_file_func			unlink_file;			//删除文件
 	is_dir_emtpy_func			is_dir_empty;			//是否是空目录
-	//new_dir_entry_func			new_dir_entry;			//新建目录项
-	//rm_dir_entry_func			rm_dir_entry;			//删除目录项
+	new_dir_entry_func			new_dir_entry;		//新建目录项
+	rm_dir_entry_func			rm_dir_entry;			//删除目录项
 	mount_func					mount;					//mount
-	//unmount_func				unmount;				//unmount
+	unmount_func				unmount;				//unmount
 	format_func					format;					//格式化
 };
 #endif

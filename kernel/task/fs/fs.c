@@ -60,9 +60,7 @@ static int fs_exit(struct message *msg);
 //只有在do_open中创建文件的时候使用
 //static struct inode * create_file(char *path, int flags);
 //使用strip_path返回的结果，避免重复调用strip_path
-static struct inode * create_file(const char *filename, struct inode * dir_inode, int flags);
 static struct inode * create_directory(char *path, int flags);
-static int unlink_file(struct inode * pinode);
 
 static int strip_path(char *filename, const char *pathname, struct inode **ppinode);
 //添加参数，避免重复调用strip_path
@@ -213,7 +211,7 @@ void init_fs()
 	
 	//创建/dev目录
 	struct inode *dir_inode = root_inode();
-	dir_inode = afs->create_file(dir_inode, "dev", I_DIRECTORY);
+	dir_inode = afs->create_directory(dir_inode, "dev", O_CREATE);
 	//struct inode *p_dir_inode = create_directory("/dev", O_CREATE);
 	//创建设备文件
 	assert(afs->create_special_file != 0);
@@ -240,10 +238,9 @@ void init_tty_files(struct abstract_file_system * afs, struct inode *dir_inode)
 	struct inode * newino;
 	for(i=0;i<CONSOLE_COUNT;i++){
 		newino = 0;
-		afs->create_file(dir_inode, )
 		sprintf(filename, "tty%d", i);
 		newino = afs->create_special_file(dir_inode, filename, I_CHAR_SPECIAL, O_CREATE, MAKE_DEV(DEV_CHAR_TTY, i));
-		assert(inode_nr!=0 && newino != 0);
+		assert(newino != 0);
 		put_inode(newino);
 	}
 		
@@ -259,7 +256,8 @@ void init_block_dev_files(struct inode *dir_inode)
 	//软盘驱动设备也是一定存在的
 	//软盘是否存在，要在挂载的时候判断
 	struct inode *newino = 0;
-	afs->create_special_file(dir_inode, "floppy", I_BLOCK_SPECIAL, O_CREATE, FLOPPYA_DEV);
+	newino = afs->create_special_file(dir_inode, "floppy", I_BLOCK_SPECIAL, O_CREATE, FLOPPYA_DEV);
+	assert(newino != 0);
 	put_inode(newino);
 }
 
@@ -334,7 +332,7 @@ int do_open(struct message *p_msg)
 	char filename[MAX_PATH];
 	struct inode *dir_inode = 0, *pin=0;
 	int inode_nr = search_file(pathname, filename, &dir_inode);
-	if(inode_nr == -1){
+	if(inode_nr == INVALID_PATH){
 		goto label_fail;
 	}
 	//原来这里是这样写的，但是上面inode_nr==-1的时候直接跳到label_fail
@@ -349,7 +347,8 @@ int do_open(struct message *p_msg)
 			//return -1;
 			goto label_fail;
 		} else {
-			pin = create_file(filename, dir_inode, flags);
+			//pin = create_file(filename, dir_inode, flags);
+			pin = get_afs(dir_inode->i_dev)->create_file(dir_inode, filename, flags);
 		}
 	} else {
 		assert(flags & O_RDWT);
@@ -358,7 +357,8 @@ int do_open(struct message *p_msg)
 			//return -1;
 			goto label_fail;
 		}
-		pin = get_inode(dir_inode, inode_nr);
+		//pin = get_inode(dir_inode, inode_nr);
+		pin = get_afs(dir_inode->i_dev)->get_inode(dir_inode, inode_nr);
 	}
 	if(pin){
 		if(pin->i_mode == I_DIRECTORY){
@@ -582,54 +582,16 @@ int do_rdwt(struct message *p_msg)
 		//}
 		return 0; //直接返回0byte
 	}else {
-		if(pin->i_dev == FLOPPYA_DEV){
-			return do_rdwt_fat12(pin, buf, pos, len, src);
-		}
 		assert(pin->i_mode == I_REGULAR || pin->i_mode == I_DIRECTORY);
 		assert((p_msg->type == READ)||(p_msg->type == WRITE));
-		int pos_end;
+		struct abstract_file_system *afs = get_afs(pin->i_dev);
 		if(p_msg->type == READ){
-			pos_end = min(pos+len, pin->i_size);
+			return afs->rdwt(DEV_READ, pin, buf, pos, len);
 		} else {
-			pos_end = min(pos+len, pin->i_sects_count * SECTOR_SIZE);
+			return afs->rdwt(DEV_WRITE, pin, buf, pos,len);
 		}
-		int off = pos % SECTOR_SIZE;
-		int rw_sect_min = pin->i_start_sect + (pos>>SECTOR_SIZE_SHIFT);
-		int rw_sect_max = pin->i_start_sect + (pos_end>>SECTOR_SIZE_SHIFT);
-		int chunk = min(rw_sect_max - rw_sect_min + 1, FSBUF_SIZE >> SECTOR_SIZE_SHIFT);
-		int bytes_rw = 0;
-		int bytes_left = len;
-		int i;
-		for(i=rw_sect_min;i<=rw_sect_max;i+=chunk){
-			//read/write this amount of bytes every time
-			int bytes = min(bytes_left, chunk * SECTOR_SIZE - off);
-			rw_sector(DEV_READ, pin->i_dev, i*SECTOR_SIZE, chunk*SECTOR_SIZE, TASK_FS, fsbuf);
-			if(p_msg->type == READ){
-				memcpy((void*)va2la(src, buf+bytes_rw), (void*)va2la(TASK_FS, fsbuf+off), bytes);
-			} else {
-				//write
-				memcpy((void*)va2la(TASK_FS, fsbuf+off), (void*)va2la(src, buf+bytes_rw), bytes);
-				//TODO add file cache here
-				rw_sector(DEV_WRITE,pin->i_dev, i*SECTOR_SIZE, chunk*SECTOR_SIZE, TASK_FS, fsbuf);
-			}
-			off = 0;
-			bytes_rw += bytes;
-			pcaller->filp[fd]->fd_pos += bytes;
-			bytes_left -= bytes;
-		}
-
-		if(pcaller->filp[fd]->fd_pos > pin->i_size){
-			//update inode::size
-			pin->i_size = pcaller->filp[fd]->fd_pos;
-			//write the updated inode back to disk
-			sync_inode(pin);
-		}
-		return bytes_rw;
 	}
 }
-
-
-
 
 /**
  * @function do_unlink
@@ -666,7 +628,12 @@ int do_unlink(struct message *p_msg)
 		//return -1;
 		goto label_fail;
 	}
-	pin = get_inode(dir_inode, inode_nr);
+	pin = get_afs(dir_inode->i_dev)->get_inode(dir_inode, inode_nr);
+	if(pin == 0){
+		goto label_fail;
+	}
+	//更新afs到pin的dev，否则遇到挂载点出现问题
+	//afs = get_afs(pin->i_dev);
 	if(pin->i_mode != I_REGULAR){
 		//can only remove regular files
 		//if you want remove directory  @see do_rmdir
@@ -683,7 +650,7 @@ int do_unlink(struct message *p_msg)
 	//这里pin->i_cnt应该是1
 	assert(pin->i_cnt == 1);
 	//unlink_file内部会进行put_inode操作
-	return unlink_file(pin);
+	return get_afs(pin->i_dev);->unlink_file(pin);
 label_fail:
 	CLEAR_INODE(dir_inode, pin);
 	return -1;
@@ -741,7 +708,7 @@ int do_rmdir(struct message *p_msg)
 		//return -1;
 		goto label_fail;
 	}
-	struct inode *pinode = get_inode(dir_inode, inode_idx);
+	struct inode *pinode = get_afs(dir_inode->i_dev)->get_inode(dir_inode, inode_idx);
 	if(!pinode){
 		//return -1;
 		goto label_fail;
@@ -761,31 +728,13 @@ int do_rmdir(struct message *p_msg)
 	//由于判读按目录是否为空在rootfs和fat12下的方法是不同的，所以即使在unlink_file中已经适配过fat12了，
 	//还是要额外在这里判读一下是否是空目录
 	//HOOK POINT
-	switch(pinode->i_dev){
-	case ROOT_DEV:
-		//判断是否是空目录
-		// 空目录是指只包含 . ..两个目录项的目录
-		dir_entry_count = pinode->i_size/DIR_ENTRY_SIZE;
-		if(dir_entry_count>2){
-			//目录项大于2说明包含除了. ..之外的，所以不是空目录
-			//return -1;
-			goto label_fail;
-		}
-		break;
-	case FLOPPYA_DEV:
-		//fat12判读是否是空目录
-		if(!is_dir_empty_fat12(pinode)){
-			//不是空目录
-			goto label_fail;
-		}
-		break;
-	default:
-		assert(0);
-		break;
+	if(!get_afs(pinode->i_dev)->is_dir_empty(pinode)){
+		//不是空目录
+		goto label_fail;
 	}
 	//删除空目录
 	//unlink_file 内部会进行put_inode 操作
-	return unlink_file(pinode);
+	return get_afs(pinode->i_dev)->unlink_file(pinode);
 label_fail:
 	CLEAR_INODE(dir_inode, pinode);
 	return -1;
@@ -814,7 +763,7 @@ int do_chdir(struct message *p_msg)
 		//无效的目录
 		goto label_fail;
 	}
-	struct inode *pinode = get_inode(dir_inode, inode_idx);
+	struct inode *pinode = get_afs(dir_inode->i_dev)->get_inode(dir_inode, inode_idx);
 	if(!pinode){
 		goto label_fail;
 	}
@@ -832,81 +781,7 @@ int do_chdir(struct message *p_msg)
 	return 0;
 }
 
-/**
- * @function unlink_file
- * @brief 清除文件/目录
- * @param pinode  文件inode指针
- * 
- * @return 0 successful
- */
-int unlink_file(struct inode *pinode)
-{
-	//hook  for adapt fat12
-	if(pinode->i_dev == FLOPPYA_DEV){
-		return unlink_file_fat12(pinode); //fat12文件系统的unlink
-	}
-	int inode_idx = pinode->i_num;
-	struct super_block *sb = get_super_block(pinode->i_dev);
-	//free the bit in imap
-	int byte_idx = inode_idx/8;
-	int bit_idx = inode_idx % 8;
-	assert(byte_idx<SECTOR_SIZE);//we have only one imap sector
-	//read sector 2 (skip bootsect and superblk):
-	READ_SECT(pinode->i_dev, 2);
-	assert(fsbuf[byte_idx%SECTOR_SIZE]&(1<<bit_idx));
-	fsbuf[byte_idx % SECTOR_SIZE] &= ~(1<<bit_idx);
-	WRITE_SECT(pinode->i_dev, 2);
-	//free the bits in smap
-	bit_idx = pinode->i_start_sect - sb->first_sect + 1;
-	byte_idx = bit_idx/8;
-	int bits_left = pinode->i_sects_count;
-	int byte_cnt = (bits_left - (8-(bit_idx % 8)))/8; 
-	
-	//current sector nr
-	int s= 2 + sb->imap_sects_count + byte_idx/SECTOR_SIZE;//2:bootsect + superblk
-	READ_SECT(pinode->i_dev, s);
-	int i;
-	//clear the first byte
-	for(i=bit_idx % 8;(i<8)&&bits_left;i++,bits_left--){
-		assert((fsbuf[byte_idx % SECTOR_SIZE]>>i&1)==1);
-		fsbuf[byte_idx%SECTOR_SIZE] &= ~(1<<i);
-	}
-	//clear bytes from the second byte to the second to last
-	int k;
-	i=(byte_idx % SECTOR_SIZE) + 1;
-	for(k=0;k<byte_cnt;k++,i++,bits_left-=8){
-		if(i==SECTOR_SIZE){
-			i=0;
-			WRITE_SECT(pinode->i_dev, s);
-			READ_SECT(pinode->i_dev, ++s);
-		}
-		assert(fsbuf[i]==0xFF);
-		fsbuf[i] = 0;
-	}
 
-	//clear the last byte
-	if(i==SECTOR_SIZE){
-		i=0;
-		WRITE_SECT(pinode->i_dev, s);
-		READ_SECT(pinode->i_dev, ++s);
-	}
-	unsigned char mask = ~((unsigned char)(~0)<<bits_left);
-	assert((fsbuf[i]&mask)==mask);
-	fsbuf[i] &= (~0)<<bits_left;
-	WRITE_SECT(pinode->i_dev, s);
-
-	//clear the inode itself
-	pinode->i_mode = 0;
-	pinode->i_size = 0;
-	pinode->i_start_sect = 0;
-	pinode->i_sects_count = 0;
-	sync_inode(pinode);
-	//release slot in inode_table[]
-	put_inode(pinode);
-	//set the inode-nr to 0 in the directory entry
-	rm_dir_entry(pinode->parent, inode_idx);
-	return 0;
-}
 /**
  * @function fs_fork
  * @brief Perform the aspects of fork() that relate to files
@@ -977,8 +852,9 @@ struct inode * create_directory(char *path, int flags)
 		//创建目录的位置非法
 		goto label_fail;		
 	}
+	struct abstract_file_system *afs = get_afs(dir_inode->i_dev);
 	if(inode_idx!=INVALID_INODE){
-		pinode = get_inode(dir_inode, inode_idx);
+		pinode = afs->get_inode(dir_inode, inode_idx);
 		if(pinode==0 || dir_inode == 0){
 			//return 0;
 			goto label_fail;
@@ -990,47 +866,10 @@ struct inode * create_directory(char *path, int flags)
 			goto label_fail;
 		}
 	}
-	//HOOK POINT
-	if(dir_inode->i_dev == FLOPPYA_DEV){
-		//adapt for fat12
-		return create_directory_fat12(dir_inode, filename);
-	}
-	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
-	int free_sect_nr = alloc_smap_bit(dir_inode->i_dev, DEFAULT_FILE_SECTS_COUNT);
-	struct inode * newino = new_inode(dir_inode, inode_nr, I_DIRECTORY, free_sect_nr, DEFAULT_FILE_SECTS_COUNT, 2*DIR_ENTRY_SIZE);
-	//写入directory文件数据 . ..
-	memset(fsbuf, 0, SECTOR_SIZE);
-	struct dir_entry *pde;
-	pde=(struct dir_entry*)fsbuf;
-	pde->inode_idx = inode_nr;
-	strcpy(pde->name, "."); //.
-	(++pde)->inode_idx = dir_inode->i_num ;
-	strcpy(pde->name, ".."); //..
-	//写入磁盘
-	WRITE_SECT(dir_inode->i_dev, free_sect_nr);	
-	new_dir_entry(dir_inode, newino->i_num, filename);
-	return newino;
+	return afs->create_directory(dir_inode, filename, O_CREATE);
 label_fail:
 	CLEAR_INODE(dir_inode, pinode);
 	return 0;
-}
-/**
- * @function create_file
- * @brief 创建新的inode，并设置磁盘上的数据
- * @param filename 文件名
- * @param dir_inode 文件所处目录inode
- * @param flags
- * 
- * @return 新inode指针，失败返回0
- */
-//struct inode * create_file(char *path, int type,  int flags, int start_sect, int sect_count)
-struct inode * create_file(const char *filename, struct inode *dir_inode , int flags)
-{
-	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
-	int free_sect_nr = alloc_smap_bit(dir_inode->i_dev, DEFAULT_FILE_SECTS_COUNT);
-	struct inode *newino = new_inode(dir_inode, inode_nr,I_REGULAR, free_sect_nr, DEFAULT_FILE_SECTS_COUNT, 0);
-	new_dir_entry(dir_inode, newino->i_num, filename);
-	return newino;
 }
 
 /**
@@ -1088,8 +927,7 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 		}
 		*t=0;
 		if(*s!=0) s++; //skip /
-		struct abstract_file_system * afs = get_afs((*ppinode)->i_dev);
-		int inode_idx = afs->get_inode_num_from_dir(*ppinode, filename);
+		int inode_idx = get_afs((*ppinode)->i_dev)->get_inode_num_from_dir(*ppinode, filename);
 		if(inode_idx != INVALID_INODE){
 			pinode = afs->get_inode(*ppinode, inode_idx);
 		}
@@ -1201,7 +1039,7 @@ int do_stat(struct message *p_msg)
 	//TODO 这里get_inode有点问题，每次都是i_cnt==0导致每次都从磁盘重新load出来
 	//inode_table[] 只是一个缓存，就算重新load，也不会影响i_size
 	//而且奇怪的是随后的read还是可以读出数据的
-	pinode = get_inode(dir_inode, inode_idx);
+	pinode = get_afs(dir_inode->i_dev)->get_inode(dir_inode, inode_idx);
 	if(!pinode){
 		printk("FS::do_stat:: get_inode() return invalid inode: %s\n", pathname);
 		ret = -1;
@@ -1253,7 +1091,7 @@ int do_rename(struct message *p_msg)
 		//oldname的目录存在错误
 		goto label_clear_inode;
 	}
-	old_pinode = get_inode(old_dir_inode , inode_idx);
+	old_pinode = get_afs(old_dir_inode->i_dev)->get_inode(old_dir_inode , inode_idx);
 	if(!old_pinode){
 		//oldname不存在
 		goto label_clear_inode;
@@ -1288,9 +1126,9 @@ int do_rename(struct message *p_msg)
 		// 由于TASK_FS一次只处理其他进程的单个消息，所以以下操作是原子的
 		//修改的时候，也要修改pinode的parent链
 		// 先在newname所在目录下创建目录项
-		new_dir_entry(new_dir_inode, old_pinode->i_num, newfilename);
+		get_afs(new_dir_inode->i_dev)->new_dir_entry(new_dir_inode, old_pinode->i_num, newfilename);
 		// 再将oldname所在目录的目录项删除
-		rm_dir_entry(old_dir_inode, old_pinode->i_num);
+		get_afs(old_dir_inode->i_dev)->rm_dir_entry(old_dir_inode, old_pinode->i_num);
 		//修改parent inode指针, 否则下面CLEAR_INODE的时候会出错
 		new_pinode = old_pinode;
 		new_pinode->parent = new_dir_inode;
@@ -1332,7 +1170,7 @@ int do_mount(struct message *p_msg)
 		//target的目录不对
 		goto label_fail;
 	}
-	target_pinode = get_inode(target_dir_inode, inode_idx);
+	target_pinode = get_afs(target_dir_inode->i_dev)->get_inode(target_dir_inode, inode_idx);
 	if(!target_pinode){
 		//target 文件不存在
 		goto label_fail;
@@ -1356,7 +1194,7 @@ int do_mount(struct message *p_msg)
 		//dev 路径无效
 		goto label_fail;
 	}
-	source_pinode = get_inode(source_dir_inode, inode_idx);
+	source_pinode = get_afs(source_dir_inode->i_dev)->get_inode(source_dir_inode, inode_idx);
 	if(!source_pinode){
 		//无效dev文件
 		goto label_fail;
@@ -1365,53 +1203,9 @@ int do_mount(struct message *p_msg)
 		//不是设备文件
 		goto label_fail;
 	}
-	
-	//validate
-	//首先打开设备文件
-	struct message driver_msg;
-	reset_msg(&driver_msg);
-	driver_msg.type = DEV_OPEN;
-	int dev = source_pinode->i_start_sect;
-	driver_msg.DEVICE=MINOR(dev);
-	//dd_map[1] = TASK_FLOPPY
-	//assert(MAJOR(dev)==1); //可能有多个块设备
-	assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
-	send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
-	assert(driver_msg.type==SYSCALL_RET);
-	//dev已经被打开了
-	//将target_pinode->i_dev改成挂在的设备文件dev
-	//注意i_dev并不会持久化到磁盘
-	//但是mount操作后，由于目录inode->i_cnt会增加，目标目录的inode会被缓存在内存中
-	//所以可以在这里进行修改dev的操作
-	//////////////////
-	//这里的逻辑有问题
-	//直接修改i_dev是错误的，因为挂载的设备跟我们的硬盘格式不同
-	//////////////////
-	target_pinode->i_dev = dev; //下次再打开挂在目录下的文件的时候，文件的dev就会因为从父目录中获取，从而改编成挂在的dev了
-	//挂载同时还需要读取软盘BPB
-	init_fat12_bpb(dev);
-	//target_pinode的其他属性也要修改，如所在设备开始扇区号
-	
-	//TODO 获取目录所在扇区及大小
-	//FAT12软盘中存储的结构与硬盘中的结构不同，所以需要在inode_table中开辟一个inode节点，虚拟的表示floppy中的文件
-	//为了简化起见，fat12只允许一级目录，根目录下的目录将会被忽略
-	struct BPB * bpb_ptr = FAT12_BPB_PTR(dev);
-	target_pinode->i_start_sect = bpb_ptr->rsvd_sec_cnt + bpb_ptr->hidd_sec + bpb_ptr->num_fats * (bpb_ptr->fat_sz16>0 ? bpb_ptr->fat_sz16 : bpb_ptr->tot_sec32);//【BPB结构中的(rsvd_sec_cnt + hidd_sec + num_fats* (fat_sz16>0?fat_sz16:tot_sec32))】 //root目录开始扇区
-	//target_pinode->i_sects_count = bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry)/bpb_ptr->bytes_per_sec; //【root_ent_cnt*sizeof(struct RootEntry)/bytes_per_sec】 //根目录最大文件数*每个目录项所占字节数/每个扇区的字节数=占用扇区数
-	target_pinode->i_size = bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry); //【root_ent_cnt*sizeof(struct RootEntry)】
-	target_pinode->i_sects_count = target_pinode->i_size / bpb_ptr->bytes_per_sec;
-	target_pinode->i_num = ROOT_INODE;		//【说明】本来预计floppy文件的inode值就设置成第一个簇号
-											//但是为了与硬盘的根目录统一，这里就设置成ROOT_INODE也就是1了
-											//其他floppy文件可以设置成开始簇号
-											//inode_table可以看作一个map (dev, inode)->pinode  所以不同的dev下，可以用相同的inode号
-											//另外挂载点的i_num设置成ROOT_INODE,在 @function get_inode 方法中也可以用来做【正确】的判断
-	//////
-	//下次再进入target目录后，发现i_dev != ROOT_DEV，说明被挂载了其他设备
-	//就不能再按现有的方式读取directory_entry，进而获取目录下的文件了
-	//而是应该按照设备（比如软盘）的格式，读取根目录项
-	//所以 strip_path  search_file 等地方都要修改，根据dev进行不同的操作
-	//////
-	//设备文件没必要占用inode table ,这里可以清空了
+	//source_pinode->i_dev 被挂载到的文件系统设备号
+	//target_pinode 挂载点目录
+	get_afs(source_pinode->i_dev)->mount(target_pinode, source_pinode->i_start_sect);
 	CLEAR_INODE(source_dir_inode, source_pinode);
 	return 0;
 label_fail:
@@ -1445,7 +1239,7 @@ int do_unmount(struct message *p_msg)
 		//路径无效
 		goto label_fail;
 	}
-	pinode = get_inode(dir_inode, inode_idx);
+	pinode = get_afs(dir_inode)->get_inode(dir_inode, inode_idx);
 	if(!pinode){
 		//无效文件
 		goto label_fail;
@@ -1459,21 +1253,8 @@ int do_unmount(struct message *p_msg)
 		//目录dev是ROOT_DEV ,说明没有被挂在过
 		goto label_fail;
 	}
-	//关闭设备文件
-	struct message driver_msg;
-	reset_msg(&driver_msg);
-	driver_msg.type = DEV_CLOSE;
-	int dev = pin->i_start_sect; //dev设备号存储在磁盘的i_start_sect区域
-	driver_msg.DEVICE=MINOR(dev);
-	//dd_map[1] = TASK_FLOPPY
-	//assert(MAJOR(dev)==1); //可能有多个块设备
-	assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
-	send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
-	assert(driver_msg.type==SYSCALL_RET);
-	//设备关闭成功
-	pinode->i_dev = ROOT_DEV; //这步操作不是不要的，因为下面就要关闭pinode了，下次再打开的目录下的文件时候，就会从新从/打开，从而i_dev会变成ROOT_DEV
-	//其他属性由于没有记录，所以不能还原了，只能依靠CLEAR_INODE之后，下次再打开的时候从硬盘还原
-	clear_fat12_bpb(dev);
+	//清理设备，并且将inode设置新的dev
+	get_afs(pinode->i_dev)->unmount(pinode, ROOT_DEV);
 	//清理pinode
 	CLEAR_INODE(dir_inode, pinode);
 	return 0;
