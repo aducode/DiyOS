@@ -4,6 +4,7 @@
 /* 之所以叫tortoise是因为我们的文件系统读写慢/扩展难  */
 /******************************************************/
 //主要供fs.c使用，用来将fat12格式的文件系统，适配到自己的文件系统.
+#include "global.h"
 #include "fs.h"
 #include "hd.h"
 #include "syscall.h"
@@ -68,7 +69,7 @@ struct abstract_file_system tortoise = {
 	init_tortoise_fs,				//init_fs_func
 	get_inode,						//get_inode_func
 	//sync_inode_fat12,				//sync_inode_func
-	get_inode_idx_from_dir,			//get_inode_num_from_dir_func
+	get_inode_num_from_dir,			//get_inode_num_from_dir_func
 	do_rdwt,						//rdwt_func
 	create_file,					//create_file_func
 	create_special_file,			//create_special_file_func
@@ -78,7 +79,7 @@ struct abstract_file_system tortoise = {
 	new_dir_entry,					//new_dir_entry_func
 	rm_dir_entry,					//rm_dir_entry_func
 	mount_dev,						//mount_func
-	umount_dev,						//unmount_func
+	unmount_dev,						//unmount_func
 	fmtfs							//format_func
 };
 
@@ -435,7 +436,6 @@ struct inode* new_inode(struct inode *parent, int inode_nr,u32 i_mode, u32 start
 	return new_inode;
 }
 
-
 /**
  * @function get_inode
  * @brief 根据inode号从inode array中返回inode指针
@@ -720,7 +720,7 @@ int do_rdwt(int io_type, struct inode *pin, void * buf, int pos , int len)
 		//read/write this amount of bytes every time
 		int bytes = min(bytes_left, chunk * SECTOR_SIZE - off);
 		rw_sector(DEV_READ, pin->i_dev, i*SECTOR_SIZE, chunk*SECTOR_SIZE, TASK_FS, fsbuf);
-		if(p_msg->type == READ){
+		if(io_type == DEV_READ){
 			memcpy((void*)va2la(src, buf+bytes_rw), (void*)va2la(TASK_FS, fsbuf+off), bytes);
 		} else {
 			//write
@@ -811,7 +811,7 @@ int unlink_file(struct inode *pinode)
 	//release slot in inode_table[]
 	put_inode(pinode);
 	//set the inode-nr to 0 in the directory entry
-	rm_dir_entry(pinode->parent, inode_idx);
+	rm_dir_entry(pinode->i_parent, inode_idx);
 	return 0;
 }
 

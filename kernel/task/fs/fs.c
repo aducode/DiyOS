@@ -178,9 +178,11 @@ struct abstract_file_system * get_afs(int dev)
 	case ROOT_DEV:
 		ret = &tortoise;
 		break;
+	/*
 	case FLOPPYA_DEV:
 		ret = &fat12;
 		break;
+	*/
 	default:
 		assert(0);
 		break;
