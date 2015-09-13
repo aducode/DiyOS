@@ -1,6 +1,6 @@
-#include "fs.h"
 #ifndef _DIYOS_TORTOISE_H
 #define _DIYOS_TORTOISE_H
+#include "fs.h"
 /**
  * @def MAGIC_V1
  * @brief Magic number of FS v1.0

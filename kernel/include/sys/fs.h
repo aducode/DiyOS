@@ -1,3 +1,4 @@
+#include "tortoise.h"
 #ifndef _DIYOS_FS_H
 #define _DIYOS_FS_H
 /**
@@ -145,7 +146,7 @@ struct file_desc {
 //#define INSTALL_SECTS_COUNT	0x800
 
 
-#define root_inode() get_inode(0, ROOT_INODE)
+#define root_inode() tortoise.get_inode(0, ROOT_INODE)
 
 //挂载点
 //#include "map.h"
@@ -197,9 +198,9 @@ struct abstract_file_system{
 	//sync_inode_func 			sync_inode;				//同步inode
 	get_inode_num_from_dir_func	get_inode_num_from_dir;	//从目录中获取inode number
 	rdwt_func					rdwt;					//读写
-	create_file_func			create_file,			//创建文件
-	create_special_file_func	create_special_file,	//创建设备文件
-	create_directory_func		create_file,			//创建目录
+	create_file_func			create_file;			//创建文件
+	create_special_file_func	create_special_file;	//创建设备文件
+	create_directory_func		create_directory;			//创建目录
 	unlink_file_func			unlink_file;			//删除文件
 	is_dir_emtpy_func			is_dir_empty;			//是否是空目录
 	new_dir_entry_func			new_dir_entry;		//新建目录项

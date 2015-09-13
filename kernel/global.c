@@ -1,6 +1,6 @@
 #include "proc.h"
 #include "syscall.h"
-#include "fs.h"
+#include "tortoise.h"
 #include "protect.h"
 #ifndef _DIYOS_GLOBAL_H
 #define _DIYOS_GLOBAL_H

@@ -20,7 +20,8 @@
 #include "fs.h"
 #include "fat12.h"
 #include "tortoise.h"
-//#include "stdio.h"
+#include "stdio.h"
+#include "stat.h"
 #include "proc.h"
 
 /**
@@ -215,12 +216,12 @@ void init_fs()
 	//struct inode *p_dir_inode = create_directory("/dev", O_CREATE);
 	//创建设备文件
 	assert(afs->create_special_file != 0);
-	assert(p_dir_inode!=0);
-	init_tty_files(p_dir_inode);
+	assert(dir_inode!=0);
+	init_tty_files(afs, dir_inode);
 	//init block device files
-	init_block_dev_files(p_dir_inode);
-	//put_inode(p_dir_inode);
-	assert(p_dir_inode->i_cnt == 0);
+	init_block_dev_files(afs, dir_inode);
+	put_inode(dir_inode);
+	assert(dir_inode->i_cnt == 0);
 }
 
 
@@ -234,7 +235,7 @@ void init_tty_files(struct abstract_file_system * afs, struct inode *dir_inode)
 	//step 1 创建tty0 tty1 tty2三个tty设备文件
 	//tty字符设备一定存在，所以不需要检测
 	char filename[MAX_PATH];
-	int i
+	int i;
 	struct inode * newino;
 	for(i=0;i<CONSOLE_COUNT;i++){
 		newino = 0;
@@ -251,7 +252,7 @@ void init_tty_files(struct abstract_file_system * afs, struct inode *dir_inode)
  * @brief 初始化块设备文件
  * @return
  */
-void init_block_dev_files(struct inode *dir_inode)
+void init_block_dev_files(struct abstract_file_system * afs, struct inode *dir_inode)
 {
 	//软盘驱动设备也是一定存在的
 	//软盘是否存在，要在挂载的时候判断
@@ -650,7 +651,7 @@ int do_unlink(struct message *p_msg)
 	//这里pin->i_cnt应该是1
 	assert(pin->i_cnt == 1);
 	//unlink_file内部会进行put_inode操作
-	return get_afs(pin->i_dev);->unlink_file(pin);
+	return get_afs(pin->i_dev)->unlink_file(pin);
 label_fail:
 	CLEAR_INODE(dir_inode, pin);
 	return -1;
@@ -779,6 +780,9 @@ int do_chdir(struct message *p_msg)
 	}
 	pcaller->current_path_inode = pinode; //设置新的进程目录
 	return 0;
+label_fail:
+	CLEAR_INODE(dir_inode, pinode);
+	return -1;
 }
 
 
@@ -798,7 +802,7 @@ int fs_fork(struct message *msg)
 	assert(pinode!=0)
 	while(pinode != 0){
 		pinode->i_cnt ++;
-		pinode = pinode->parent;
+		pinode = pinode->i_parent;
 	}
 	for(i=0;i<MAX_FILE_COUNT;i++){
 		if(child->filp[i]){
@@ -929,7 +933,7 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 		if(*s!=0) s++; //skip /
 		int inode_idx = get_afs((*ppinode)->i_dev)->get_inode_num_from_dir(*ppinode, filename);
 		if(inode_idx != INVALID_INODE){
-			pinode = afs->get_inode(*ppinode, inode_idx);
+			pinode = get_afs((*ppinode)->i_dev)->get_inode(*ppinode, inode_idx);
 		}
 		if(*s!=0){
 			//不是最后一级目录
@@ -1027,7 +1031,7 @@ int do_stat(struct message *p_msg)
 	pathname[name_len]=0;
 	char filename[MAX_PATH];
 	struct inode *dir_inode = 0, *pinode = 0;
-	struct stat stat; //内核层保存结果
+	struct stat _stat; //内核层保存结果
 	int inode_idx = search_file(pathname,filename, &dir_inode);
 	//if(inode_idx == INVALID_INODE || dir_inode == 0){
 	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
@@ -1045,16 +1049,16 @@ int do_stat(struct message *p_msg)
 		ret = -1;
 		goto label_clear_inode;
 	}
-	stat.st_dev = pinode->i_dev;
-	stat.st_ino = pinode->i_num;
-	stat.st_mode = pinode->i_mode;
+	_stat.st_dev = pinode->i_dev;
+	_stat.st_ino = pinode->i_num;
+	_stat.st_mode = pinode->i_mode;
 	if(pinode->i_mode == I_CHAR_SPECIAL||pinode->i_mode == I_BLOCK_SPECIAL){
-		stat.st_dev = pinode->i_start_sect;
+		_stat.st_dev = pinode->i_start_sect;
 	} else {
-		stat.st_rdev = 0;
+		_stat.st_rdev = 0;
 	}
-	stat.st_size = pinode->i_size;
-	memcpy((void*)va2la(src, p_msg->BUF), (void*)va2la(TASK_FS, &stat), sizeof(struct stat)); //数据拷贝到用户层的buf中
+	_stat.st_size = pinode->i_size;
+	memcpy((void*)va2la(src, p_msg->BUF), (void*)va2la(TASK_FS, &_stat), sizeof(struct stat)); //数据拷贝到用户层的buf中
 	ret = 0;
 label_clear_inode:
 	CLEAR_INODE(dir_inode, pinode);
@@ -1131,7 +1135,7 @@ int do_rename(struct message *p_msg)
 		get_afs(old_dir_inode->i_dev)->rm_dir_entry(old_dir_inode, old_pinode->i_num);
 		//修改parent inode指针, 否则下面CLEAR_INODE的时候会出错
 		new_pinode = old_pinode;
-		new_pinode->parent = new_dir_inode;
+		new_pinode->i_parent = new_dir_inode;
 		old_pinode = 0;
 		ret = 0;
 	} else {
@@ -1239,7 +1243,7 @@ int do_unmount(struct message *p_msg)
 		//路径无效
 		goto label_fail;
 	}
-	pinode = get_afs(dir_inode)->get_inode(dir_inode, inode_idx);
+	pinode = get_afs(dir_inode->i_dev)->get_inode(dir_inode, inode_idx);
 	if(!pinode){
 		//无效文件
 		goto label_fail;

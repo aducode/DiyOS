@@ -38,7 +38,8 @@ struct BPB {
 
 //根目录条目  
 struct fat12_dir_entry {
-	char name[11];			//文件名8字节，扩展名3字节
+	char name[8];			//文件名8字节，扩展名3字节
+	char suffix[3];
 	u8   attr;				//文件属性  
 	char reserved[10];		//保留位
 	u16  wrt_time;			//最后一次写入时间

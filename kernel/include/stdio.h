@@ -1,3 +1,4 @@
+#include "type.h"
 #ifndef _DIYOS_STDIO_H
 #define _DIYOS_STDIO_H
 /**
@@ -119,5 +120,5 @@ extern int printf(const char *fmt, ...);
  * @param newname 新文件名
  * @return 0 if success
  */
-extern int rename(const char *oldname, struct char *newname);
+extern int rename(const char *oldname, const char *newname);
 #endif

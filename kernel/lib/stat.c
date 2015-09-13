@@ -70,7 +70,7 @@ extern int chdir(const char *pathname)
 {
 	struct message msg;
 	reset_msg(&msg);
-	msg.TYPE = CHDIR;
+	msg.type = CHDIR;
 	msg.PATHNAME = (void*)pathname;
 	msg.NAME_LEN = strlen(pathname);
 	send_recv(BOTH, TASK_FS, &msg);
