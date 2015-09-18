@@ -55,7 +55,7 @@ static void rm_dir_entry(struct inode *dir_inode, int inode_nr);
 
 static int get_inode_num_from_dir(struct inode *parent,  const char * filename);
 
-static int do_rdwt(int io_type, struct inode *pinode, void * buf, int pos , int len);
+static int do_rdwt(int fd, int src_pid, int io_type, struct inode *pinode, void * buf, int pos , int len);
 
 static int unlink_file(struct inode * pinode);
 
@@ -75,7 +75,7 @@ struct abstract_file_system tortoise = {
 	create_special_file,			//create_special_file_func
 	create_directory,				//create_directory_func
 	unlink_file,					//unlink_file_func
-	is_dir_emtpy,					//is_dir_emtpy_func
+	is_dir_empty,					//is_dir_emtpy_func
 	new_dir_entry,					//new_dir_entry_func
 	rm_dir_entry,					//rm_dir_entry_func
 	mount_dev,						//mount_func
@@ -99,6 +99,7 @@ void init_tortoise_fs(int dev)
 	//比如软盘 /dev/floppy
 	//将来对软盘的操作由mount unmount来完成
 	struct message msg;
+	struct super_block * sb;
 	msg.type = DEV_OPEN;
 	msg.DEVICE = MINOR(ROOT_DEV);
 	assert(dd_map[MAJOR(ROOT_DEV)].driver_pid != INVALID_DRIVER);
@@ -538,7 +539,7 @@ struct inode * create_file(struct inode * dir_inode, const char *filename, int f
 	return newino;
 }
 
-struct inode * create_directory(struct inode *parent, const char *filename, int flags)
+struct inode * create_directory(struct inode *dir_inode, const char *filename, int flags)
 {
 	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
 	int free_sect_nr = alloc_smap_bit(dir_inode->i_dev, DEFAULT_FILE_SECTS_COUNT);
@@ -569,7 +570,7 @@ struct inode * create_directory(struct inode *parent, const char *filename, int 
 struct inode * create_special_file(struct inode * dir_inode, const char * filename, int types, int flags, int dev)
 {
 	int inode_nr = alloc_imap_bit(dir_inode->i_dev);
-	struct inode *newino = new_inode(dir_inode, inode_nr,type, dev, 0, 0);
+	struct inode *newino = new_inode(dir_inode, inode_nr,types, dev, 0, 0);
 	new_dir_entry(dir_inode, newino->i_num, filename);
 	return newino;
 }
@@ -584,10 +585,6 @@ struct inode * create_special_file(struct inode * dir_inode, const char * filena
  */
 void new_dir_entry(struct inode *dir_inode, int inode_nr, const char *filename)
 {
-	//HOOK POINT
-	if(dir_inode->i_dev == FLOPPYA_DEV){
-		return new_dir_entry_fat12(dir_inode, inode_nr, filename);
-	}
 	//write the dir_entry
 	int dir_blk0_nr = dir_inode->i_start_sect;
 	int nr_dir_blks = (dir_inode->i_size + SECTOR_SIZE)/SECTOR_SIZE;
@@ -638,14 +635,10 @@ void new_dir_entry(struct inode *dir_inode, int inode_nr, const char *filename)
  */
 void rm_dir_entry(struct inode *dir_inode, int inode_nr)
 {
-	//HOOK POINT
-	if(dir_inode->i_dev == FLOPPYA_DEV){
-		return rm_dir_entry_fat12(dir_inode, inode_nr);
-	}
 	int dir_blk0_nr = dir_inode->i_start_sect;
 	int nr_dir_blks = (dir_inode->i_size + SECTOR_SIZE)/SECTOR_SIZE;
 	int nr_dir_entries = dir_inode->i_size /DIR_ENTRY_SIZE;
-	int m = 0;
+	int m = 0, i;
 	struct dir_entry *pde = 0;
 	int flag = 0;
 	int dir_size = 0;
@@ -680,7 +673,7 @@ void rm_dir_entry(struct inode *dir_inode, int inode_nr)
 
 int get_inode_num_from_dir(struct inode *parent,  const char * filename)
 {
-	int i;
+	int i,j;
 	struct dir_entry *pde;
 	int dir_entry_count_per_sect = SECTOR_SIZE/DIR_ENTRY_SIZE;
 	int dir_entry_count = parent->i_size/DIR_ENTRY_SIZE;
@@ -700,7 +693,7 @@ int get_inode_num_from_dir(struct inode *parent,  const char * filename)
 	return INVALID_INODE;
 }
 
-int do_rdwt(int io_type, struct inode *pin, void * buf, int pos , int len)
+int do_rdwt(int fd, int src_pid, int io_type, struct inode *pin, void * buf, int pos , int len)
 {
 	int pos_end;
 	if(io_type == DEV_READ){
@@ -716,15 +709,16 @@ int do_rdwt(int io_type, struct inode *pin, void * buf, int pos , int len)
 	int bytes_rw = 0;
 	int bytes_left = len;
 	int i;
+	struct process *pcaller = proc_table+ src_pid;
 	for(i=rw_sect_min;i<=rw_sect_max;i+=chunk){
 		//read/write this amount of bytes every time
 		int bytes = min(bytes_left, chunk * SECTOR_SIZE - off);
 		rw_sector(DEV_READ, pin->i_dev, i*SECTOR_SIZE, chunk*SECTOR_SIZE, TASK_FS, fsbuf);
 		if(io_type == DEV_READ){
-			memcpy((void*)va2la(src, buf+bytes_rw), (void*)va2la(TASK_FS, fsbuf+off), bytes);
+			memcpy((void*)va2la(src_pid, buf+bytes_rw), (void*)va2la(TASK_FS, fsbuf+off), bytes);
 		} else {
 			//write
-			memcpy((void*)va2la(TASK_FS, fsbuf+off), (void*)va2la(src, buf+bytes_rw), bytes);
+			memcpy((void*)va2la(TASK_FS, fsbuf+off), (void*)va2la(src_pid, buf+bytes_rw), bytes);
 			//TODO add file cache here
 			rw_sector(DEV_WRITE,pin->i_dev, i*SECTOR_SIZE, chunk*SECTOR_SIZE, TASK_FS, fsbuf);
 		}
@@ -823,51 +817,7 @@ int is_dir_empty(struct inode *pinode)
 
 void mount_dev(struct inode *pinode, int dev)
 {
-	//validate
-	//首先打开设备文件
-	struct message driver_msg;
-	reset_msg(&driver_msg);
-	driver_msg.type = DEV_OPEN;
-	driver_msg.DEVICE=MINOR(dev);
-	//dd_map[1] = TASK_FLOPPY
-	//assert(MAJOR(dev)==1); //可能有多个块设备
-	assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
-	send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
-	assert(driver_msg.type==SYSCALL_RET);
-	//dev已经被打开了
-	//将target_pinode->i_dev改成挂在的设备文件dev
-	//注意i_dev并不会持久化到磁盘
-	//但是mount操作后，由于目录inode->i_cnt会增加，目标目录的inode会被缓存在内存中
-	//所以可以在这里进行修改dev的操作
-	//////////////////
-	//这里的逻辑有问题
-	//直接修改i_dev是错误的，因为挂载的设备跟我们的硬盘格式不同
-	//////////////////
-	pinode->i_dev = dev; //下次再打开挂在目录下的文件的时候，文件的dev就会因为从父目录中获取，从而改编成挂在的dev了
-	//挂载同时还需要读取软盘BPB
-	init_fat12_bpb(dev);
-	//target_pinode的其他属性也要修改，如所在设备开始扇区号
-	
-	//TODO 获取目录所在扇区及大小
-	//FAT12软盘中存储的结构与硬盘中的结构不同，所以需要在inode_table中开辟一个inode节点，虚拟的表示floppy中的文件
-	//为了简化起见，fat12只允许一级目录，根目录下的目录将会被忽略
-	struct BPB * bpb_ptr = FAT12_BPB_PTR(dev);
-	pinode->i_start_sect = bpb_ptr->rsvd_sec_cnt + bpb_ptr->hidd_sec + bpb_ptr->num_fats * (bpb_ptr->fat_sz16>0 ? bpb_ptr->fat_sz16 : bpb_ptr->tot_sec32);//【BPB结构中的(rsvd_sec_cnt + hidd_sec + num_fats* (fat_sz16>0?fat_sz16:tot_sec32))】 //root目录开始扇区
-	//pinode->i_sects_count = bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry)/bpb_ptr->bytes_per_sec; //【root_ent_cnt*sizeof(struct RootEntry)/bytes_per_sec】 //根目录最大文件数*每个目录项所占字节数/每个扇区的字节数=占用扇区数
-	pinode->i_size = bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry); //【root_ent_cnt*sizeof(struct RootEntry)】
-	pinode->i_sects_count = pinode->i_size / bpb_ptr->bytes_per_sec;
-	pinode->i_num = ROOT_INODE;			//【说明】本来预计floppy文件的inode值就设置成第一个簇号
-											//但是为了与硬盘的根目录统一，这里就设置成ROOT_INODE也就是1了
-											//其他floppy文件可以设置成开始簇号
-											//inode_table可以看作一个map (dev, inode)->pinode  所以不同的dev下，可以用相同的inode号
-											//另外挂载点的i_num设置成ROOT_INODE,在 @function get_inode 方法中也可以用来做【正确】的判断
-	//////
-	//下次再进入target目录后，发现i_dev != ROOT_DEV，说明被挂载了其他设备
-	//就不能再按现有的方式读取directory_entry，进而获取目录下的文件了
-	//而是应该按照设备（比如软盘）的格式，读取根目录项
-	//所以 strip_path  search_file 等地方都要修改，根据dev进行不同的操作
-	//////
-	//设备文件没必要占用inode table ,这里可以清空了
+	//
 }
 
 void unmount_dev(struct inode *pinode, int dev)

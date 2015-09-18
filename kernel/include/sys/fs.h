@@ -164,7 +164,7 @@ typedef void (* sync_inode_func)(struct inode *pinode);
 //从目录中获取inode number
 typedef int (* get_inode_num_from_dir_func)(struct inode *parent,  const char * filename);
 //读写
-typedef int (* rdwt_func)(int io_type, struct inode *pinode, void * buf, int pos,  int len);
+typedef int (* rdwt_func)(int fd, int src_pid, int io_type, struct inode *pinode, void * buf, int pos,  int len);
 //创建文件
 typedef struct inode * (* create_file_func)(struct inode *parent, const char * filename, int flags);
 
@@ -209,4 +209,20 @@ struct abstract_file_system{
 	unmount_func				unmount;				//unmount
 	format_func					format;					//格式化
 };
+
+extern void put_inode(struct inode *pinode);
+
+/**
+ * @define CLEAR_INODE
+ * @brief 清理目录树路径上的inode
+ * @param dir_inode
+ * @param inode
+ */
+#define CLEAR_INODE(dir_inode, inode)  do { \
+        if((inode) != 0){ \
+                put_inode((inode)); \
+        } else if((dir_inode) != 0){ \
+                put_inode((dir_inode)); \
+        }                                                                               \
+}while(0)
 #endif

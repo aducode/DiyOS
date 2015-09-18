@@ -2,13 +2,15 @@
 /*                   fat12文件系统                    */
 /******************************************************/
 //主要供fs.c使用，用来将fat12格式的文件系统，适配到自己的文件系统
+#include "hd.h"
 #include "floppy.h"
 #include "fat12.h"
 #include "fs.h"
 #include "assert.h"
 #include "string.h"
 #include "proc.h"
-
+#include "syscall.h"
+#include "global.h"
 /**
  * @function init_fat12_bpb
  * @brief 根据设备号获取软盘的BPB
@@ -57,6 +59,8 @@ static int get_inode_idx_from_dir_fat12(struct inode *parent,  const char * file
 /**
  * @function do_rdwt_fat12
  * @breif 适配rootfs的do_rdwt
+ * @param fd
+ * @param src_pid
  * @param pinode  inode指针
  * @param buf 输出的缓冲
  * @param pos 当前文件偏移
@@ -64,7 +68,7 @@ static int get_inode_idx_from_dir_fat12(struct inode *parent,  const char * file
  * @param src_pid 输出的进程ID
  * @return 读写的字节数
  */
-static int do_rdwt_fat12(int io_type, struct inode *pinode, void * buf, int pos,  int len);
+static int do_rdwt_fat12(int fd, int src_pid, int io_type, struct inode *pinode, void * buf, int pos,  int len);
 
 /**
  * @function unlink_file_fat12
@@ -160,7 +164,7 @@ struct abstract_file_system fat12 = {
 	mount_for_fat12,				//mount_func
 	unmount_for_fat12,				//unmount_func
 	fmt_fat12						//format_func
-}
+};
 /**
  * 缓存软盘BPB
  * 一般只允许fs.c和fat12.c使用
@@ -174,6 +178,7 @@ void init_fat12(){
 
 void init_fat12_fs(int dev)
 {
+	/*
 	int idx = MINOR(dev);
 	assert(idx == 0||idx==1); //floppya floppyb
 	if(FAT12_BPB[idx].i_cnt == 0){
@@ -186,19 +191,23 @@ void init_fat12_fs(int dev)
 		//说明已经挂载过了
 		FAT12_BPB[idx].i_cnt++;
 	}
+	*/
 }
 
 void clear_fat12_bpb(int dev)
 {
+	/*
 	int idx = MINOR(dev);
 	assert(idx == 0||idx == 1);
 	if(FAT12_BPB[idx].i_cnt > 0){
 		FAT12_BPB[idx].i_cnt--;
 	}
+	*/
 }
 
-struct inode * get_inode_fat12(struct *parent, int inode_idx)
+struct inode * get_inode_fat12(struct inode *parent, int inode_idx)
 {
+	/*
 	if(inode_idx==0){//0号inode没有使用
 		return 0;
 	}
@@ -231,10 +240,13 @@ struct inode * get_inode_fat12(struct *parent, int inode_idx)
 	//int file_size = dir_entry_ptr->file_size; //得到文件大小
 	//q->i_mode = is_dir(dir_entry)? I_DIRECTORY:I_REGULAR  //软盘中的，暂时使用这两种吧
 	return q;
+	*/
+	return 0;
 }
 
 int get_inode_idx_from_dir_fat12(struct inode *parent,  const char * filename)
 {
+	/*
 	assert(parent != 0);
 	assert(filename[0] != 0);
 	//读取目录项
@@ -242,10 +254,13 @@ int get_inode_idx_from_dir_fat12(struct inode *parent,  const char * filename)
 	//	if(dir_entry->name)
 	//return dir_entry->fst_clus;
 	return INVALID_INODE;
+	*/
+	return 0;
 }
 
-int do_rdwt_fat12(int io_type, struct inode *pinode, void * buf, int pos, int len)
+int do_rdwt_fat12(int fd, int src_pid, int io_type, struct inode *pinode, void * buf, int pos, int len)
 {
+	/*
 	int bytes_rdwt = 0; //已读写字节数
 	struct inode *dir_inode = pinode->i_parent; //得到父目录的inode
 	//TODO从fat12中得到目录项
@@ -253,52 +268,68 @@ int do_rdwt_fat12(int io_type, struct inode *pinode, void * buf, int pos, int le
 	//根据pos len 读写数据
 	//同步文件变化
 	return 0;
+	*/
+	return 0;
 	
 }
 
 int unlink_file_fat12(struct inode *pinode)
 {
+	/*
 	struct inode *dir_inode = pinode->i_parent;
 	//1.清空目录项
 	//2.清空fat表链
 	rm_dir_entry_fat12(pinode, pinode->i_num);
 	return 0;
+	*/
+	return 0;
 }
 
 
-struct inode * create_file_fat12(struct inode *parent, const char * filename, int type, int flags)
+struct inode * create_file_fat12(struct inode *parent, const char * filename, int flags)
 {
+	/*
+	int fst_clus;
+	//找到空的簇号，作为目录第一个簇号
+	//创建新的目录项
+	struct inode *pinode = get_inode_fat12(parent, fst_clus);
+	return pinode;	
+	*/
+	return 0;
+}
+
+struct inode * create_directory_fat12(struct inode *parent, const char * filename, int flags)
+{
+	/*
 	int fst_clus;
 	//找到空的簇号，作为目录第一个簇号
 	//创建新的目录项
 	struct inode *pinode = get_inode_fat12(parent, fst_clus);
 	return pinode;
-}
-
-struct inode * create_directory_fat12(struct inode *parent, const char * filename, int type, int flags)
-{
-	int fst_clus;
-	//找到空的簇号，作为目录第一个簇号
-	//创建新的目录项
-	struct inode *pinode = get_inode_fat12(parent, fst_clus);
-	return pinode;
+	*/
+	return 0;
 }
 
 int is_dir_emtpy(struct inode *pinode)
 {
+	/*
 	struct inode *dir_inode = pinode->i_parent;
 	//fat12 目录文件的size字段为0，没办法简单的经过计算得到目录项个数
 	// 读取目录项，遍历判断是否是空目录
 	// 是空目录返回1
 	// 否则返回0
 	return 0;
+	*/
+	return 0;
 }
 
 
 void new_dir_entry_fat12(struct inode *dir_inode, int fst_clus, const char *filename)
 {
+	/*
 	//TODO fat12 修改目录项
 	struct inode *pinode = get_inode_fat12(dir_inode, fst_clus);
+	*/
 }
 
 void rm_dir_entry_fat12(struct inode *dir_inode, int fst_clus)
@@ -312,9 +343,47 @@ void sync_inode_fat12(struct inode *pinode)
 	//DO NOTHING
 }
 
+/**
+ * 挂在fat12
+ */
 void mount_for_fat12(struct inode *pinode, int dev)
 {
-	//在fat12文件系统上挂载
+	//validate
+        //首先打开设备文件
+        struct message driver_msg;
+        reset_msg(&driver_msg);
+        driver_msg.type = DEV_OPEN;
+        driver_msg.DEVICE=MINOR(dev);
+        //dd_map[1] = TASK_FLOPPY
+        //assert(MAJOR(dev)==1); //可能有多个块设备
+        assert(dd_map[MAJOR(dev)].driver_pid != INVALID_DRIVER);
+        send_recv(BOTH, dd_map[MAJOR(dev)].driver_pid, &driver_msg);
+        assert(driver_msg.type==SYSCALL_RET);
+        //dev已经被打开了
+        //将target_pinode->i_dev改成挂在的设备文件dev
+        //注意i_dev并不会持久化到磁盘
+        //但是mount操作后，由于目录inode->i_cnt会增加，目标目录的inode会被缓存在内存中
+        //所以可以在这里进行修改dev的操作
+        //////////////////
+        //这里的逻辑有问题
+        //直接修改i_dev是错误的，因为挂载的设备跟我们的硬盘格式不同
+        //////////////////
+        pinode->i_dev = dev; //下次再打开挂在目录下的文件的时候，文件的dev就会因为从父目录中获取，从而改编成挂在的dev了
+        //挂载同时还需要读取软盘BPB
+        init_fat12_fs(dev);
+        //target_pinode的其他属性也要修改，如所在设备开始扇区号
+
+        //TODO 获取目录所在扇区及大小
+        //FAT12软盘中存储的结构与硬盘中的结构不同，所以需要在inode_table中开辟一个inode节点，虚拟的表示floppy中的文件
+        //为了简化起见，fat12只允许一级目录，根目录下的目录将会被忽略
+        struct BPB * bpb_ptr = (struct BPB *)FAT12_BPB_PTR(dev);
+        pinode->i_start_sect = bpb_ptr->rsvd_sec_cnt + bpb_ptr->hidd_sec + bpb_ptr->num_fats * (bpb_ptr->fat_sz16>0 ? bpb_ptr->fat_sz16 : bpb_ptr->tot_sec32);//【BPB结构中的(rsvd_sec_cnt + hidd_sec + num_fats* (fat_sz16>0?fat_sz16:tot_sec32))】 //root目录开始扇区
+        //pinode->i_sects_count = bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry)/bpb_ptr->bytes_per_sec; //【root_ent_cnt*sizeof(struct RootEntry)/bytes_per_sec】 //根目录最大文件数*每个目录项所占字节数/每个扇区的字节数=占用扇区数
+        pinode->i_size = bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry); //【root_ent_cnt*sizeof(struct RootEntry)】
+        pinode->i_sects_count = pinode->i_size / bpb_ptr->bytes_per_sec;
+        pinode->i_num = ROOT_INODE;                     //【说明】本来预计floppy文件的inode值就设置成第一个簇号
+                                                                                        //但是为了与硬盘的根目录统一，这里就设置成ROOT_INODE也就是1了
+                               
 	
 }
 
@@ -325,7 +394,7 @@ void unmount_for_fat12(struct inode * pinode, int newdev)
 	struct message driver_msg;
 	reset_msg(&driver_msg);
 	driver_msg.type = DEV_CLOSE;
-	int dev = pin->i_start_sect; //dev设备号存储在磁盘的i_start_sect区域
+	int dev = pinode->i_start_sect; //dev设备号存储在磁盘的i_start_sect区域
 	driver_msg.DEVICE=MINOR(dev);
 	//dd_map[1] = TASK_FLOPPY
 	//assert(MAJOR(dev)==1); //可能有多个块设备

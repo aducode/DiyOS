@@ -18,12 +18,11 @@
 #include "hd.h"
 #include "floppy.h"
 #include "fs.h"
-#include "fat12.h"
 #include "tortoise.h"
+#include "fat12.h"
 #include "stdio.h"
 #include "stat.h"
 #include "proc.h"
-
 /**
  * @function get_afs
  * @brief 根据设备号获取抽象文件系统
@@ -36,8 +35,6 @@ static void init_fs();
 
 static void init_tty_files(struct abstract_file_system * afs, struct inode *pin);
 static void init_block_dev_files(struct abstract_file_system * afs, struct inode *pin);
-
-static void put_inode(struct inode *pinode);
 
 /** 文件操作 **/
 static int do_open(struct message *p_msg);
@@ -66,20 +63,6 @@ static struct inode * create_directory(char *path, int flags);
 static int strip_path(char *filename, const char *pathname, struct inode **ppinode);
 //添加参数，避免重复调用strip_path
 static int search_file(const char *path, char * filename, struct inode **ppinode);
-
-/**
- * @define CLEAR_INODE
- * @brief 清理目录树路径上的inode
- * @param dir_inode
- * @param inode
- */
-#define CLEAR_INODE(dir_inode, inode)  do { \
-	if((inode) != 0){ \
-		put_inode((inode)); \
-	} else if((dir_inode) != 0){ \
-		put_inode((dir_inode)); \
-	}										\
-}while(0)
 
 /**
  * Main Loop 
@@ -589,9 +572,9 @@ int do_rdwt(struct message *p_msg)
 		assert((p_msg->type == READ)||(p_msg->type == WRITE));
 		struct abstract_file_system *afs = get_afs(pin->i_dev);
 		if(p_msg->type == READ){
-			return afs->rdwt(DEV_READ, pin, buf, pos, len);
+			return afs->rdwt(fd, src, DEV_READ, pin, buf, pos, len);
 		} else {
-			return afs->rdwt(DEV_WRITE, pin, buf, pos,len);
+			return afs->rdwt(fd, src, DEV_WRITE, pin, buf, pos,len);
 		}
 	}
 }
@@ -1211,7 +1194,8 @@ int do_mount(struct message *p_msg)
 	}
 	//source_pinode->i_dev 被挂载到的文件系统设备号
 	//target_pinode 挂载点目录
-	get_afs(source_pinode->i_dev)->mount(target_pinode, source_pinode->i_start_sect);
+	int target_dev = source_pinode->i_start_sect;
+	get_afs(target_dev)->mount(target_pinode, target_dev);
 	CLEAR_INODE(source_dir_inode, source_pinode);
 	return 0;
 label_fail:

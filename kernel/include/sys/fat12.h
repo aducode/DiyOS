@@ -1,7 +1,5 @@
-#include "type.h"
 #ifndef _DIYOS_FAT12_H
 #define _DIYOS_FAT12_H
-
 //修改对齐方式是必须的，否则会按照缺省对齐
 //比如64位机器就会按8字节对齐
 //    32位机器就会按4字节对齐
@@ -61,7 +59,7 @@ extern struct BPB FAT12_BPB[];
  * @define FAT12_BPB_PTR
  * @breif 获取dev对应的BPB指针
  */
-#define FAT12_BPB_PTR(dev) &(FAT12_BPB[MINOR(dev)])
+#define FAT12_BPB_PTR(dev)  &(FAT12_BPB[MINOR(dev)])
 
 /**
  * @define is_dir
