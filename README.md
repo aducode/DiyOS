@@ -19,7 +19,7 @@
 
 ###目前进度:
 
-1. boot loader 完成;
+1. boot loader完成;
 2. 微内核架构kernel，主要处理进程调度;
 3. 自定义系统中断函数sendrecv，用于进程间消息通信;
 4. 屏幕输出，完成用户级别输出（printf）;
