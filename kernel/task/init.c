@@ -35,10 +35,10 @@ void init(){
 	}
 }
 #else
-static void test_fs();
-static void test_fs2();
-static void test_fork();
-static void test_mount();
+static void test_fs(int id);
+static void test_fs2(int id);
+static void test_fork(int id);
+static void test_mount(int id);
 void init()
 {
 	int stdin = open("/dev/tty0", O_RDWT);
@@ -55,12 +55,9 @@ void init()
 	//open("/dev/floppy", O_RDWT);
 	//assert(0);
 	printf("RUN TESTS...\n");
-	test_fs();
-	printf("TEST FILE SUCCESS!!\n");
-	test_fs2();
-	printf("TEST DIRECTORY SUCCESS!!\n");
-	test_fork();
-	printf("TEST FORK/EXIT SUCCESS!!\n");
+	test_fs(1);
+	test_fs2(2);
+	test_fork(3);
 	//test_mount();
 	//untar("/cmd.tar");
 	char buf[128];
@@ -86,7 +83,7 @@ void init()
  *
  * @return  void
  */
-void test_fs()
+void test_fs(int id)
 {
 	int ret, fd, bytes, pos;
 	char buf[50];
@@ -124,6 +121,7 @@ void test_fs()
 	assert(statbuf.st_size == file_content_len);
 	ret = stat("/hello", &statbuf);
 	assert(ret == 0);
+	printf("[%d]TEST FILE SUCCESS!!\n", id);
 }
 
 /**
@@ -132,7 +130,7 @@ void test_fs()
  *
  * @return void
  */
-void test_fs2()
+void test_fs2(int id)
 {
 	int ret, fd;
 	//1. test for mkdir
@@ -167,9 +165,10 @@ void test_fs2()
 	fd = open("/dir/yoo", O_CREATE);
 	//should fail
 	assert(fd == -1);
+	printf("[%d]TEST DIRECTORY SUCCESS!!\n", id);
 }
 
-void test_fork()
+void test_fork(int id)
 {
 	int pid = fork();
 	assert(pid>=0);
@@ -180,10 +179,11 @@ void test_fork()
         } else {
                 exit(2333);
         }
+	printf("[%d]TEST FORK/EXIT SUCCESS!!\n", id);
 
 }
 
-void test_mount()
+void test_mount(int id)
 {
 	printf("test\n");
 	int ret;
