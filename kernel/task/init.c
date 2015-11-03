@@ -48,7 +48,6 @@ void init()
 	assert(stdout == 1);
 	int stderr = open("/dev/tty0", O_RDWT);
 	assert(stderr == 2);
-	printf("%d\n", get_inode_icnt("/"));
 	//创建/root 作为进程目录
 	mkdir("/root");
 	//设置进程目录

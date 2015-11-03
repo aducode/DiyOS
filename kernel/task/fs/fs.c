@@ -26,10 +26,11 @@
 /**
  * @function get_afs
  * @brief 根据设备号获取抽象文件系统
- * @param dev 设备号
+ * @param inode
  * @return 抽象文件系统 ptr
  */
-static struct abstract_file_system * get_afs(int dev);
+static struct abstract_file_system * get_afs(struct inode *inode);
+static struct abstract_file_system * get_afs_by_dev(int dev);
 
 static void init_fs();
 
@@ -63,7 +64,6 @@ static struct inode * create_directory(char *path, int flags);
 static int strip_path(char *filename, const char *pathname, struct inode **ppinode);
 //添加参数，避免重复调用strip_path
 static int search_file(const char *path, char * filename, struct inode **ppinode);
-
 /**
  * Main Loop 
  */
@@ -153,24 +153,29 @@ void task_fs()
 	}
 }
 
-
-struct abstract_file_system * get_afs(int dev)
+struct abstract_file_system * get_afs_by_dev(int dev)
 {
 	struct abstract_file_system * ret;
 	switch(dev){
-	case ROOT_DEV:
-		ret = &tortoise;
-		break;
-	/*
-	case FLOPPYA_DEV:
-		ret = &fat12;
-		break;
-	*/
-	default:
-		assert(0);
-		break;
-	}
-	return ret;
+        case ROOT_DEV:
+                ret = &tortoise;
+                break;
+        /*
+        case FLOPPYA_DEV:
+                ret = &fat12;
+                break;
+        */
+        default:
+                assert(0);
+                break;
+        }
+        return ret;
+
+}
+struct abstract_file_system * get_afs(struct inode *inode)
+{
+	int dev = inode != 0?inode->i_dev:ROOT_DEV;
+	return get_afs_by_dev(dev);
 }
 
 /**
@@ -192,7 +197,7 @@ void init_fs()
 	init_tortoise();
 	init_fat12();
 	//初始化根目录设备
-	struct abstract_file_system * afs = get_afs(ROOT_DEV);
+	struct abstract_file_system * afs = get_afs(0);
 	afs->init_fs(ROOT_DEV);
 	
 	//创建/dev目录
@@ -341,7 +346,7 @@ int do_open(struct message *p_msg)
 			goto label_fail;
 		} else {
 			//pin = create_file(filename, dir_inode, flags);
-			pin = get_afs(dir_inode->i_dev)->create_file(dir_inode, filename, flags);
+			pin = get_afs(dir_inode)->create_file(dir_inode, filename, flags);
 		}
 	} else {
 		assert(flags & O_RDWT);
@@ -351,7 +356,7 @@ int do_open(struct message *p_msg)
 			goto label_fail;
 		}
 		//pin = get_inode(dir_inode, inode_nr);
-		pin = get_afs(dir_inode->i_dev)->get_inode(dir_inode, inode_nr);
+		pin = get_afs(dir_inode)->get_inode(dir_inode, inode_nr);
 	}
 	if(pin){
 		if(pin->i_mode == I_DIRECTORY){
@@ -577,7 +582,7 @@ int do_rdwt(struct message *p_msg)
 	}else {
 		assert(pin->i_mode == I_REGULAR || pin->i_mode == I_DIRECTORY);
 		assert((p_msg->type == READ)||(p_msg->type == WRITE));
-		struct abstract_file_system *afs = get_afs(pin->i_dev);
+		struct abstract_file_system *afs = get_afs(pin);
 		if(p_msg->type == READ){
 			return afs->rdwt(fd, src, DEV_READ, pin, buf, pos, len);
 		} else {
@@ -621,12 +626,12 @@ int do_unlink(struct message *p_msg)
 		//return -1;
 		goto label_fail;
 	}
-	pin = get_afs(dir_inode->i_dev)->get_inode(dir_inode, inode_nr);
+	pin = get_afs(dir_inode)->get_inode(dir_inode, inode_nr);
 	if(pin == 0){
 		goto label_fail;
 	}
 	//更新afs到pin的dev，否则遇到挂载点出现问题
-	//afs = get_afs(pin->i_dev);
+	//afs = get_afs(pin);
 	if(pin->i_mode != I_REGULAR){
 		//can only remove regular files
 		//if you want remove directory  @see do_rmdir
@@ -643,7 +648,7 @@ int do_unlink(struct message *p_msg)
 	//这里pin->i_cnt应该是1
 	assert(pin->i_cnt == 1);
 	//unlink_file内部会进行put_inode操作
-	return get_afs(pin->i_dev)->unlink_file(pin);
+	return get_afs(pin)->unlink_file(pin);
 label_fail:
 	CLEAR_INODE(dir_inode, pin);
 	return -1;
@@ -701,7 +706,7 @@ int do_rmdir(struct message *p_msg)
 		//return -1;
 		goto label_fail;
 	}
-	struct inode *pinode = get_afs(dir_inode->i_dev)->get_inode(dir_inode, inode_idx);
+	struct inode *pinode = get_afs(dir_inode)->get_inode(dir_inode, inode_idx);
 	if(!pinode){
 		//return -1;
 		goto label_fail;
@@ -721,13 +726,13 @@ int do_rmdir(struct message *p_msg)
 	//由于判读按目录是否为空在rootfs和fat12下的方法是不同的，所以即使在unlink_file中已经适配过fat12了，
 	//还是要额外在这里判读一下是否是空目录
 	//HOOK POINT
-	if(!get_afs(pinode->i_dev)->is_dir_empty(pinode)){
+	if(!get_afs(pinode)->is_dir_empty(pinode)){
 		//不是空目录
 		goto label_fail;
 	}
 	//删除空目录
 	//unlink_file 内部会进行put_inode 操作
-	return get_afs(pinode->i_dev)->unlink_file(pinode);
+	return get_afs(pinode)->unlink_file(pinode);
 label_fail:
 	CLEAR_INODE(dir_inode, pinode);
 	return -1;
@@ -756,7 +761,7 @@ int do_chdir(struct message *p_msg)
 		//无效的目录
 		goto label_fail;
 	}
-	struct inode *pinode = get_afs(dir_inode->i_dev)->get_inode(dir_inode, inode_idx);
+	struct inode *pinode = get_afs(dir_inode)->get_inode(dir_inode, inode_idx);
 	if(!pinode){
 		goto label_fail;
 	}
@@ -852,7 +857,7 @@ struct inode * create_directory(char *path, int flags)
 		//创建目录的位置非法
 		goto label_fail;		
 	}
-	struct abstract_file_system *afs = get_afs(dir_inode->i_dev);
+	struct abstract_file_system *afs = get_afs(dir_inode);
 	if(inode_idx!=INVALID_INODE){
 		pinode = afs->get_inode(dir_inode, inode_idx);
 		if(pinode==0 || dir_inode == 0){
@@ -927,9 +932,9 @@ int strip_path(char *filename, const char *pathname, struct inode **ppinode)
 		}
 		*t=0;
 		if(*s!=0) s++; //skip /
-		int inode_idx = get_afs((*ppinode)->i_dev)->get_inode_num_from_dir(*ppinode, filename);
+		int inode_idx = get_afs(*ppinode)->get_inode_num_from_dir(*ppinode, filename);
 		if(inode_idx != INVALID_INODE){
-			pinode = get_afs((*ppinode)->i_dev)->get_inode(*ppinode, inode_idx);
+			pinode = get_afs(*ppinode)->get_inode(*ppinode, inode_idx);
 		}
 		if(*s!=0){
 			//不是最后一级目录
@@ -991,7 +996,7 @@ int search_file(const char *path, char *filename, struct inode **ppinode)
 	if(filename[0] == 0){//path:"/"
 		return dir_inode->i_num;
 	}
-	return get_afs(dir_inode->i_dev)->get_inode_num_from_dir(dir_inode, filename);
+	return get_afs(dir_inode)->get_inode_num_from_dir(dir_inode, filename);
 }
 
 
@@ -1045,7 +1050,7 @@ int do_stat(struct message *p_msg)
 	//TODO 这里get_inode有点问题，每次都是i_cnt==0导致每次都从磁盘重新load出来
 	//inode_table[] 只是一个缓存，就算重新load，也不会影响i_size
 	//而且奇怪的是随后的read还是可以读出数据的
-	pinode = get_afs(dir_inode!=0?dir_inode->i_dev:ROOT_DEV)->get_inode(dir_inode, inode_idx);
+	pinode = get_afs(dir_inode)->get_inode(dir_inode, inode_idx);
 	if(!pinode){
 		printk("FS::do_stat:: get_inode() return invalid inode: %s\n", pathname);
 		ret = -1;
@@ -1100,7 +1105,7 @@ int do_rename(struct message *p_msg)
 		//oldname的目录存在错误
 		goto label_clear_inode;
 	}
-	old_pinode = get_afs(old_dir_inode->i_dev)->get_inode(old_dir_inode , inode_idx);
+	old_pinode = get_afs(old_dir_inode)->get_inode(old_dir_inode , inode_idx);
 	if(!old_pinode){
 		//oldname不存在
 		goto label_clear_inode;
@@ -1135,9 +1140,9 @@ int do_rename(struct message *p_msg)
 		// 由于TASK_FS一次只处理其他进程的单个消息，所以以下操作是原子的
 		//修改的时候，也要修改pinode的parent链
 		// 先在newname所在目录下创建目录项
-		get_afs(new_dir_inode->i_dev)->new_dir_entry(new_dir_inode, old_pinode->i_num, newfilename);
+		get_afs(new_dir_inode)->new_dir_entry(new_dir_inode, old_pinode->i_num, newfilename);
 		// 再将oldname所在目录的目录项删除
-		get_afs(old_dir_inode->i_dev)->rm_dir_entry(old_dir_inode, old_pinode->i_num);
+		get_afs(old_dir_inode)->rm_dir_entry(old_dir_inode, old_pinode->i_num);
 		//修改parent inode指针, 否则下面CLEAR_INODE的时候会出错
 		new_pinode = old_pinode;
 		new_pinode->i_parent = new_dir_inode;
@@ -1179,7 +1184,7 @@ int do_mount(struct message *p_msg)
 		//target的目录不对
 		goto label_fail;
 	}
-	target_pinode = get_afs(target_dir_inode->i_dev)->get_inode(target_dir_inode, inode_idx);
+	target_pinode = get_afs(target_dir_inode)->get_inode(target_dir_inode, inode_idx);
 	if(!target_pinode){
 		//target 文件不存在
 		goto label_fail;
@@ -1203,7 +1208,7 @@ int do_mount(struct message *p_msg)
 		//dev 路径无效
 		goto label_fail;
 	}
-	source_pinode = get_afs(source_dir_inode->i_dev)->get_inode(source_dir_inode, inode_idx);
+	source_pinode = get_afs(source_dir_inode)->get_inode(source_dir_inode, inode_idx);
 	if(!source_pinode){
 		//无效dev文件
 		goto label_fail;
@@ -1215,7 +1220,7 @@ int do_mount(struct message *p_msg)
 	//source_pinode->i_dev 被挂载到的文件系统设备号
 	//target_pinode 挂载点目录
 	int target_dev = source_pinode->i_start_sect;
-	get_afs(target_dev)->mount(target_pinode, target_dev);
+	get_afs_by_dev(target_dev)->mount(target_pinode, target_dev);
 	CLEAR_INODE(source_dir_inode, source_pinode);
 	return 0;
 label_fail:
@@ -1249,7 +1254,7 @@ int do_unmount(struct message *p_msg)
 		//路径无效
 		goto label_fail;
 	}
-	pinode = get_afs(dir_inode->i_dev)->get_inode(dir_inode, inode_idx);
+	pinode = get_afs(dir_inode)->get_inode(dir_inode, inode_idx);
 	if(!pinode){
 		//无效文件
 		goto label_fail;
@@ -1264,7 +1269,7 @@ int do_unmount(struct message *p_msg)
 		goto label_fail;
 	}
 	//清理设备，并且将inode设置新的dev
-	get_afs(pinode->i_dev)->unmount(pinode, ROOT_DEV);
+	get_afs(pinode)->unmount(pinode, ROOT_DEV);
 	//清理pinode
 	CLEAR_INODE(dir_inode, pinode);
 	return 0;
