@@ -977,6 +977,12 @@ label_fail:
  */
 int search_file(const char *path, char *filename, struct inode **ppinode)
 {
+	//fast path
+	if(*path == '/' && *(path+1) == 0){
+		//root
+		*ppinode = 0;
+		return ROOT_INODE;
+	}
 	int i,j;
 	if(strip_path(filename, path, ppinode)!=0){
 		return INVALID_PATH;
@@ -1039,7 +1045,7 @@ int do_stat(struct message *p_msg)
 	//TODO 这里get_inode有点问题，每次都是i_cnt==0导致每次都从磁盘重新load出来
 	//inode_table[] 只是一个缓存，就算重新load，也不会影响i_size
 	//而且奇怪的是随后的read还是可以读出数据的
-	pinode = get_afs(dir_inode->i_dev)->get_inode(dir_inode, inode_idx);
+	pinode = get_afs(dir_inode!=0?dir_inode->i_dev:ROOT_DEV)->get_inode(dir_inode, inode_idx);
 	if(!pinode){
 		printk("FS::do_stat:: get_inode() return invalid inode: %s\n", pathname);
 		ret = -1;
@@ -1054,6 +1060,9 @@ int do_stat(struct message *p_msg)
 		_stat.st_rdev = 0;
 	}
 	_stat.st_size = pinode->i_size;
+#ifdef _WITH_TEST_
+	_stat.i_cnt = pinode->i_cnt - 1;
+#endif
 	memcpy((void*)va2la(src, p_msg->BUF), (void*)va2la(TASK_FS, &_stat), sizeof(struct stat)); //数据拷贝到用户层的buf中
 	ret = 0;
 label_clear_inode:

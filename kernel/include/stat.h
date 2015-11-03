@@ -1,3 +1,4 @@
+#include "type.h"
 #ifndef _DIYOS_STAT_H
 #define _DIYOS_STAT_H
 //stat函数 获取文件信息
@@ -11,6 +12,9 @@
 	int st_mode;		/* file mode, protection bits, etc. */
 	int st_rdev;		/* device ID (if special file) */
 	int st_size;		/* file size */
+#ifdef _WITH_TEST_
+	int i_cnt;		/*引用计数*/
+#endif
 };
 /**
  * @function stat

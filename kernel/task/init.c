@@ -39,6 +39,7 @@ static void test_fs(int id);
 static void test_fs2(int id);
 static void test_fork(int id);
 static void test_mount(int id);
+static int get_inode_icnt(const char *pathname);
 void init()
 {
 	int stdin = open("/dev/tty0", O_RDWT);
@@ -47,6 +48,7 @@ void init()
 	assert(stdout == 1);
 	int stderr = open("/dev/tty0", O_RDWT);
 	assert(stderr == 2);
+	printf("%d\n", get_inode_icnt("/"));
 	//创建/root 作为进程目录
 	mkdir("/root");
 	//设置进程目录
@@ -191,5 +193,13 @@ void test_mount(int id)
 	printf("ret=%d\n", ret);
 	ret = unmount("/tmp");
 	printf("ret=%d\n", ret);
+}
+
+int get_inode_icnt(const char *pathname)
+{
+	struct stat statbuf;
+	int ret = stat(pathname, &statbuf);
+	assert(ret == 0);
+	return statbuf.i_cnt;
 }
 #endif
