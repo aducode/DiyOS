@@ -1,6 +1,9 @@
 //定义一些全局类型
 #ifndef _DIYOS_TYPE_H
 #define _DIYOS_TYPE_H
+
+//测试使用
+#define _WITH_TEST_
 /**
  * @define _SHOW_PROC_ENTRY_
  * @brief 用于调试，输出进程入口地址，不运行进程
@@ -124,7 +127,7 @@ enum msgtype {
 	DEV_CLOSE,			/*关闭硬件设备*/
 	DEV_READ,			/*从硬件中读取数据*/
 	DEV_WRITE,			/*写入数据到硬件设备*/
-	DEV_IOCTL			/*控制硬件设备*/
+	DEV_IOCTL,			/*控制硬件设备*/
 };
 //macro for message
 /**common return value**/

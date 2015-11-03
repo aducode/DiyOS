@@ -7,7 +7,7 @@
 #include "getpid.h"
 #include "tar.h"
 
-#define _WITH_TEST_
+//#define _WITH_TEST_	//MOVE TO type.h
 #ifndef _WITH_TEST_
 void init(){
 	//为了简化，这里stdin  stdout stderr只是简单的作为FD
@@ -54,10 +54,14 @@ void init()
 	//test /dev/floppy
 	//open("/dev/floppy", O_RDWT);
 	//assert(0);
+	printf("RUN TESTS...\n");
 	test_fs();
+	printf("TEST FILE SUCCESS!!\n");
 	test_fs2();
+	printf("TEST DIRECTORY SUCCESS!!\n");
 	test_fork();
-	test_mount();
+	printf("TEST FORK/EXIT SUCCESS!!\n");
+	//test_mount();
 	//untar("/cmd.tar");
 	char buf[128];
 	while(1){
@@ -86,7 +90,7 @@ void test_fs()
 {
 	int ret, fd, bytes, pos;
 	char buf[50];
-	char file_content[] = "issac!@#$%^&*()_+";
+	char file_content[] = "123issac!@#$%^&*()_+";
 	int file_content_len = strlen(file_content);
 	ret = mkdir("/hello");
 	assert(ret==0);
@@ -118,6 +122,8 @@ void test_fs()
 	ret = stat("/hello/fuckyou/test/test.txt", &statbuf);
 	assert(ret == 0);
 	assert(statbuf.st_size == file_content_len);
+	ret = stat("/hello", &statbuf);
+	assert(ret == 0);
 }
 
 /**

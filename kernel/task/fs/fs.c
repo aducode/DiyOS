@@ -227,7 +227,11 @@ void init_tty_files(struct abstract_file_system * afs, struct inode *dir_inode)
 		sprintf(filename, "tty%d", i);
 		newino = afs->create_special_file(dir_inode, filename, I_CHAR_SPECIAL, O_CREATE, MAKE_DEV(DEV_CHAR_TTY, i));
 		assert(newino != 0);
-		put_inode(newino);
+		//put_inode(newino);
+		//这里不要用put_inode，否则连同dir_inode也会被清理
+		//在最后put_inode(dir_inode)的时候就会出错
+		newino->i_cnt--; //直接减少引用计数即可，因为这是内核级创建文件
+				 //无须跟进程绑定，也就无须占用inode table
 	}
 		
 }
@@ -244,7 +248,10 @@ void init_block_dev_files(struct abstract_file_system * afs, struct inode *dir_i
 	struct inode *newino = 0;
 	newino = afs->create_special_file(dir_inode, "floppy", I_BLOCK_SPECIAL, O_CREATE, FLOPPYA_DEV);
 	assert(newino != 0);
-	put_inode(newino);
+	//put_inode(newino);
+	//同init_tty_files
+	//直接减少引用计数，不用调用put_inode函数
+	newino->i_cnt--;
 }
 
 /**
@@ -760,7 +767,11 @@ int do_chdir(struct message *p_msg)
 	//是一个合法目录
 	struct process *pcaller = proc_table + src;
 	//清空原来的current_path_inode
-	if(!pcaller->current_path_inode){
+	if(pcaller->current_path_inode != INVALID_INODE){
+		//pcaller->current_path_inode == 0
+		//说明原来没有设置进程运行目录
+		//pcaller->current_path_inode != INVALID_INODE (0)
+		//说明原来设置过进程运行目录，那么需要清理目录inode的引用计数
 		put_inode(pcaller->current_path_inode);
 	}
 	pcaller->current_path_inode = pinode; //设置新的进程目录
@@ -986,7 +997,7 @@ int search_file(const char *path, char *filename, struct inode **ppinode)
  */
 void put_inode(struct inode *pinode)
 {
-	assert(pinode && pinode->i_cnt>0);	
+	assert(pinode && pinode->i_cnt>0);
 	/*
 	if(pinode==0 || pinode->i_cnt<=0){
 		return;
