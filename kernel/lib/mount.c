@@ -11,8 +11,16 @@
  */
 int mount(const char *source, const char *target)
 {
-	//TODO
-	return -1;
+	struct message msg;
+	reset_msg(&msg);
+	msg.type = MOUNT;
+	msg.PATHNAME = (void*)target;
+	msg.NAME_LEN = strlen(target);
+	msg.DEVNAME = (void*)source;
+	msg.DEVNAME_LEN = strlen(source);
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.RETVAL;
 }
 
 /**
@@ -23,6 +31,13 @@ int mount(const char *source, const char *target)
  */
 int unmount(const char * target)
 {
-	//TODO
+	struct message msg;
+	reset_msg(&msg);
+	msg.type = UNMOUNT;
+	msg.PATHNAME = (void*)target;
+	msg.NAME_LEN = strlen(target);
+	send_recv(BOTH, TASK_FS, &msg);
+	assert(msg.type == SYSCALL_RET);
+	return msg.RETVAL;
 	return -1;
 }

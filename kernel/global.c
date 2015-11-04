@@ -1,6 +1,6 @@
 #include "proc.h"
 #include "syscall.h"
-#include "fs.h"
+#include "tortoise.h"
 #include "protect.h"
 #ifndef _DIYOS_GLOBAL_H
 #define _DIYOS_GLOBAL_H
@@ -143,13 +143,18 @@ const int FSBUF_SIZE = 0x100000;
 //struct inode * root_inode;
 struct file_desc f_desc_table[MAX_FILE_DESC_COUNT]; //文件描述符表
 struct inode inode_table[MAX_INODE_COUNT];
-//MAX_SUPER_BLOCK_COUNT目前是8
-//每个设备都有一个超级块
-struct super_block super_block[MAX_SUPER_BLOCK_COUNT];
 
 /**
  * key_pressed
  * @brief 用于判断案件是否被按下
  */
 int key_pressed = 0;
+
+/**
+ * kernel_lock
+ * @brief 内核锁
+ * 		0	表示没有进程独占CPU时间片
+ * 		1	表示某一进程独占CPU时间片
+ */
+int kernel_lock = 0;
 #endif

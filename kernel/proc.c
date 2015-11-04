@@ -27,6 +27,10 @@ static void unblock(struct process *p_proc);
  */
 void schedule()
 {
+	if(kernel_lock) {
+		//说明有进程独占CPU时间
+		return;
+	}
 	//有优先级的简单进程调度
 	struct process *p;
         int greatest_ticks = 0;
@@ -446,5 +450,26 @@ void interrupt_wait()
 {
         struct message msg;
         send_recv(RECEIVE, INTERRUPT, &msg);
+}
+
+
+/**
+ * @function lock_kernel
+ * @brief  锁内核
+ */
+void lock_kernel()
+{
+	assert(kernel_lock==0); //不可重入
+	kernel_lock = 1;
+}
+
+/**
+ * @function unlock_kernel
+ * @brief 解锁内核
+ */
+void unlock_kernel()
+{
+	assert(kernel_lock == 1);
+	kernel_lock = 0;
 }
 

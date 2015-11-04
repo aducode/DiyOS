@@ -1,6 +1,9 @@
 //定义一些全局类型
 #ifndef _DIYOS_TYPE_H
 #define _DIYOS_TYPE_H
+
+//测试使用
+//#define _WITH_TEST_
 /**
  * @define _SHOW_PROC_ENTRY_
  * @brief 用于调试，输出进程入口地址，不运行进程
@@ -102,10 +105,12 @@ enum msgtype {
 	WRITE,				/*写入文件*/
 	SEEK,				/*更改文件指针位置*/
 	TELL,				/*获取文件指针位置*/
-	STAT, 				/*获取文件meta信息*/							/*未实现*/
+	STAT, 				/*获取文件meta信息*/
+	RENAME,				/*重命名文件*/
 	UNLINK,				/*删除文件*/
 	MKDIR,				/*创建空目录，非递归*/
-	RMDIR,				/*删除空目录(目录项含除了. ..之外项时报错)*/	/*未实现*/
+	RMDIR,				/*删除空目录(目录项含除了. ..之外项时报错)*/
+	CHDIR,				/*修改进程所在目录*/
 	MOUNT,				/*挂载文件系统*/								/*未实现*/
 	UNMOUNT,			/*卸载文件系统*/								/*未实现*/
 	//FS & TTY
@@ -122,7 +127,7 @@ enum msgtype {
 	DEV_CLOSE,			/*关闭硬件设备*/
 	DEV_READ,			/*从硬件中读取数据*/
 	DEV_WRITE,			/*写入数据到硬件设备*/
-	DEV_IOCTL			/*控制硬件设备*/
+	DEV_IOCTL,			/*控制硬件设备*/
 };
 //macro for message
 /**common return value**/
@@ -153,6 +158,15 @@ enum msgtype {
 
 #define OFFSET		u.m3.m3i2
 #define WHERE		u.m3.m3i3
+
+#define DEVNAME		u.m3.m3p2
+#define DEVNAME_LEN	u.m3.m3i4
+
+/** for  rename **/
+#define OLDNAME		u.m3.m3p1
+#define OLDNAME_LEN	u.m3.m3i1
+#define NEWNAME		u.m3.m3p2
+#define NEWNAME_LEN	u.m3.m3i2
 
 //about process
 //#define MAX_PROCESS_COUNT     32      //最多32个进程

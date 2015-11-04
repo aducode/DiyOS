@@ -2,7 +2,7 @@
 ;nasm -o boot.bin boot.asm
 ;软盘引导扇区
 %define _BOOT_USE_
-org 0x7c00
+org 0x7c00				;引导扇区的512Byte必须被加载到内存地址0x7c00处
 %include	"memmap.inc"
 ;加载boot.bin使用的常量
 BaseOfStack		equ	BaseOfBootStack;0x7c00	;栈基址（从0x7c00开始向底地址生长，也就是栈顶地址<0x7c00）
@@ -147,4 +147,4 @@ Message1:	db	'Ready.   '
 Message2:	db	'No LOADER'
 ;Message3:	db	'Read Fail'
 times 510 - ($-$$) db 0
-dw 0xaa55
+dw 0xaa55			; 引导扇区必须是以0xaa55结束的512Byte，才能被BIOS识别

@@ -209,6 +209,7 @@ extern void init_hd();
 //
 #define ROOT_DEV	MAKE_DEV(DEV_HD, MINOR_hd1)    //我们系统的文件系统根目录在主分区（现在只有一个分区）
 
+
 //我们系统的ROOT_DEV
 //分区类型
 //没有分区

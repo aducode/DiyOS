@@ -36,7 +36,8 @@ DASM=ndisasm
 DASMFLAGS=-u -o $(KERNEL_ENTRY_POINT) -e $(KERNEL_ENTRY_OFFSET)
 DASMOUTPUT=$(KERNEL).bin.asm
 
-OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o mount.o systicks.o getpid.o fork.o exit.o wait.o tar.o assert.o clock.o keyboard.o hd.o floppy.o console.o proc.o ipc.o syscall.o tty.o hddriver.o floppydriver.o sys.o fs.o mm.o init.o map.o
+OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o stat.o mount.o systicks.o getpid.o fork.o exit.o wait.o tar.o assert.o clock.o keyboard.o hd.o floppy.o console.o proc.o ipc.o syscall.o tty.o hddriver.o floppydriver.o sys.o fs.o tortoise.o fat12.o mm.o init.o 
+#map.o
 #OBJECTS=$(KERNEL).o main.o global.o head.o klib.o  interrupt.o string.o stdio.o clock.o keyboard.o console.o proc.o  syscall.o tty.o test.o
 
 all:$(KERNEL).bin
@@ -66,6 +67,8 @@ string.o:lib/string.c
 	$(CC) $(CFLAGS) lib/string.c -o string.o
 stdio.o:lib/stdio.c
 	$(CC) $(CFLAGS) lib/stdio.c -o stdio.o
+stat.o:lib/stat.c
+	$(CC) $(CFLAGS) lib/stat.c -o stat.o
 mount.o:lib/mount.c
 	$(CC) $(CFLAGS) lib/mount.c -o mount.o
 tar.o:lib/tar.o
@@ -101,24 +104,28 @@ floppy.o:int/floppy.c
 
 
 ########################### TASKS ##########################################
-tty.o:task/tty.c
-	$(CC) $(CFLAGS) task/tty.c -o tty.o
-hddriver.o:task/hddriver.c
-	$(CC) $(CFLAGS) task/hddriver.c -o hddriver.o
-floppydriver.o:task/floppydriver.c
-	$(CC) $(CFLAGS) task/floppydriver.c -o floppydriver.o
-sys.o:task/sys.c
-	$(CC) $(CFLAGS) task/sys.c -o sys.o
-fs.o:task/fs.c
-	$(CC) $(CFLAGS) task/fs.c -o fs.o
-mm.o:task/mm.c
-	$(CC) $(CFLAGS) task/mm.c -o mm.o
+tty.o:task/tty/tty.c
+	$(CC) $(CFLAGS) task/tty/tty.c -o tty.o
+hddriver.o:task/driver/hddriver.c
+	$(CC) $(CFLAGS) task/driver/hddriver.c -o hddriver.o
+floppydriver.o:task/driver/floppydriver.c
+	$(CC) $(CFLAGS) task/driver/floppydriver.c -o floppydriver.o
+sys.o:task/sys/sys.c
+	$(CC) $(CFLAGS) task/sys/sys.c -o sys.o
+fs.o:task/fs/fs.c
+	$(CC) $(CFLAGS) task/fs/fs.c -o fs.o
+tortoise.o:task/fs/tortoise.c
+	$(CC) $(CFLAGS) task/fs/tortoise.c -o tortoise.o
+fat12.o:task/fs/fat12.c
+	$(CC) $(CFLAGS) task/fs/fat12.c -o fat12.o
+mm.o:task/mm/mm.c
+	$(CC) $(CFLAGS) task/mm/mm.c -o mm.o
 init.o:task/init.c
 	$(CC) $(CFLAGS) task/init.c -o init.o
 	
 ########################### common #########################################
-map.o:common/map.c
-	$(CC) $(CFLAGS) common/map.c -o map.o
+#map.o:common/map.c
+#	$(CC) $(CFLAGS) common/map.c -o map.o
 	
 ########################### PHONY ##########################################
 lib:$(ARINFILE)

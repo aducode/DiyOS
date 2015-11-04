@@ -112,9 +112,11 @@ struct process{
 	struct process *q_sending;	//向该进程发送消息的队列
 	struct process *next_sending;	//队列头
 	//int tty_idx;	//tty表索引
-	//fs
 	int p_parent;			//pid of parent process
 	int exit_status;		//for parent
+	//fs
+	struct inode *current_path_inode;		//进程所在目录的inode指针 cd操作时会改变这个值， pwd会根据这个值获得路径名
+								// 只有用户级进程才需要，内核级进程直接设置成INVALID_INODE
 	struct file_desc *filp[MAX_FILE_COUNT];   //这里保存的是struct file_desc 指针类型，真正的struct file_desc作为全局变量单独保存在global.c中的f_desc_table中
 };
 
@@ -148,4 +150,17 @@ extern void inform_int(int task_idx);
 //
 extern void interrupt_wait();
 extern int waitfor(int reg_port, int mask, int val, int timeout);
+
+/**
+ * @function lock_kernel
+ * @brief  锁内核 不可重入
+ *  		粗粒度全局内核锁，系统进程(TASK)调用后会独占CPU时间片(clock中断中会skip掉schedule)
+ */
+void lock_kernel();
+
+/**
+ * @function unlock_kernel
+ * @brief 解锁内核
+ */
+void unlock_kernel();
 #endif

@@ -117,41 +117,6 @@ int open(const char *pathname, int flags)   //0x1b7c
 }
 
 /**
- * @function mkdir
- * @brief 创建目录
- * @param pathname 目录
- * @return
- */
-int mkdir(const char *pathname)
-{
-	struct message msg;
-	reset_msg(&msg);
-	msg.type = MKDIR;
-	msg.PATHNAME = (void*)pathname;
-	msg.NAME_LEN = strlen(pathname);
-	send_recv(BOTH, TASK_FS, &msg);
-	assert(msg.type == SYSCALL_RET);
-	return msg.RETVAL;
-}
-
-/**
- * @function rmdir
- * @brief 删除空目录
- * @param pathname 目录
- * @return 
- */
-int rmdir(const char *pathname)
-{
-	struct message msg;
-	reset_msg(&msg);
-	msg.type = RMDIR;
-	msg.PATHNAME = (void*) pathname;
-	msg.NAME_LEN = strlen(pathname);
-	send_recv(BOTH, TASK_FS, &msg);
-	assert(msg.type == SYSCALL_RET);
-	return msg.RETVAL;
-}
-/**
  * @function close
  * @brief 关闭文件
  * 
@@ -164,8 +129,8 @@ int close(int fd)
 	assert(fd!=-1);
 	struct message msg;
 	reset_msg(&msg);
-	msg.type	= CLOSE;
-	msg.FD		= fd;
+	msg.type = CLOSE;
+	msg.FD = fd;
 	send_recv(BOTH, TASK_FS, &msg);
 	return msg.RETVAL;
 }
@@ -279,20 +244,21 @@ int unlink(const char * pathname)
 }
 
 /**
- * @function stat
- * @brief get file stat
- * @param pathname  file path
- * @param buf   for output
- * @return 0 success
+ * @function rename
+ * @brief 重命名文件，可以用来实现移动文件功能
+ * @param oldname 旧文件名
+ * @param newname 新文件名
+ * @return 0 if success
  */
-int stat(const char *pathname, struct stat *buf)
+int rename(const char *oldname, const char *newname)
 {
 	struct message msg;
 	reset_msg(&msg);
-	msg.type = STAT;
-	msg.PATHNAME = (void*)pathname;
-	msg.NAME_LEN = strlen(pathname);
-	msg.BUF = (void*)buf;
+	msg.type = RENAME;
+	msg.OLDNAME = (void*)oldname;
+	msg.OLDNAME_LEN = strlen(oldname);
+	msg.NEWNAME = (void*)newname;
+	msg.NEWNAME_LEN = strlen(newname);
 	send_recv(BOTH, TASK_FS, &msg);
 	assert(msg.type == SYSCALL_RET);
 	return msg.RETVAL;

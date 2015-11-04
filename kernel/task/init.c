@@ -1,19 +1,28 @@
 #include "type.h"
 #include "stdio.h"
+#include "stat.h"
+#include "mount.h"
 #include "assert.h"
 #include "fork.h"
 #include "getpid.h"
 #include "tar.h"
 
-#define _WITH_TEST_
+//#define _WITH_TEST_	//MOVE TO type.h
 #ifndef _WITH_TEST_
 void init(){
+	//为了简化，这里stdin  stdout stderr只是简单的作为FD
+	//真正的linux中stdin stdout stderr 是作为FILE *类型存在的
 	int stdin = open("/dev/tty0", O_RDWT);
 	assert(stdin==0);
 	int stdout = open("/dev/tty0", O_RDWT);
 	assert(stdout==1);
 	int stderr = open("/dev/tty0", O_RDWT);
 	assert(stderr==2);
+	//创建/root 作为进程目录
+	mkdir("/root");
+	//设置进程目录
+	chdir("/root");
+	//由于init进程设置了进程运行时目录，所以所有用户态的进程都会继承这个目录值
 	char buf[81];
 	int bytes;
 	while(1){
@@ -26,9 +35,11 @@ void init(){
 	}
 }
 #else
-static void test_fs();
-static void test_fs2();
-static void test_fork();
+static void test_fs(int id);
+static void test_fs2(int id);
+static void test_fork(int id);
+static void test_mount(int id);
+static int get_inode_icnt(const char *pathname);
 void init()
 {
 	int stdin = open("/dev/tty0", O_RDWT);
@@ -37,12 +48,18 @@ void init()
 	assert(stdout == 1);
 	int stderr = open("/dev/tty0", O_RDWT);
 	assert(stderr == 2);
+	//创建/root 作为进程目录
+	mkdir("/root");
+	//设置进程目录
+	chdir("/root");
 	//test /dev/floppy
 	//open("/dev/floppy", O_RDWT);
 	//assert(0);
-	test_fs();
-	test_fs2();
-	test_fork();
+	printf("RUN TESTS...\n");
+	test_fs(1);
+	test_fs2(2);
+	test_fork(3);
+	//test_mount();
 	//untar("/cmd.tar");
 	char buf[128];
 	while(1){
@@ -67,11 +84,11 @@ void init()
  *
  * @return  void
  */
-void test_fs()
+void test_fs(int id)
 {
 	int ret, fd, bytes, pos;
 	char buf[50];
-	char file_content[] = "issac!@#$%^&*()_+";
+	char file_content[] = "123issac!@#$%^&*()_+";
 	int file_content_len = strlen(file_content);
 	ret = mkdir("/hello");
 	assert(ret==0);
@@ -103,6 +120,9 @@ void test_fs()
 	ret = stat("/hello/fuckyou/test/test.txt", &statbuf);
 	assert(ret == 0);
 	assert(statbuf.st_size == file_content_len);
+	ret = stat("/hello", &statbuf);
+	assert(ret == 0);
+	printf("[%d]TEST FILE SUCCESS!!\n", id);
 }
 
 /**
@@ -111,7 +131,7 @@ void test_fs()
  *
  * @return void
  */
-void test_fs2()
+void test_fs2(int id)
 {
 	int ret, fd;
 	//1. test for mkdir
@@ -146,9 +166,10 @@ void test_fs2()
 	fd = open("/dir/yoo", O_CREATE);
 	//should fail
 	assert(fd == -1);
+	printf("[%d]TEST DIRECTORY SUCCESS!!\n", id);
 }
 
-void test_fork()
+void test_fork(int id)
 {
 	int pid = fork();
 	assert(pid>=0);
@@ -159,6 +180,25 @@ void test_fork()
         } else {
                 exit(2333);
         }
+	printf("[%d]TEST FORK/EXIT SUCCESS!!\n", id);
 
+}
+
+void test_mount(int id)
+{
+	printf("test\n");
+	int ret;
+	ret = mount("/dev/floppy", "/tmp");
+	printf("ret=%d\n", ret);
+	ret = unmount("/tmp");
+	printf("ret=%d\n", ret);
+}
+
+int get_inode_icnt(const char *pathname)
+{
+	struct stat statbuf;
+	int ret = stat(pathname, &statbuf);
+	assert(ret == 0);
+	return statbuf.i_cnt;
 }
 #endif

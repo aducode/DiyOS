@@ -99,6 +99,7 @@ void kmain(){
 		//优先级 时间片
 		p_proc->ticks = p_proc->priority = p_task->priority;
 		//
+		p_proc->current_path_inode = 0; //进程当前目录inode
 		for(j=0;j<MAX_FILE_COUNT;j++){
 			p_proc->filp[j]=0;
 		}	
