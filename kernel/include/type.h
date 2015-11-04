@@ -3,7 +3,7 @@
 #define _DIYOS_TYPE_H
 
 //测试使用
-//#define _WITH_TEST_
+#define _WITH_TEST_
 /**
  * @define _SHOW_PROC_ENTRY_
  * @brief 用于调试，输出进程入口地址，不运行进程
