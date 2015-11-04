@@ -169,7 +169,7 @@ struct abstract_file_system fat12 = {
  * 缓存软盘BPB
  * 一般只允许fs.c和fat12.c使用
  */
-struct BPB FAT12_BPB[MAX_FAT12_NUM];
+static struct BPB FAT12_BPB[MAX_FAT12_NUM];
 
 void init_fat12(){
 	//唯一要做的就是初始化全局BPB表
@@ -178,7 +178,6 @@ void init_fat12(){
 
 void init_fat12_fs(int dev)
 {
-	/*
 	int idx = MINOR(dev);
 	assert(idx == 0||idx==1); //floppya floppyb
 	if(FAT12_BPB[idx].i_cnt == 0){
@@ -191,7 +190,6 @@ void init_fat12_fs(int dev)
 		//说明已经挂载过了
 		FAT12_BPB[idx].i_cnt++;
 	}
-	*/
 }
 
 void clear_fat12_bpb(int dev)
@@ -205,9 +203,16 @@ void clear_fat12_bpb(int dev)
 	*/
 }
 
+/**
+ * @function get_inode_fat12
+ * @brief 获取inode
+ */
 struct inode * get_inode_fat12(struct inode *parent, int inode_idx)
 {
-	/*
+	//能调用到这个函数，说明已经parent已经被挂载fat12文件系统了
+	//此时parent->i_dev已经被修改成floppy的dev id了
+	assert(parent!=0);
+	assert(parent->i_dev == FLOPPYA_DEV);
 	if(inode_idx==0){//0号inode没有使用
 		return 0;
 	}
@@ -240,8 +245,6 @@ struct inode * get_inode_fat12(struct inode *parent, int inode_idx)
 	//int file_size = dir_entry_ptr->file_size; //得到文件大小
 	//q->i_mode = is_dir(dir_entry)? I_DIRECTORY:I_REGULAR  //软盘中的，暂时使用这两种吧
 	return q;
-	*/
-	return 0;
 }
 
 int get_inode_idx_from_dir_fat12(struct inode *parent,  const char * filename)

@@ -467,6 +467,7 @@ struct inode * get_inode(struct inode *parent, int inode_idx)
 			//遇到挂载点会有问题，挂载过的目录的inode->i_dev已经被改变过了
 			//这里暂时采用如下办法判断dev(目录dev) != inode->dev的情况：
 			//		被挂载的目录，一定是根目录，那么根目录的inode idx值，就一定是ROOT_INODE
+			//可以认为标示inode的唯一key是(dev, inode_i_num)
 			if((p->i_dev == dev || parent->i_num == ROOT_INODE /* 只有挂载点会出现这种情况 */) && (p->i_num == inode_idx) && (p->i_parent == parent)){
 				//this is the inode we want
 				p->i_cnt ++ ;

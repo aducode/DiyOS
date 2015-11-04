@@ -53,8 +53,6 @@ struct fat12_dir_entry {
 //最多只有两个软盘设备
 #define MAX_FAT12_NUM		2
 
-extern struct BPB FAT12_BPB[];
-
 /**
  * @define FAT12_BPB_PTR
  * @breif 获取dev对应的BPB指针
