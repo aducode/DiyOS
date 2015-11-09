@@ -242,7 +242,7 @@ struct inode * get_inode_fat12(struct inode *parent, int inode_idx)
 	//parent->i_num就是目录的fst_clus
 	struct BPB * bpb_ptr = (struct BPB *)FAT12_BPB_PTR(parent->i_dev);
 	//如果inum==ROOT_INODE，表明是fat12根目录，那么起始扇区是boot扇区+Fat数*每Fat扇区数（1+9*2=19）
-	int dir_fst_clus = parent->i_num==ROOT_INODE?bpb_ptr->rsvd_sec_cnt + num_fats * fat_sz16:parent->i_num;
+	int dir_fst_clus = parent->i_num==ROOT_INODE?bpb_ptr->rsvd_sec_cnt + bpb_ptr->num_fats * bpb_ptr->fat_sz16:parent->i_num;
 	//读取目录项
 	//struct fat12_dir_entry * dir_entry_ptr;
 	//loop
