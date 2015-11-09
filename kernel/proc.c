@@ -397,6 +397,8 @@ void dump_msg(const char * title, struct message *msg)
 /**
  * @function infrom_int
  * @brief 通知一个进程一个中断已经发生
+ * 被通知进程之前调用interrupt_wait等待中断
+ * inform_int成功后，interrupt_wait阻塞的地方开始继续执行
  * @praram task_idx 进程id  pid
  *
  */
@@ -445,6 +447,7 @@ int waitfor(int reg_port, int mask, int val, int timeout)
 
 /**
  * wait until a disk interrupt occurs
+ * 阻塞等待中断发生，IO操作中会用到
  */
 void interrupt_wait()
 {
