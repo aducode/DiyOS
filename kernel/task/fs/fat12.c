@@ -171,6 +171,15 @@ struct abstract_file_system fat12 = {
  */
 static struct BPB FAT12_BPB[MAX_FAT12_NUM];
 
+/**
+ * @function get_next_clus
+ * @brief 获取下一个clus号
+ * @param bpb_ptr BPB指针
+ * @param clus当前clus号
+ * @return 下一个clus号
+ */
+static int get_next_clus(struct BPB * bpb_ptr, int clus);
+
 void init_fat12(){
 	//唯一要做的就是初始化全局BPB表
 	memset(FAT12_BPB, 0, sizeof(FAT12_BPB));
@@ -242,9 +251,61 @@ struct inode * get_inode_fat12(struct inode *parent, int inode_idx)
 	//parent->i_num就是目录的fst_clus
 	struct BPB * bpb_ptr = (struct BPB *)FAT12_BPB_PTR(parent->i_dev);
 	//如果inum==ROOT_INODE，表明是fat12根目录，那么起始扇区是boot扇区+Fat数*每Fat扇区数（1+9*2=19）
-	int dir_fst_clus = parent->i_num==ROOT_INODE?bpb_ptr->rsvd_sec_cnt + bpb_ptr->num_fats * bpb_ptr->fat_sz16:parent->i_num;
 	//读取目录项
-	//struct fat12_dir_entry * dir_entry_ptr;
+	if(parent->i_num == ROOT_INODE) {
+		//是根目录
+		rw_sector(DEV_READ, 	//io type
+			parent->i_dev, 	//dev
+			parent->i_start_sect * bpb_ptr->bytes_per_sec, 	//pos
+			parent->i_size,	 //size
+			TASK_FS,	 //
+			fsbuf);
+			
+	} else {
+		//非根目录
+		//数据区起始位置
+		//fst_clus (起始簇数）* 
+		rw_sector(DEV_READ, parent->i_dev,
+			parent->i_start_sect * bpb_ptr->bytes_per_sec,
+			//子目录由于类似clus链表，不能一次读完
+			//每次读区一个clus
+			1 * bpb_ptr->sec_per_clus * bpb_ptr->bytes_per_sec,
+			TASK_FS,
+			fsbuf); 
+	}
+	struct fat12_dir_entry * dir_entry_ptr = (struct fat12_dir_entry *)fsbuf;
+	int dir_size = parent->i_num == ROOT_INODE ? parent->i_size: 1 * bpb_ptr->sec_per_clus * bpb_ptr->bytes_per_sec;
+	int fat_sec_base = bpb_ptr->rsvd_sec_cnt + 	//boot 扇区数
+			   bpb_ptr->hidd_sec;		//隐藏扇区数
+	int data_sec_base = fat_sec_base + 
+			    bpb_ptr->num_fats * (bpb_ptr->fat_sz16>0?bpb_ptr->fat_sz16:bpb_ptr->tot_sec32) + //FAT扇区数
+			    (bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry) + (bpb_ptr->bytes_per_sec - 1))/bpb_ptr->bytes_per_sec;
+	int start_clus = inode_idx;
+	while(dir_size>0){
+		if(dir_entry_ptr->fst_clus == inode_idx){
+			q->i_mode =  
+			q->i_size = dir_entry_ptr->file_size;
+			q->i_start_sect = data_sec_base +  
+				(inode_idx/*fst_clus*/ -2 /*0 1簇号没用*/) * bpb_ptr->sec_per_clus;
+			q->i_sects_count = 0; //unuse for fat12
+			q->i_dev = parent->i_dev;
+			q->i_cnt = 1;
+			q->i_num = inode_idx;
+			q->i_parent = parent;
+			break;
+		}
+		dir_entry_ptr++;
+		dir_size -= sizeof(struct fat12_dir_entry);
+		if(parent->i_num != ROOT_INODE){
+			//不是根目录
+			if(dir_size == 0 && (start_clus = get_next_clus(bpb_ptr, start_clus)) >= 0xFF8) {
+				//读取下一个cluster
+				//下一个cluster号在FAT表中
+				//TODO fst_clus获取起始pos，需要写个macro
+				//rw_sector(DEV_READ, parent->i_dev,	
+			}
+		}
+	}
 	//loop
 	//if(dir_entry_ptr->fst_clus == inode_idx); //不同的文件对应的开始簇号是唯一的
 	//int file_size = dir_entry_ptr->file_size; //得到文件大小
@@ -266,6 +327,21 @@ int get_inode_idx_from_dir_fat12(struct inode *parent,  const char * filename)
 	return 0;
 }
 
+
+/**
+ * @function do_rdwt_fat12
+ * @brief读写fat12文件系统数据
+ *       底层封装rw_sector
+ * @param fd 文件描述符,由于文件读写需要修改进程内文件pos等状态改变，所以需要fd
+ * @param src_pid 进行读写操作的进程id
+ * @param io_type 读/写
+ * @param pinode 要读写的inode信息
+ * @parma buf 缓存
+ * @param pos 读写pos
+ * @param len 读写长度
+ * 
+ * @return 读写的bytes数
+ */
 int do_rdwt_fat12(int fd, int src_pid, int io_type, struct inode *pinode, void * buf, int pos, int len)
 {
 	/*
@@ -467,4 +543,17 @@ void dump_entry(struct fat12_dir_entry *entry_ptr)
 	else {
 		printk("\tfile\n");
 	}
+}
+
+/**
+ * 获取下一个clus
+ */
+int get_next_clus(struct BPB * bpb_ptr, int clus)
+{
+	assert(clus>1);//0 1 clus没有使用
+	int base = bpb_ptr->rsvd_sec_cnt + bpb_ptr->hidd_sec;
+	//是否应该将FAT表缓存？
+	//还是每次都从新IO读
+	return -1;
+	
 }
