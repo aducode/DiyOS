@@ -194,13 +194,11 @@ void init_fat12_fs(int dev)
 
 void clear_fat12_bpb(int dev)
 {
-	/*
 	int idx = MINOR(dev);
 	assert(idx == 0||idx == 1);
 	if(FAT12_BPB[idx].i_cnt > 0){
 		FAT12_BPB[idx].i_cnt--;
 	}
-	*/
 }
 
 /**
@@ -235,10 +233,17 @@ struct inode * get_inode_fat12(struct inode *parent, int inode_idx)
 	if(!q){
 		panic("the inode able is full");
 	}
+	//需要将磁盘inode数据load进inode table缓存
 	//inode table之前没有缓存inode， 需要初始化这个inode
 	//fat12的文件大小信息保存在目录项里面，所以还需要先从软盘中读取目录信息
 	//TODO step 2 读取目录信息到BUF
-	//
+	//@see mount_for_fat12 mount后软盘根目录的i_num被设置成ROOT_INODE
+	//			其他目录/文件 i_num就是fst_clus
+	//parent->i_num就是目录的fst_clus
+	struct BPB * bpb_ptr = (struct BPB *)FAT12_BPB_PTR(parent->i_dev);
+	//如果inum==ROOT_INODE，表明是fat12根目录，那么起始扇区是boot扇区+Fat数*每Fat扇区数（1+9*2=19）
+	int dir_fst_clus = parent->i_num==ROOT_INODE?bpb_ptr->rsvd_sec_cnt + num_fats * fat_sz16:parent->i_num;
+	//读取目录项
 	//struct fat12_dir_entry * dir_entry_ptr;
 	//loop
 	//if(dir_entry_ptr->fst_clus == inode_idx); //不同的文件对应的开始簇号是唯一的
