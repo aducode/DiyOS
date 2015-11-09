@@ -554,6 +554,10 @@ int get_next_clus(struct BPB * bpb_ptr, int clus)
 	int base = bpb_ptr->rsvd_sec_cnt + bpb_ptr->hidd_sec;
 	//是否应该将FAT表缓存？
 	//还是每次都从新IO读
+	//为了实现简单&fat12文件系统仅仅是作为安装盘
+	//所以还是每次都从新读fat表吧，维护一个缓存太复杂了
+	//函数用起来也简单明了
+	
 	return -1;
 	
 }
