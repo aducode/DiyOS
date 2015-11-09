@@ -178,7 +178,7 @@ static struct BPB FAT12_BPB[MAX_FAT12_NUM];
  * @param clus当前clus号
  * @return 下一个clus号
  */
-static int get_next_clus(struct BPB * bpb_ptr, int clus);
+static int get_next_clus(struct BPB * bpb_ptr, int dev, int clus);
 
 void init_fat12(){
 	//唯一要做的就是初始化全局BPB表
@@ -298,7 +298,7 @@ struct inode * get_inode_fat12(struct inode *parent, int inode_idx)
 		dir_size -= sizeof(struct fat12_dir_entry);
 		if(parent->i_num != ROOT_INODE){
 			//不是根目录
-			if(dir_size == 0 && (start_clus = get_next_clus(bpb_ptr, start_clus)) >= 0xFF8) {
+			if(dir_size == 0 && (start_clus = get_next_clus(bpb_ptr, parent->i_dev, start_clus)) >= 0xFF8) { //get_next_clus会覆盖fsbuf的值
 				//读取下一个cluster
 				//下一个cluster号在FAT表中
 				//TODO fst_clus获取起始pos，需要写个macro
@@ -548,7 +548,7 @@ void dump_entry(struct fat12_dir_entry *entry_ptr)
 /**
  * 获取下一个clus
  */
-int get_next_clus(struct BPB * bpb_ptr, int clus)
+int get_next_clus(struct BPB * bpb_ptr, int dev, int clus)
 {
 	assert(clus>1);//0 1 clus没有使用
 	int base = bpb_ptr->rsvd_sec_cnt + bpb_ptr->hidd_sec;
@@ -557,7 +557,12 @@ int get_next_clus(struct BPB * bpb_ptr, int clus)
 	//为了实现简单&fat12文件系统仅仅是作为安装盘
 	//所以还是每次都从新读fat表吧，维护一个缓存太复杂了
 	//函数用起来也简单明了
-	
-	return -1;
+	rw_sector(DEV_READ, dev, base, bpb_ptr->num_fats * (bpb_ptr->fat_sz16>0?bpb_ptr->fat_sz16:bpb_ptr->tot_sec32), TASK_FS, fsbuf);
+	u8 * item = (u8*)fsbuf + clus/2*3;
+	if(clus % 2 == 0){
+		return -1;
+	} else {
+		return -1;
+	}		
 	
 }
