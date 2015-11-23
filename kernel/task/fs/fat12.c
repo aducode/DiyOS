@@ -104,7 +104,7 @@ static struct inode * create_directory_fat12(struct inode *parent, const char * 
  * @param pinode
  * @return 0 false 1 true
  */
-static int is_dir_emtpy(struct inode *pinode);
+static int is_dir_empty(struct inode *pinode);
 
 /**
  * @function new_dir_entry_fat12
@@ -158,7 +158,7 @@ struct abstract_file_system fat12 = {
 	0,								//create_special_file_func
 	create_directory_fat12,			//create_directory_func
 	unlink_file_fat12,				//unlink_file_func
-	is_dir_emtpy,					//is_dir_emtpy_func
+	is_dir_empty,					//is_dir_empty_func
 	new_dir_entry_fat12,			//new_dir_entry_func
 	rm_dir_entry_fat12,				//rm_dir_entry_func
 	mount_for_fat12,				//mount_func
@@ -180,6 +180,16 @@ static struct BPB FAT12_BPB[MAX_FAT12_NUM];
  */
 static int get_next_clus(struct BPB * bpb_ptr, int dev, int clus);
 
+/**
+ * @function read_bpb
+ * @brief 从磁盘读取BPB信息
+ * @param bpb_ptr
+ * @param dev
+ * @return 0 if success
+ * 会使用fsbuf
+ */
+static int read_bpb(struct BPB * bpb_ptr, int dev);
+
 void init_fat12(){
 	//唯一要做的就是初始化全局BPB表
 	memset(FAT12_BPB, 0, sizeof(FAT12_BPB));
@@ -190,8 +200,8 @@ void init_fat12_fs(int dev)
 	int idx = MINOR(dev);
 	assert(idx == 0||idx==1); //floppya floppyb
 	if(FAT12_BPB[idx].i_cnt == 0){
-		//TODO 读取软盘BPB
-		
+		//读取软盘BPB
+		read_bpb(&FAT12_BPB[idx], dev);	
 		//i_cnt会被软盘数据覆盖
 		//需要重新置为1
 		FAT12_BPB[idx].i_cnt = 1;
@@ -394,7 +404,7 @@ struct inode * create_directory_fat12(struct inode *parent, const char * filenam
 	return 0;
 }
 
-int is_dir_emtpy(struct inode *pinode)
+int is_dir_empty(struct inode *pinode)
 {
 	/*
 	struct inode *dir_inode = pinode->i_parent;
@@ -464,6 +474,7 @@ void mount_for_fat12(struct inode *pinode, int dev)
         pinode->i_start_sect = bpb_ptr->rsvd_sec_cnt + bpb_ptr->hidd_sec + bpb_ptr->num_fats * (bpb_ptr->fat_sz16>0 ? bpb_ptr->fat_sz16 : bpb_ptr->tot_sec32);//【BPB结构中的(rsvd_sec_cnt + hidd_sec + num_fats* (fat_sz16>0?fat_sz16:tot_sec32))】 //root目录开始扇区
         //pinode->i_sects_count = bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry)/bpb_ptr->bytes_per_sec; //【root_ent_cnt*sizeof(struct RootEntry)/bytes_per_sec】 //根目录最大文件数*每个目录项所占字节数/每个扇区的字节数=占用扇区数
         pinode->i_size = bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry); //【root_ent_cnt*sizeof(struct RootEntry)】
+	//TODO 这里有点问题， root_ent_cnt是根目录项最大数，并不是当前根目录数
         pinode->i_sects_count = pinode->i_size / bpb_ptr->bytes_per_sec;
         pinode->i_num = ROOT_INODE;                     //【说明】本来预计floppy文件的inode值就设置成第一个簇号
                                                                                         //但是为了与硬盘的根目录统一，这里就设置成ROOT_INODE也就是1了
@@ -565,4 +576,15 @@ int get_next_clus(struct BPB * bpb_ptr, int dev, int clus)
 		return -1;
 	}		
 	
+}
+
+int read_bpb(struct BPB *bpb_ptr, int dev)
+{
+	//读取bpb数据
+	//TODO dev 读取数据到fsbuf
+	//read(fsbuf, 1, sizeof(struct BPB)+11, dev);
+	//前11个字节中：
+	//	3byte jump指令
+	//	8byte oem名
+	*bpb_ptr = *((struct BPB*)(fsbuf+11));
 }
