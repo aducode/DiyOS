@@ -190,6 +190,15 @@ static int get_next_clus(struct BPB * bpb_ptr, int dev, int clus);
  */
 static int read_bpb(struct BPB * bpb_ptr, int dev);
 
+/**
+ * @function validate
+ * @brief 判断是否是合文件名，只能是数字字母和空格
+ * @param 名称
+ * @param size
+ * @return 0 合法 1 非法
+ */
+static int validate(const char * name, int size);
+
 void init_fat12(){
 	//唯一要做的就是初始化全局BPB表
 	memset(FAT12_BPB, 0, sizeof(FAT12_BPB));
@@ -285,18 +294,19 @@ struct inode * get_inode_fat12(struct inode *parent, int inode_idx)
 	}
 	struct fat12_dir_entry * dir_entry_ptr = (struct fat12_dir_entry *)fsbuf;
 	int dir_size = parent->i_num == ROOT_INODE ? parent->i_size: 1 * bpb_ptr->sec_per_clus * bpb_ptr->bytes_per_sec;
-	int fat_sec_base = bpb_ptr->rsvd_sec_cnt + 	//boot 扇区数
-			   bpb_ptr->hidd_sec;		//隐藏扇区数
-	int data_sec_base = fat_sec_base + 
-			    bpb_ptr->num_fats * (bpb_ptr->fat_sz16>0?bpb_ptr->fat_sz16:bpb_ptr->tot_sec32) + //FAT扇区数
-			    (bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry) + (bpb_ptr->bytes_per_sec - 1))/bpb_ptr->bytes_per_sec;
+	//int fat_sec_base = bpb_ptr->rsvd_sec_cnt + 	//boot 扇区数
+	//		   bpb_ptr->hidd_sec;		//隐藏扇区数
+	//int data_sec_base = fat_sec_base + 
+	//		    bpb_ptr->num_fats * (bpb_ptr->fat_sz16>0?bpb_ptr->fat_sz16:bpb_ptr->tot_sec32) + //FAT扇区数
+	//		    (bpb_ptr->root_ent_cnt * sizeof(struct fat12_dir_entry) + (bpb_ptr->bytes_per_sec - 1))/bpb_ptr->bytes_per_sec;
 	int start_clus = inode_idx;
 	while(dir_size>0){
 		if(dir_entry_ptr->fst_clus == inode_idx){
 			q->i_mode =  
 			q->i_size = dir_entry_ptr->file_size;
-			q->i_start_sect = data_sec_base +  
-				(inode_idx/*fst_clus*/ -2 /*0 1簇号没用*/) * bpb_ptr->sec_per_clus;
+			//q->i_start_sect = data_sec_base +  
+			//	(inode_idx/*fst_clus*/ -2 /*0 1簇号没用*/) * bpb_ptr->sec_per_clus;
+			q->i_start_sect = DATA_BASE(bpb_ptr, start_clus);
 			q->i_sects_count = 0; //unuse for fat12
 			q->i_dev = parent->i_dev;
 			q->i_cnt = 1;
@@ -562,19 +572,26 @@ void dump_entry(struct fat12_dir_entry *entry_ptr)
 int get_next_clus(struct BPB * bpb_ptr, int dev, int clus)
 {
 	assert(clus>1);//0 1 clus没有使用
-	int base = bpb_ptr->rsvd_sec_cnt + bpb_ptr->hidd_sec;
+	u16 bytes;
+	rw_sector(DEV_READ, dev, FAT_TAB_BASE(bpb_ptr) + (clus *3 / 2), 2, TASK_FS, &bytes);
+	if(clus % 2 == 0){
+		return bytes << 4;
+	} else {
+		return bytes >> 4;
+	}
+	//int base = bpb_ptr->rsvd_sec_cnt + bpb_ptr->hidd_sec;
 	//是否应该将FAT表缓存？
 	//还是每次都从新IO读
 	//为了实现简单&fat12文件系统仅仅是作为安装盘
 	//所以还是每次都从新读fat表吧，维护一个缓存太复杂了
 	//函数用起来也简单明了
-	rw_sector(DEV_READ, dev, base, bpb_ptr->num_fats * (bpb_ptr->fat_sz16>0?bpb_ptr->fat_sz16:bpb_ptr->tot_sec32), TASK_FS, fsbuf);
-	u8 * item = (u8*)fsbuf + clus/2*3;
-	if(clus % 2 == 0){
-		return -1;
-	} else {
-		return -1;
-	}		
+	//rw_sector(DEV_READ, dev, base, bpb_ptr->num_fats * (bpb_ptr->fat_sz16>0?bpb_ptr->fat_sz16:bpb_ptr->tot_sec32), TASK_FS, fsbuf);
+	//u8 * item = (u8*)fsbuf + clus/2*3;
+	//if(clus % 2 == 0){
+	//	return -1;
+	//} else {
+	//	return -1;
+	//}		
 	
 }
 
@@ -587,4 +604,29 @@ int read_bpb(struct BPB *bpb_ptr, int dev)
 	//	3byte jump指令
 	//	8byte oem名
 	*bpb_ptr = *((struct BPB*)(fsbuf+11));
+}
+
+/**
+ * @function validate
+ * @brief 判断是否是合文件名，只能是数字字母和空格
+ * @param 名称
+ * @param size
+ * @return 0 合法 1 非法
+ */
+int validate(const char * name, int size)
+{
+        int i;
+        char ch;
+        for(i=0;i<size;i++){
+                ch = *(name + i);
+                if(!(
+                        (ch >= 48 && ch <= 57) ||       //空格
+                        (ch >= 'A' && ch <= 'Z') ||     //字母
+                        (ch >= 'a' && ch <= 'z') ||     //小写
+                        (ch == ' ')                     //空格
+                )|| ch == 0 ){
+                        return 1;
+                }
+        }
+        return 0;
 }

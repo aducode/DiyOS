@@ -65,6 +65,54 @@ struct fat12_dir_entry {
  */
 #define is_dir(entry_ptr)	((entry_ptr)->attr & 0x10) != 0
 
+/**
+ * @define FAT_TAB_BASE_SEC
+ * @brief FAT表项起始扇区
+ */
+#define FAT_TAB_BASE_SEC(bpb_ptr) ((bpb_ptr)->rsvd_sec_cnt + (bpb_ptr)->hidd_sec)
+//#define FAT_TAB_SIZE(bpb_ptr) (((bpb_ptr)->fat_sz16>0?(bpb_ptr)->fat_sz16:(bpb_ptr)->tot_sec32) * (bpb_ptr)->bytes_per_sec)
+
+/**
+ * @define FAT_TAB_BASE
+ * @brief FAT表项起始位置
+ */
+#define FAT_TAB_BASE(bpb_ptr) (FAT_TAB_BASE_SEC((bpb_ptr)) * (bpb_ptr)->bytes_per_sec)
+
+/**
+ * @define  ROOT_ENT_BASE_SEC
+ * @brief 根目录项起始扇区
+ */
+#define ROOT_ENT_BASE_SEC(bpb_ptr) (FAT_TAB_BASE_SEC((bpb_ptr))+ (bpb_ptr)->num_fats * ((bpb_ptr)->fat_sz16>0?(bpb_ptr)->fat_sz16:(bpb_ptr)->tot_sec32))
+
+/**
+ * @define ROOT_ENT_BASE
+ * @brief 根目录项起始位置
+ */
+#define ROOT_ENT_BASE(bpb_ptr) (ROOT_ENT_BASE_SEC((bpb_ptr)) * (bpb_ptr)->bytes_per_sec)
+
+/**
+ * @define DATA_BASE_SEC
+ * @brief 数据区起始扇区
+ */
+#define DATA_BASE_SEC(bpb_ptr) (ROOT_ENT_BASE_SEC((bpb_ptr)) + ((bpb_ptr)->root_ent_cnt * sizeof(struct fat12_dir_entry) + (bpb_ptr)->bytes_per_sec - 1)/(bpb_ptr)->bytes_per_sec)
+
+/**
+ * @define DATA_BASE
+ * @brief 某簇数据区起始位置
+ * @param bpb_ptr BPB指针
+ * @param clus_no簇号
+ * 还跟簇有关
+ */
+#define DATA_BASE(bpb_ptr, clus_no) ((DATA_BASE_SEC((bpb_ptr)) + (clus_no) - 2) * (bpb_ptr)->sec_per_clus * (bpb_ptr)->bytes_per_sec)
+
+/**
+ * @define VALIDATE
+ * @brief 判断目录项是否合法
+ * @param dir_entry fat12文件系统的目录项
+ * @return 0 合法 1 非法
+ */
+#define VALIDATE(dir_entry) ((validate((dir_entry)->name, 11) || validate((dir_entry)->suffix, 3)) || (dir_entry)->fst_clus <= 0 || (dir_entry)->file_size < 0)
+
 extern struct abstract_file_system  fat12;
 
 extern void init_fat12();

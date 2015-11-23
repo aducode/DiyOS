@@ -23,7 +23,7 @@ int main(int argv, char ** argc)
 	struct BPB bpb;
 	get_bpb(&bpb);
 	dump_bpb(&bpb);
-	printf("%d, %d\n", ROOT_ENT_BASE(&bpb), sizeof(struct fat12_dir_entry));
+	//printf("%d, %d\n", ROOT_ENT_BASE(&bpb), sizeof(struct fat12_dir_entry));
 	int base = ROOT_ENT_BASE(&bpb);
 	int i;
 	struct fat12_dir_entry dir_entry;
@@ -32,15 +32,13 @@ int main(int argv, char ** argc)
 		fread(FSBUF, 1, sizeof(dir_entry), fat12);
 		base += sizeof(dir_entry);
 		dir_entry = *((struct fat12_dir_entry *)FSBUF);	
-		if(dir_entry.fst_clus <= 0 || dir_entry.file_size < 0){
-			continue;
-		}
-		if(validate(dir_entry.name, 8) || validate(dir_entry.suffix, 3)){
+		if(VALIDATE(&dir_entry)){
 			continue;
 		}
 		printf("0x%x\n", base);
 		dump_entry(&dir_entry);
 	}
+	printf("%d\n", get_next_clus(&bpb, fat12, 3));
 	fclose(fat12);	
 	return 0;
 }
@@ -130,7 +128,12 @@ int validate(const char * name, int size)
 
 int get_next_clus(struct BPB * bpb_ptr, FILE * fat12, int clus)
 {
-	fseek(fat12, FAT_TAB_BASE(bpb_ptr), SEEK_SET);
-	fread(FSBUF, 1, FAT_TAB_SIZE(bpb_ptr), fat12);	
-	return 0;
+	fseek(fat12, FAT_TAB_BASE(bpb_ptr) + (clus * 3 / 2), SEEK_SET);
+	u16 ret;
+	fread(&ret, 1, 2, fat12);
+	if(clus % 2 == 0){
+		return ret << 4;
+	} else {
+		return ret >> 4;
+	}
 }

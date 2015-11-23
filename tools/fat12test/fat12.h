@@ -66,4 +66,27 @@ struct fat12_dir_entry {
 
 #define ROOT_ENT_BASE(bpb_ptr) (ROOT_ENT_BASE_SEC((bpb_ptr)) * (bpb_ptr)->bytes_per_sec)
 
+/**
+ * @define DATA_BASE_SEC
+ * @brief 数据区起始扇区
+ */
+#define DATA_BASE_SEC(bpb_ptr) (ROOT_ENT_BASE_SEC((bpb_ptr)) + ((bpb_ptr)->root_ent_cnt * sizeof(struct fat12_dir_entry) + (bpb_ptr)->bytes_per_sec - 1)/(bpb_ptr)->bytes_per_sec)
+
+/**
+ * @define DATA_BASE
+ * @brief 某簇数据区起始位置
+ * @param bpb_ptr BPB指针
+ * @param clus_no簇号
+ * 还跟簇有关
+ */
+#define DATA_BASE(bpb_ptr, clus_no) ((DATA_BASE_SEC((bpb_ptr)) + (clus_no) - 2) * (bpb_ptr)->sec_per_clus * (bpb_ptr)->bytes_per_sec)
+
+/**
+ * @define VALIDATE
+ * @brief 判断目录项是否合法
+ * @param dir_entry fat12文件系统的目录项
+ * @return 0 合法 1 非法
+ */
+#define VALIDATE(dir_entry) ((validate((dir_entry)->name, 11) || validate((dir_entry)->suffix, 3)) || (dir_entry)->fst_clus <= 0 || (dir_entry)->file_size < 0)
+
 #endif

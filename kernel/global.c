@@ -86,7 +86,7 @@ struct task task_table[TASKS_COUNT] = {
 
 
 //task/init.c
-extern init();
+extern void init();
 struct task user_proc_table[PROCS_COUNT] = {
 	/*entry		stack size	task name	priority*/
 	/*----		----------	----------	--------*/
