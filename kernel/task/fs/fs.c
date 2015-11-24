@@ -160,11 +160,9 @@ struct abstract_file_system * get_afs_by_dev(int dev)
         case ROOT_DEV:
                 ret = &tortoise;
                 break;
-        /*
         case FLOPPYA_DEV:
                 ret = &fat12;
                 break;
-        */
         default:
                 assert(0);
                 break;
@@ -1165,6 +1163,7 @@ label_clear_inode:
  */
 int do_mount(struct message *p_msg)
 {
+	int error = 0;
 	int inode_idx = 0;
 	char filename[MAX_PATH];
 	char pathname[MAX_PATH];
@@ -1182,19 +1181,24 @@ int do_mount(struct message *p_msg)
 	//if(inode_idx == INVALID_INODE || target_dir_inode == 0){
 	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
 		//target的目录不对
+		printk("%s\n", pathname);
+		error = 1;
 		goto label_fail;
 	}
 	target_pinode = get_afs(target_dir_inode)->get_inode(target_dir_inode, inode_idx);
 	if(!target_pinode){
 		//target 文件不存在
+		error = 2;
 		goto label_fail;
 	}
 	if(target_pinode->i_mode != I_DIRECTORY){
 		//不是目录文件
+		error = 3;
 		goto label_fail;
 	}
 	if(target_pinode->i_cnt > 1){
 		//该目录下有文件被打开或该目录是某进程的运行时目录
+		error = 4;
 		goto label_fail;
 	}
 	//step2 判断是否已经挂载
@@ -1206,15 +1210,18 @@ int do_mount(struct message *p_msg)
 	//if(inode_idx == INVALID_INODE || source_dir_inode == 0){
 	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
 		//dev 路径无效
+		error = 5;
 		goto label_fail;
 	}
 	source_pinode = get_afs(source_dir_inode)->get_inode(source_dir_inode, inode_idx);
 	if(!source_pinode){
 		//无效dev文件
+		error = 6;
 		goto label_fail;
 	}
 	if(source_pinode->i_mode != I_BLOCK_SPECIAL){
 		//不是设备文件
+		error = 7;
 		goto label_fail;
 	}
 	//source_pinode->i_dev 被挂载到的文件系统设备号
@@ -1226,7 +1233,7 @@ int do_mount(struct message *p_msg)
 label_fail:
 	CLEAR_INODE(target_dir_inode, target_pinode);
 	CLEAR_INODE(source_dir_inode, source_pinode);
-	return -1;
+	return error;
 }
 
 

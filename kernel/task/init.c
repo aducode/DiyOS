@@ -59,7 +59,7 @@ void init()
 	test_fs(1);
 	test_fs2(2);
 	test_fork(3);
-	//test_mount();
+	test_mount(4);
 	//untar("/cmd.tar");
 	char buf[128];
 	while(1){
@@ -186,12 +186,16 @@ void test_fork(int id)
 
 void test_mount(int id)
 {
-	printf("test\n");
 	int ret;
-	ret = mount("/dev/floppy", "/tmp");
+	ret = mkdir("/root/tmp");
+	assert(ret==0);
+	ret = mount("/dev/floppy", "/root/tmp");
 	printf("ret=%d\n", ret);
-	ret = unmount("/tmp");
+	ret = unmount("/root/tmp");
 	printf("ret=%d\n", ret);
+	ret = rmdir("/root/tmp");
+	assert(ret==0);
+	printf("[%d]TEST MOUNT SUCCESS!!\n", id);
 }
 
 int get_inode_icnt(const char *pathname)
