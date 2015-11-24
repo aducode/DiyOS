@@ -10,6 +10,7 @@ static void dump_bpb(struct BPB * bpb_ptr);
 static void dump_entry(struct fat12_dir_entry *entry_ptr);
 static int validate(const char * name, int size);
 static int get_next_clus(struct BPB * bpb_ptr, FILE * fat12, int clus);
+static int fat12read(struct BPB * bpb_ptr, FILE * fat12, struct fat12_dir_entry * dir_entry_ptr, char * buf);
 int main(int argv, char ** argc)
 {
 	if(argv <2){
@@ -25,8 +26,9 @@ int main(int argv, char ** argc)
 	dump_bpb(&bpb);
 	//printf("%d, %d\n", ROOT_ENT_BASE(&bpb), sizeof(struct fat12_dir_entry));
 	int base = ROOT_ENT_BASE(&bpb);
-	int i;
+	int i, bytes;
 	struct fat12_dir_entry dir_entry;
+	char out[1024];
 	for(i=0;i<bpb.root_ent_cnt;i++){
 		fseek(fat12, base, SEEK_SET);
 		fread(FSBUF, 1, sizeof(dir_entry), fat12);
@@ -37,8 +39,40 @@ int main(int argv, char ** argc)
 		}
 		printf("0x%x\n", base);
 		dump_entry(&dir_entry);
+		if(is_dir(&dir_entry)){
+			//子目录
+			/*
+			int current  = dir_entry.fst_clus;
+			printf("%d\n", current);
+			while(current < 0xFF8){
+				if(current== 0xFF7){
+					break;
+				}
+				fseek(fat12, DATA_BASE(&bpb, current), SEEK_SET);
+				int bytes = fread(FSBUF, 1, CLUS_BYTES(&bpb), fat12);
+				printf("%d\n", bytes);
+				int j;
+				struct fat12_dir_entry de;
+				for(j=0;j<CLUS_BYTES(&bpb)/sizeof(struct fat12_dir_entry);i++){
+					de = *((struct fat12_dir_entry *)FSBUF	+ i);
+					if(VALIDATE(&de)){
+						continue;
+					}
+					dump_entry(&de);
+				}
+			}
+			*/			
+		} else {
+			bytes = fat12read(&bpb, fat12, &dir_entry, out);
+			if(bytes>1024){
+				 bytes = 1024;
+			}
+			out[bytes] = 0;
+			printf("%s", out);
+		}
 	}
-	printf("%d\n", get_next_clus(&bpb, fat12, 3));
+	//printf("%d\n", get_next_clus(&bpb, fat12, 3));
+	int fst_clus;
 	fclose(fat12);	
 	return 0;
 }
@@ -136,4 +170,30 @@ int get_next_clus(struct BPB * bpb_ptr, FILE * fat12, int clus)
 	} else {
 		return ret >> 4;
 	}
+}
+
+/**
+ * @function fat12read
+ * @brief 显示文件内容
+ */
+int fat12read(struct BPB *bpb_ptr, FILE * fat12, struct fat12_dir_entry * dir_entry_ptr, char * buf){
+	char * curr = buf;
+	int current_clus = dir_entry_ptr->fst_clus;
+	int size = dir_entry_ptr->file_size;
+	int bytes;
+	int ret = 0;
+	while(current_clus < 0xFF8){
+		if(current_clus == 0xFF7){
+			printf("invalid cluster\n");
+			return -1;
+		}
+		fseek(fat12, DATA_BASE(bpb_ptr, current_clus), SEEK_SET);
+		bytes = fread(FSBUF, 1, MIN(CLUS_BYTES(bpb_ptr), size), fat12);
+		size -= bytes;
+		ret += bytes;
+		memcpy(curr, FSBUF, bytes);
+		curr += bytes;
+		current_clus = get_next_clus(bpb_ptr, fat12, current_clus);
+	}
+	return ret;
 }

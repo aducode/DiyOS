@@ -113,6 +113,13 @@ struct fat12_dir_entry {
  */
 #define VALIDATE(dir_entry) ((validate((dir_entry)->name, 11) || validate((dir_entry)->suffix, 3)) || (dir_entry)->fst_clus <= 0 || (dir_entry)->file_size < 0)
 
+/**
+ * @define CLUS_BYTES
+ * @brief 每个簇所占字节数
+ */
+#define CLUS_BYTES(bpb_ptr) ((bpb_ptr)->sec_per_clus * (bpb_ptr)->bytes_per_sec)
+
+
 extern struct abstract_file_system  fat12;
 
 extern void init_fat12();
