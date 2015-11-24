@@ -44,6 +44,10 @@ extern void floppy_rdwt(struct message *msg);
  */
 extern void floppy_ioctl(struct message *msg);
 
+
+/**
+ * @see [Floppy Disk Control](http://wiki.osdev.org/Floppy_Disk_Controller#Accessing_Floppies_in_Real_Mode)
+ */
 #define		FD_US1			0x02
 #define		FD_US2			0x01
 
@@ -55,13 +59,16 @@ extern void floppy_ioctl(struct message *msg);
 //0x3f7					Read					DIR: Digital Input Register
 //						Write					DCR: Disk Control Register
 
+#define 	STATUS_REGISTER_A		0x3f0		//read-only
+#define		STATUS_REGISTER_B		0x3f1		//read-only
+#define		DIGITAL_OUTPUT_REGISTER		0x3f2		//数字输出寄存器
+#define		TAPE_DRIVE_REGISTER		0x3f3		
+#define		MAIN_STATUS			0x3f4		//主状态寄存器端口read-only
+#define		DATARATE_SELECT_REGISTER	0x3f4		//write-only
+#define		DATA_FIFO			0x3f5		//数据端口
 
-#define		FD_STATUS			0x3f4		//主状态寄存器端口
-#define		FD_DATA				0x3f5		//数据端口
-
-#define		FD_DOR				0x3f2		//数字输出寄存器 Digital Output Register
-#define		FD_DIR				0x3f7		//数字出入寄存器 Digital Input Register(read)
-#define		FD_DCR				0x3f7		//数据传输率控制寄存器 Diskette Control Register(write)
+#define		DIGITAL_INPUT_REGISTER		0x3f7		//数据传输率控制寄存器 read-only
+#define		CONFIGUATION_CONTROL_REGISTER	0x3f7		//write-only
 
 //DOR 数字输出寄存器
 //DOR是一个8为寄存器，他控制驱动器马达的开启、驱动器选择、启动/复位FDC以及允许/禁止DMA请求

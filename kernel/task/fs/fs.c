@@ -1163,7 +1163,7 @@ label_clear_inode:
  */
 int do_mount(struct message *p_msg)
 {
-	int error = 0;
+	int error = -1;
 	int inode_idx = 0;
 	char filename[MAX_PATH];
 	char pathname[MAX_PATH];
@@ -1181,7 +1181,6 @@ int do_mount(struct message *p_msg)
 	//if(inode_idx == INVALID_INODE || target_dir_inode == 0){
 	if(inode_idx == INVALID_INODE || inode_idx == INVALID_PATH){
 		//target的目录不对
-		printk("%s\n", pathname);
 		error = 1;
 		goto label_fail;
 	}

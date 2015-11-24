@@ -51,11 +51,11 @@ void floppy_open(int device)
 		irq_handler_table[FLOPPY_IRQ] = floppy_handler;
 		_enable_irq(FLOPPY_IRQ);	
 		//step 2 reset
-		_out_byte(FD_DOR, 0x08);		//重启
+		_out_byte(DIGITAL_OUTPUT_REGISTER, 0x08);		//重启
 		for(i=0;i<100;i++){
 			__asm__("nop");//延时保证重启完成
 		}
-		_out_byte(FD_DOR, 0x0c);			//选择DMA模式，选择软驱A
+		_out_byte(DIGITAL_OUTPUT_REGISTER, 0x0c);			//选择DMA模式，选择软驱A
 	} else {
 		//说明已经mount过了
 	}
@@ -97,7 +97,7 @@ void floppy_close(int device)
  */
 void floppy_rdwt(struct message *msg)
 {
-	
+	printk("floppy_rdwt\n");	
 }
 
 /**

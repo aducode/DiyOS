@@ -181,14 +181,14 @@ static struct BPB FAT12_BPB[MAX_FAT12_NUM];
 static int get_next_clus(struct BPB * bpb_ptr, int dev, int clus);
 
 /**
- * @function read_bpb
+ * @function fill_bpb
  * @brief 从磁盘读取BPB信息
  * @param bpb_ptr
  * @param dev
  * @return 0 if success
  * 会使用fsbuf
  */
-static int read_bpb(struct BPB * bpb_ptr, int dev);
+static int fill_bpb(struct BPB * bpb_ptr, int dev);
 
 /**
  * @function validate
@@ -210,7 +210,7 @@ void init_fat12_fs(int dev)
 	assert(idx == 0||idx==1); //floppya floppyb
 	if(FAT12_BPB[idx].i_cnt == 0){
 		//读取软盘BPB
-		read_bpb(&FAT12_BPB[idx], dev);	
+		fill_bpb(&FAT12_BPB[idx], dev);	
 		//i_cnt会被软盘数据覆盖
 		//需要重新置为1
 		FAT12_BPB[idx].i_cnt = 1;
@@ -595,7 +595,7 @@ int get_next_clus(struct BPB * bpb_ptr, int dev, int clus)
 	
 }
 
-int read_bpb(struct BPB *bpb_ptr, int dev)
+int fill_bpb(struct BPB *bpb_ptr, int dev)
 {
 	//读取bpb数据
 	//TODO dev 读取数据到fsbuf
@@ -603,6 +603,7 @@ int read_bpb(struct BPB *bpb_ptr, int dev)
 	//前11个字节中：
 	//	3byte jump指令
 	//	8byte oem名
+	rw_sector(DEV_READ, dev, 0, sizeof(struct BPB)+11, TASK_FS, fsbuf);
 	*bpb_ptr = *((struct BPB*)(fsbuf+11));
 }
 
