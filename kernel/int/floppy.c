@@ -29,6 +29,13 @@ static unsigned char reply_buffer[MAX_REPLIES];
 static void floppy_handler(int irq_no);
 
 /**
+ * @function reset_floppy
+ * @brief 重置软盘驱动并设置参数
+ * @param dev 软驱号0-3
+ */
+static void reset_floppy(int dev);
+
+/**
  * @function fdc_output_byte
  * @brief 向FDC（软盘控制器)写入byte
  * @param byte 要写入的字节
@@ -68,19 +75,20 @@ void floppy_open(int device)
 	//参考linux，mount应该是一个系统调用与open同级别，所以打开中断与关闭中断应该在mount / unmount 中 而不应该在open close中
 	//应该是mount 的时候调用至此
 	if(floppy_mount_count == 0){
+		reset_floppy(device);
 		//说明是第一次mount
-		int i;
+		//int i;
 		//setp 1 enable interrupt
-		_disable_irq(FLOPPY_IRQ);
-		irq_handler_table[FLOPPY_IRQ] = floppy_handler;
-		_enable_irq(FLOPPY_IRQ);	
+		//_disable_irq(FLOPPY_IRQ);
+		//irq_handler_table[FLOPPY_IRQ] = floppy_handler;
+		//_enable_irq(FLOPPY_IRQ);	
 		//step 2 reset
-		_out_byte(DIGITAL_OUTPUT_REGISTER, CMD_FD_RECALIBRATE);//开始重置软盘控制器命令
-		_out_byte(DIGITAL_OUTPUT_REGISTER, device); //指定驱动器号 
-		for(i=0;i<100;i++){
-			__asm__("nop");//延时保证重启完成
-		}
-		_out_byte(DIGITAL_OUTPUT_REGISTER, 0x0c);			//选择DMA模式，选择软驱A
+		//_out_byte(DIGITAL_OUTPUT_REGISTER, CMD_FD_RECALIBRATE);//开始重置软盘控制器命令
+		//_out_byte(DIGITAL_OUTPUT_REGISTER, device); //指定驱动器号 
+		//for(i=0;i<100;i++){
+		//	__asm__("nop");//延时保证重启完成
+		//}
+		//_out_byte(DIGITAL_OUTPUT_REGISTER, 0x0c);			//选择DMA模式，选择软驱A
 	} else {
 		//说明已经mount过了
 	}
@@ -189,4 +197,24 @@ int fdc_result()
 	reset = 1;
 	printk("Get status timeout\n");
 	return -1;
+}
+
+void reset_floppy(int dev)
+{
+	reset = 0;
+	recalibrate = 1;
+	int i;
+	printk("Reset Floppy\n");
+	//关中断
+	_disable_irq(FLOPPY_IRQ);
+	irq_handler_table[FLOPPY_IRQ] = floppy_handler;
+	//重启
+	_out_byte(DIGITAL_OUTPUT_REGISTER, BUILD_DOR(dev, OFF, 0, OFF));
+	for(i=0;i<100;i++){
+		__asm__("nop");
+	}
+	_out_byte(DIGITAL_OUTPUT_REGISTER, BUILD_DOR(dev, OFF, 0, ON));	//再启动
+	//开中断
+	_enable_irq(FLOPPY_IRQ);
+	
 }

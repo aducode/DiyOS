@@ -70,7 +70,7 @@ extern void floppy_ioctl(struct message *msg);
 #define		DIGITAL_INPUT_REGISTER		0x3f7		//数据传输率控制寄存器 read-only
 #define		CONFIGUATION_CONTROL_REGISTER	0x3f7		//write-only 数据传输率控制寄存器
 
-//DATA_OUTPUT_REGISTER 数字输出寄存器
+//DIGITAL_OUTPUT_REGISTER 数字输出寄存器
 //DOR是一个8为寄存器，他控制驱动器马达的开启、驱动器选择、启动/复位FDC以及允许/禁止DMA请求
 //位			Name		Description
 //7			MOT_EN3		Driver D motor：1-start；0-stop
@@ -95,6 +95,20 @@ extern void floppy_ioctl(struct message *msg);
 //1			DBB			Driver B busy
 //0			DAB			Driver A busy
 //
+//DOR
+#define			ON			1
+#define			OFF			0
+/**
+ * @define BUILD_DOR
+ * @brief 构建写入DOR(Data output register)的byte
+ * 
+ * @param dev 软盘驱动号
+ * @param fdsw 软驱马达是否启动 ON  OFF
+ * @param dma_int 是否允许DMA中断，0禁止 1允许
+ * @param reset FDC 0 重置
+ */ 
+#define BUILD_DOR(dev, fdsw, dma_int, reset) 	((dev) & 3) | (((reset) & 1) <<2 ) | (((dma_int) & 1) << 3) | ((fdsw)==OFF?0:(1<<(((dev) & 3)+4)))
+
 //MAIN_STATUS状态定义
 #define		STATUS_BUSYMASK			0x0F		//driver busy
 #define		STATUS_BUSY			0x10		//FDC 忙
