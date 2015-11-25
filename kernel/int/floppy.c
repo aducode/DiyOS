@@ -11,6 +11,24 @@
 #include "assert.h"
 #include "floppy.h"
 
+
+/**
+ * @struct floppy_struct
+ * @brief 支持软盘类型的参数
+ *
+ * 参考linux 0.11内核
+ */
+static struct floppy_struct {
+	unsigned int size;	//大小（扇区数）
+	unsigned int sect;	//每磁道扇区数
+	unsigned int head;	//磁头数
+	unsigned int track;	//磁道数
+	unsigned int stretch;	//对磁道是否需要特殊处理
+	unsigned char gap;	//数据区域长度(字节数)
+	unsigned char rate;	//数据传输速率
+	unsigned char specl;	//参数(高4位步进速率， 低4位磁头卸载时间)
+} FD_144 = {2880, 18, 2, 80, 0, 0x1B, 0x00, 0xCF}; //我们只支持1.44MB软盘
+
 /**
  * mount计数
  **/
@@ -71,7 +89,6 @@ void init_floppy()
  */
 void floppy_open(int device)
 {
-	printk("%d\n", device);
 	//之前考虑的mount /dev/floppy /test 时，是应用层open函数调用至此
 	//参考linux，mount应该是一个系统调用与open同级别，所以打开中断与关闭中断应该在mount / unmount 中 而不应该在open close中
 	//应该是mount 的时候调用至此
@@ -203,9 +220,19 @@ int fdc_result()
 
 void reset_interrupt_handler(int irq_no)
 {
-	fdc_output_byte(CMD_FD_SENSEI);
-	fdc_result();
-	printk("..\n");
+	//检查中断状态
+	fdc_output_byte(CMD_SENSEI_INTERRUPT);
+	int i,bytes = fdc_result(); 
+	printk("result:%dbytes\n", bytes);
+	for(i=0;i<bytes;i++){
+		printk("0x%x\n",reply_buffer[i]); 
+	}	
+	//不需要结果
+	//重新设置参数
+	fdc_output_byte(CMD_SPECIFY);
+	fdc_output_byte(FD_144.specl);
+	fdc_output_byte(2<<1|1); //磁头加载时间2*4ms， 非DMA
+	
 }
 
 void reset_floppy(int dev)
