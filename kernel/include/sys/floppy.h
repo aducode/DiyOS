@@ -44,7 +44,6 @@ extern void floppy_rdwt(struct message *msg);
  */
 extern void floppy_ioctl(struct message *msg);
 
-
 /**
  * @see [Floppy Disk Control](http://wiki.osdev.org/Floppy_Disk_Controller#Accessing_Floppies_in_Real_Mode)
  */

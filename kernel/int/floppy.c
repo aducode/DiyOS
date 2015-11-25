@@ -27,6 +27,7 @@ static unsigned char reply_buffer[MAX_REPLIES];
  * 处理中断
  */
 static void floppy_handler(int irq_no);
+static void reset_interrupt_handler(int irq_no);
 
 /**
  * @function reset_floppy
@@ -150,6 +151,7 @@ void floppy_handler(int irq_no)
 	printk("[*]floppy irq:%d\n", irq_no);
 }
 
+
 void fdc_output_byte(char byte)
 {
 	int counter; 		//计数器
@@ -199,6 +201,13 @@ int fdc_result()
 	return -1;
 }
 
+void reset_interrupt_handler(int irq_no)
+{
+	fdc_output_byte(CMD_FD_SENSEI);
+	fdc_result();
+	printk("..\n");
+}
+
 void reset_floppy(int dev)
 {
 	reset = 0;
@@ -207,7 +216,7 @@ void reset_floppy(int dev)
 	printk("Reset Floppy\n");
 	//关中断
 	_disable_irq(FLOPPY_IRQ);
-	irq_handler_table[FLOPPY_IRQ] = floppy_handler;
+	irq_handler_table[FLOPPY_IRQ] = reset_interrupt_handler;//floppy_handler;
 	//重启
 	_out_byte(DIGITAL_OUTPUT_REGISTER, BUILD_DOR(dev, OFF, 0, OFF));
 	for(i=0;i<100;i++){

@@ -91,7 +91,7 @@ read_sector16:
 .GoOnReading:
 	mov ah, 2;
 	mov al,byte[bp-2];byte[bp-2]中开始保存的是传过来的cl（cl个扇区) 寄存器不够，所以需要使用栈保存局部变量
-	int 0x13
+	int 0x13		;int 0x13 软盘中断
 	jc .GoOnReading
 ;	jnc .ReadSuccess	;如果成功
 ;.ReadError:			;如果失败重试 
