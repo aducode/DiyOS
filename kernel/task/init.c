@@ -171,13 +171,18 @@ void test_fs2(int id)
 
 void test_fork(int id)
 {
+	//int i;
 	int pid = fork();
 	assert(pid>=0);
         if(pid!=0){
+		//for(i=0;i<30;i++){
+		//	printf("P%d,",i);
+		//}
                 int s;
                 int cpid = wait(&s);
 		assert(s == 2333);
         } else {
+		//for(i=0;i<20;i++) printf("C%d,",i);	
                 exit(2333);
         }
 	printf("[%d]TEST FORK/EXIT SUCCESS!!\n", id);

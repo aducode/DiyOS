@@ -11,7 +11,6 @@
 #include "assert.h"
 #include "floppy.h"
 
-
 /**
  * @struct floppy_struct
  * @brief 支持软盘类型的参数
@@ -79,6 +78,12 @@ void init_floppy()
 {
 	//初始化floppy_mount_count
 	floppy_mount_count = 0;
+	//设置FDC基本参数
+	//BIOS已经设置过这些参数了，不需要再设置
+	//fdc_output_byte(CMD_CONFIGURE);
+	//fdc_output_byte(0);
+	//fdc_output_byte((1<<6)|(1<<5)|(0<<4)|(8));
+	//fdc_output_byte(0);
 }
 
 /**
@@ -148,7 +153,7 @@ void floppy_close(int device)
  */
 void floppy_rdwt(struct message *msg)
 {
-	printk("floppy_rdwt\n");	
+	printk("floppy_rdwt\n");
 }
 
 /**
@@ -222,17 +227,17 @@ void reset_interrupt_handler(int irq_no)
 {
 	//检查中断状态
 	fdc_output_byte(CMD_SENSEI_INTERRUPT);
-	int i,bytes = fdc_result(); 
-	printk("result:%dbytes\n", bytes);
-	for(i=0;i<bytes;i++){
-		printk("0x%x\n",reply_buffer[i]); 
-	}	
+	fdc_result(); 
 	//不需要结果
 	//重新设置参数
 	fdc_output_byte(CMD_SPECIFY);
 	fdc_output_byte(FD_144.specl);
-	fdc_output_byte(2<<1|1); //磁头加载时间2*4ms， 非DMA
-	
+	fdc_output_byte(2<<1|0); //磁头加载时间2*4ms， DMA
+/*	
+	_disable_irq(FLOPPY_IRQ);
+	irq_handler_table[FLOPPY_IRQ] = floppy_handler;
+	_enable_irq(FLOPPY_IRQ);
+*/
 }
 
 void reset_floppy(int dev)
@@ -240,17 +245,22 @@ void reset_floppy(int dev)
 	reset = 0;
 	recalibrate = 1;
 	int i;
-	printk("Reset Floppy\n");
 	//关中断
 	_disable_irq(FLOPPY_IRQ);
 	irq_handler_table[FLOPPY_IRQ] = reset_interrupt_handler;//floppy_handler;
 	//重启
-	_out_byte(DIGITAL_OUTPUT_REGISTER, BUILD_DOR(dev, OFF, 0, OFF));
+	//在对软盘进行操作之前，必须先“选中”对应磁盘，并开启马达
+	_out_byte(DIGITAL_OUTPUT_REGISTER, BUILD_DOR(dev, OFF, 1, OFF));
 	for(i=0;i<100;i++){
 		__asm__("nop");
 	}
-	_out_byte(DIGITAL_OUTPUT_REGISTER, BUILD_DOR(dev, OFF, 0, ON));	//再启动
+	_out_byte(DIGITAL_OUTPUT_REGISTER, BUILD_DOR(dev, OFF, 1, ON));	//再启动
 	//开中断
 	_enable_irq(FLOPPY_IRQ);
-	
+	//VERSION CMD
+	fdc_output_byte(CMD_VERSION);
+	int bytes = fdc_result();
+	//保证CMD VERSION返回1byte，并且值为0x90
+	//也就是运行在软盘控制芯片82077AA
+	assert(bytes==1 && reply_buffer[0] == 0x90);
 }

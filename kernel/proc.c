@@ -28,7 +28,8 @@ static void unblock(struct process *p_proc);
 void schedule()
 {
 	if(kernel_lock) {
-		//说明有进程独占CPU时间
+		//说明有进程独占CPU时间，不进行调度
+		//kernel lock粒度太大，没有使用
 		return;
 	}
 	//有优先级的简单进程调度

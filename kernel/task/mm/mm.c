@@ -34,7 +34,7 @@ void task_mm()
 				break;
 			case WAIT:
 				do_wait(&msg);
-				reply = 0; //进程会返回到父进程，所以页不需要在给这个进程发消息了
+				reply = 0; //进程会返回到父进程，所以也不需要在给这个进程发消息了
 				break;
 			default:
 				dump_msg("MM::unknown msg", &msg);
