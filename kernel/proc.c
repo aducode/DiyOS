@@ -13,7 +13,7 @@ static int deadlock(int src, int dest);
 
 static int msg_send(struct process *p_proc, int dest, struct message *msg);
 
-static int msg_receive(struct process *p_prc, int src, struct message *msg);
+static int msg_receive(struct process *p_prc, int src, struct message *msg, int no_block);
 
 static void block(struct process *p_proc);
 
@@ -210,7 +210,7 @@ int msg_send(struct process *current, int dest, struct message *m)   //0x3b1a
 }
 
 
-int msg_receive(struct process *current, int src, struct message *m)
+int msg_receive(struct process *current, int src, struct message *m, int no_block)
 {
 	struct process *receiver = current;
 	struct process *sender = 0;
@@ -304,6 +304,10 @@ int msg_receive(struct process *current, int src, struct message *m)
 		sender->p_flags &= ~SENDING;
 		unblock(sender);
 	} else {
+		if(no_block){
+			//非阻塞方式
+			return -1;
+		}
 		//nobody's sending any msg
 		receiver->p_flags |= RECEIVING;
 		receiver->p_msg = m;  //这里将消息地址设置给receiver->p_msg，在msg_send中会使用这个地址
@@ -346,6 +350,8 @@ int sys_sendrec(int function, int dest_src, struct message *msg , struct process
 {
 	assert(k_reenter == 0); //make sure we are not in ring0
 	assert((dest_src >= 0 && dest_src < TASKS_COUNT + PROCS_COUNT) || dest_src == ANY || dest_src == INTERRUPT);
+	int no_block = (function & 0xF0) >> 7;
+	function = function & 0x0F;
 	int caller = proc2pid(p_proc);
 	assert(caller != dest_src);
 	struct message *mla = (struct message *)va2la(caller, msg);
@@ -356,7 +362,7 @@ int sys_sendrec(int function, int dest_src, struct message *msg , struct process
 			ret = msg_send(p_proc, dest_src, msg);
 			break;
 		case RECEIVE:
-			ret = msg_receive(p_proc, dest_src, msg);
+			ret = msg_receive(p_proc, dest_src, msg, no_block);
 			break;
 		default:
 			panic("{sys_sendrec} invalid function:%d (SEND:%d, RECEIVE:%d).",function, SEND, RECEIVE);

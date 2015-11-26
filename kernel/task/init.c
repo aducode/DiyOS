@@ -5,7 +5,8 @@
 #include "assert.h"
 #include "fork.h"
 #include "getpid.h"
-#include "tar.h"
+#include "concurrent.h"
+//#include "tar.h"
 
 //#define _WITH_TEST_	//MOVE TO type.h
 #ifndef _WITH_TEST_
@@ -39,6 +40,7 @@ static void test_fs(int id);
 static void test_fs2(int id);
 static void test_fork(int id);
 static void test_mount(int id);
+static void test_sleep(int id);
 static int get_inode_icnt(const char *pathname);
 void init()
 {
@@ -59,6 +61,7 @@ void init()
 	test_fs(1);
 	test_fs2(2);
 	test_fork(3);
+	test_sleep(4);
 	//test_mount();
 	//untar("/cmd.tar");
 	char buf[128];
@@ -192,6 +195,12 @@ void test_mount(int id)
 	printf("ret=%d\n", ret);
 	ret = unmount("/tmp");
 	printf("ret=%d\n", ret);
+}
+
+void test_sleep(int id)
+{
+	printf("sleeping...\n");
+	sleep(1);
 }
 
 int get_inode_icnt(const char *pathname)
