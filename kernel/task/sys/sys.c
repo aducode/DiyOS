@@ -77,10 +77,11 @@ void task_sys()
 					break;
 			}
 		} 
-		else  {
+		//else  {
 			//spinning();
-		}
+		//}
 		//异步处理
+		//lock_kernel();
 		while((ret=check_and_dqueue(&interrupt_pid)) == 0){
 			//用户级进程
 			assert(interrupt_pid>=TASKS_COUNT && interrupt_pid < MAX_PROCESS_COUNT);
@@ -90,6 +91,7 @@ void task_sys()
 			//唤醒sleep的进程
 			send_recv(SEND, interrupt_pid, &msg);
 		}
+		//unlock_kernel();
 	}
 }
 
@@ -101,13 +103,20 @@ void spinning()
 
 int equeue(long long timeout, int pid)
 {
-	long long _ticks = ((int)timeout * HZ) / 1000 + ticks;
-	/*
+	long long _ticks = ((int)timeout * HZ) + ticks * 1000;
 	int i = queue_head;
-	while(priority_queue[i++].next_ticks  < _ticks){
-			
+	while(i<queue_tail){
+		i += 1;
+		if(i>=PROCS_COUNT){
+			i=0;
+		}
+		//if(
 	}
-	*/
+	for(i=queue_head;i<queue_tail;i++){
+		if(priority_queue[i].next_ticks > _ticks){
+			break;
+		}
+	}
 	queue_size ++;
 	return -1;
 }

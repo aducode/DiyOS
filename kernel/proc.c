@@ -465,7 +465,8 @@ void interrupt_wait()
  */
 void lock_kernel()
 {
-	assert(kernel_lock==0); //不可重入
+	//assert(kernel_lock==0); //不可重入
+	while(kernel_lock);//自旋等待
 	kernel_lock = 1;
 }
 
