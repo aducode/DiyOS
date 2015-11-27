@@ -13,14 +13,13 @@ struct priority_queue_node {
 };
 
 struct priority_queue {
-	int head;
-	int tail;
 	int size;
-	struct priority_queue_node nodes[PROCS_COUNT];
+	struct priority_queue_node nodes[MAX_PROCESS_COUNT];
 };
 
 extern struct priority_queue sleep_queue;
 
+extern void init_queue(struct priority_queue * queue);
 /**
  * @function equeue
  * @brief 入队列
