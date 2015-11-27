@@ -43,7 +43,7 @@ extern BOOL dqueue(struct  priority_queue * queue, struct priority_queue_node * 
  * 条件函数
  * 当node满足条件返回TRUE，否则返回FALSE
  */
-typedef BOOL (when_func *)(struct priority_queue_node * node);
+typedef BOOL (*when_func)(struct priority_queue_node * node);
 
 /**
  * @function dqueue_when

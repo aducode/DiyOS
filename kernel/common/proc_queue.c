@@ -40,11 +40,13 @@ BOOL equeue(struct priority_queue * queue, struct priority_queue_node * node)
 			//是右节点 并且 左节点更小
 			curr -= 1;
 		}
-		if(cmp(queue->nodes[curr], queue->nodes[root])<0){
+		if(cmp(&(queue->nodes[curr]), &(queue->nodes[root]))<0){
 			//swap
 			tmp = queue->nodes[curr];
 			queue->nodes[curr] = queue->nodes[root];
 			queue->nodes[root] = tmp;	
+		} else {
+			break;
 		}
 		curr = root;	
 	}
@@ -54,13 +56,13 @@ BOOL equeue(struct priority_queue * queue, struct priority_queue_node * node)
 
 BOOL dqueue(struct priority_queue * queue, struct priority_queue_node * node)
 {
-	if(size <= 0){
+	if(queue->size <= 0){
 		return FALSE;
 	}
 	//队列头
 	struct priority_queue_node * head = &(queue->nodes[0]);	
 	memcpy(node, head, sizeof(struct priority_queue_node));
-	struct priority_queue_node * tail = &(queue->nodes[size-1]);
+	struct priority_queue_node * tail = &(queue->nodes[queue->size-1]);
 	//set tail as the new head
 	memcpy(head, tail, sizeof(struct priority_queue_node));
 	queue->size--;
@@ -77,7 +79,7 @@ BOOL dqueue(struct priority_queue * queue, struct priority_queue_node * node)
 			//有右节点，并且右节点更小
 			child = right;
 		} 
-		if(cmp(&(queue->nodes[child]), &(queue->nodes[root]))>0){
+		if(cmp(&(queue->nodes[child]), &(queue->nodes[root]))<0){
 			//swap
 			tmp = queue->nodes[child];
 			queue->nodes[child] = queue->nodes[root];
