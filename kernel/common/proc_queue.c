@@ -94,11 +94,10 @@ BOOL dqueue(struct priority_queue * queue, struct priority_queue_node * node)
 
 BOOL dqueue_when(struct priority_queue * queue, struct priority_queue_node * node, when_func when)
 {
-	if(queue->size = 0){
+	if(queue->size <= 0){
 		return FALSE;
 	}
-	struct priority_queue_node *head = &(queue->nodes[0]);
-	if(when(head) == TRUE){
+	if(when(&(queue->nodes[0])) == TRUE){
 		return dqueue(queue, node);
 	} else {
 		return FALSE;

@@ -49,8 +49,8 @@ typedef char* 			va_list;
 typedef void* 			system_call;//系统调用
 
 typedef unsigned char		BOOL;	//布尔类型
-#define TRUE			1;
-#define	FALSE			0;
+#define TRUE			1
+#define	FALSE			0
 
 /**
  * 内部全部为整形的结构体

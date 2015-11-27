@@ -8,7 +8,7 @@
  * 优先级队列
  */
 struct priority_queue_node {
-	long long run_tick; 	//key
+	int run_tick; 	//key
 	int pid;		//pid
 };
 

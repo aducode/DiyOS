@@ -36,7 +36,7 @@ DASM=ndisasm
 DASMFLAGS=-u -o $(KERNEL_ENTRY_POINT) -e $(KERNEL_ENTRY_OFFSET)
 DASMOUTPUT=$(KERNEL).bin.asm
 
-OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o stat.o mount.o systicks.o getpid.o concurrent.o fork.o exit.o wait.o tar.o assert.o clock.o keyboard.o hd.o floppy.o console.o proc.o ipc.o syscall.o tty.o hddriver.o floppydriver.o sys.o fs.o tortoise.o fat12.o mm.o init.o 
+OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o stat.o mount.o systicks.o getpid.o concurrent.o fork.o exit.o wait.o tar.o assert.o clock.o keyboard.o hd.o floppy.o console.o proc.o ipc.o syscall.o tty.o hddriver.o floppydriver.o sys.o fs.o tortoise.o fat12.o mm.o init.o  proc_queue.o
 #map.o
 #OBJECTS=$(KERNEL).o main.o global.o head.o klib.o  interrupt.o string.o stdio.o clock.o keyboard.o console.o proc.o  syscall.o tty.o test.o
 
@@ -128,7 +128,8 @@ init.o:task/init.c
 ########################### common #########################################
 #map.o:common/map.c
 #	$(CC) $(CFLAGS) common/map.c -o map.o
-	
+proc_queue.o:common/proc_queue.c
+	$(CC) $(CFLAGS) common/proc_queue.c -o proc_queue.o	
 ########################### PHONY ##########################################
 lib:$(ARINFILE)
 	$(AR) $(ARFLAGS) $(AROUTFILE) $(ARINFILE)

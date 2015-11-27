@@ -199,8 +199,8 @@ void test_mount(int id)
 
 void test_sleep(int id)
 {
-	printf("sleeping...\n");
-	sleep(1);
+	sleep(10000);
+	printf("[%d]TEST SLEEP SUCCESS!!\n", id);
 }
 
 int get_inode_icnt(const char *pathname)

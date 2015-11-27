@@ -26,7 +26,7 @@ void init_clock()
 	ticks = 0;
 	_out_byte(TIMER_MODE, RATE_GENERATOR);
 	_out_byte(TIMER0,(u8)(TIMER_FREQ/HZ));
-	_out_byte(TIMER0,(u8)(TIMER_FREQ/HZ>>8));
+	_out_byte(TIMER0,(u8)((TIMER_FREQ/HZ)>>8));
 
 	_disable_irq(CLOCK_IRQ);
 	irq_handler_table[CLOCK_IRQ] = clock_handler;
