@@ -181,6 +181,12 @@ void test_fork(int id)
                 int cpid = wait(&s);
 		assert(s == 2333);
         } else {
+		/*
+		int i;
+		for(i=0;i<10;i++){
+			sleep((i+1)*1000);
+		}
+		*/
                 exit(2333);
         }
 	printf("[%d]TEST FORK/EXIT SUCCESS!!\n", id);
@@ -199,7 +205,12 @@ void test_mount(int id)
 
 void test_sleep(int id)
 {
-	sleep(5000);
+	int i;
+	for(i=0;i<10;i++){
+		printf(".");
+		sleep(i*1000);
+	}
+	printf("\n");
 	printf("[%d]TEST SLEEP SUCCESS!!\n", id);
 }
 

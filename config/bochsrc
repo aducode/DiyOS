@@ -1,5 +1,10 @@
 #display_library:sdl
+#how much memory the emulated machine will have
+#32MB
 megs:32
+
+#cpu:count=1,ips=6000000,reset_on_triple_fault=1,ignore_bad_msrs=1
+
 romimage:file=/usr/local/share/bochs/BIOS-bochs-latest
 vgaromimage:file=/usr/share/vgabios/vgabios.bin
 floppya:1_44=a.img, status=inserted

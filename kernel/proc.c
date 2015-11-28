@@ -367,7 +367,7 @@ int sys_sendrec(int function, int dest_src, struct message *msg , struct process
 		default:
 			panic("{sys_sendrec} invalid function:%d (SEND:%d, RECEIVE:%d).",function, SEND, RECEIVE);
 			break;
-	}		
+	}
 	return ret;
 }
 
@@ -438,8 +438,8 @@ void inform_int(int task_idx)
  */
 int waitfor(int reg_port, int mask, int val, int timeout)
 {
-        int t = (int)get_ticks();
-        while((((int)get_ticks()-t)*1000/HZ)<timeout){
+        long long t = get_ticks();
+        while((get_ticks()-t)<timeout){
                 //
                 if((_in_byte(reg_port) & mask) == val){
                         return 1;
