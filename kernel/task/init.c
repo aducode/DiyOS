@@ -199,7 +199,7 @@ void test_mount(int id)
 
 void test_sleep(int id)
 {
-	sleep(10000);
+	sleep(5000);
 	printf("[%d]TEST SLEEP SUCCESS!!\n", id);
 }
 
