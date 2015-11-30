@@ -39,7 +39,10 @@ static int reset = 0; //1表示需要进行复位操作
 
 //DATA_FIFO输出
 static unsigned char reply_buffer[MAX_REPLIES];
-
+#define ST0	reply_buffer[0]
+#define ST1	reply_buffer[1]
+#define ST2	reply_buffer[2]
+#define ST3	reply_buffer[3]
 /**
  * 处理中断
  */
@@ -262,5 +265,5 @@ void reset_floppy(int dev)
 	int bytes = fdc_result();
 	//保证CMD VERSION返回1byte，并且值为0x90
 	//也就是运行在软盘控制芯片82077AA
-	assert(bytes==1 && reply_buffer[0] == 0x90);
+	assert(bytes==1 && ST0 == 0x90);
 }
