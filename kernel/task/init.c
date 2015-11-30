@@ -5,7 +5,8 @@
 #include "assert.h"
 #include "fork.h"
 #include "getpid.h"
-#include "tar.h"
+#include "concurrent.h"
+//#include "tar.h"
 
 //#define _WITH_TEST_	//MOVE TO type.h
 #ifndef _WITH_TEST_
@@ -39,6 +40,7 @@ static void test_fs(int id);
 static void test_fs2(int id);
 static void test_fork(int id);
 static void test_mount(int id);
+static void test_sleep(int id);
 static int get_inode_icnt(const char *pathname);
 void init()
 {
@@ -60,6 +62,7 @@ void init()
 	test_fs2(2);
 	test_fork(3);
 	test_mount(4);
+	//test_sleep(4);
 	//untar("/cmd.tar");
 	char buf[128];
 	while(1){
@@ -183,6 +186,12 @@ void test_fork(int id)
 		assert(s == 2333);
         } else {
 		//for(i=0;i<20;i++) printf("C%d,",i);	
+		/*
+		int i;
+		for(i=0;i<10;i++){
+			sleep((i+1)*1000);
+		}
+		*/
                 exit(2333);
         }
 	printf("[%d]TEST FORK/EXIT SUCCESS!!\n", id);
@@ -201,6 +210,17 @@ void test_mount(int id)
 	ret = rmdir("/root/tmp");
 	assert(ret==0);
 	printf("[%d]TEST MOUNT SUCCESS!!\n", id);
+}
+
+void test_sleep(int id)
+{
+	int i;
+	for(i=0;i<10;i++){
+		printf(".");
+		sleep(i*1000);
+	}
+	printf("\n");
+	printf("[%d]TEST SLEEP SUCCESS!!\n", id);
 }
 
 int get_inode_icnt(const char *pathname)

@@ -13,7 +13,7 @@ int send_recv(int function, int src_dest, struct message *msg)  //0x4da0
                 memset(msg, 0, sizeof(struct message));
 
         }
-        switch(function){
+        switch(function & 0x0F){
                 case BOTH:
                         ret = sendrec(SEND, src_dest, msg);
                         if(ret==0){

@@ -99,8 +99,9 @@ char task_stack[STACK_SIZE_TOTAL];
 
 //全局时钟
 //int ticks;
-//这里不是类似unix时间戳，而是系统启动以来发生时钟中断的次数
 //时钟中断通过init_clock设置为每隔10ms中断一次，也就是说一个进程的cpu时间片约为10ms
+//在时钟中断中每次会增加TICK_SIZE（10ms）
+//获取的ticks值就是ms
 long long ticks;
 
 

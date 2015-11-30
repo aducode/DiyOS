@@ -16,7 +16,7 @@ LDFLAGS=-s -Ttext $(KERNEL_ENTRY_POINT)
 AR=ar
 ARFLAGS=rcs
 AROUTFILE=../app/diycrt.a
-ARINFILE=syscall.o string.o stdio.o assert.o systicks.o getpid.o fork.o exit.o wait.o ipc.o
+ARINFILE=syscall.o string.o stdio.o assert.o systicks.o getpid.o concurrent.o fork.o exit.o wait.o ipc.o
 #LDFLAGS=-s -e $(KERNEL_ENTRY_POINT)
 # 用-e替代 -Ttext链接脚本
 # 由于在kernel.asm中显示的写上[section .s32],导致-Ttext设置后真正的Entry不相符，
@@ -36,7 +36,7 @@ DASM=ndisasm
 DASMFLAGS=-u -o $(KERNEL_ENTRY_POINT) -e $(KERNEL_ENTRY_OFFSET)
 DASMOUTPUT=$(KERNEL).bin.asm
 
-OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o stat.o mount.o systicks.o getpid.o fork.o exit.o wait.o tar.o assert.o clock.o keyboard.o hd.o floppy.o console.o proc.o ipc.o syscall.o tty.o hddriver.o floppydriver.o sys.o fs.o tortoise.o fat12.o mm.o init.o 
+OBJECTS=$(KERNEL).o head.o global.o main.o interrupt.o klib.o string.o stdio.o stat.o mount.o systicks.o getpid.o concurrent.o fork.o exit.o wait.o tar.o assert.o clock.o keyboard.o hd.o floppy.o console.o proc.o ipc.o syscall.o tty.o hddriver.o floppydriver.o sys.o fs.o tortoise.o fat12.o mm.o init.o  proc_queue.o
 #map.o
 #OBJECTS=$(KERNEL).o main.o global.o head.o klib.o  interrupt.o string.o stdio.o clock.o keyboard.o console.o proc.o  syscall.o tty.o test.o
 
@@ -79,6 +79,8 @@ systicks.o:lib/systicks.c
 	$(CC) $(CFLAGS) lib/systicks.c -o systicks.o
 getpid.o:lib/getpid.c
 	$(CC) $(CFLAGS) lib/getpid.c -o getpid.o
+concurrent.o:lib/concurrent.o
+	$(CC) $(CFLAGS) lib/concurrent.c -o concurrent.o
 fork.o:lib/fork.c
 	$(CC) $(CFLAGS) lib/fork.c -o fork.o
 exit.o:lib/exit.c
@@ -126,7 +128,8 @@ init.o:task/init.c
 ########################### common #########################################
 #map.o:common/map.c
 #	$(CC) $(CFLAGS) common/map.c -o map.o
-	
+proc_queue.o:common/proc_queue.c
+	$(CC) $(CFLAGS) common/proc_queue.c -o proc_queue.o	
 ########################### PHONY ##########################################
 lib:$(ARINFILE)
 	$(AR) $(ARFLAGS) $(AROUTFILE) $(ARINFILE)

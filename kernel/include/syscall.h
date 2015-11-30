@@ -7,6 +7,8 @@
 #define SEND		1
 #define RECEIVE		2
 #define BOTH		3
+//NO BLOCK标志位
+#define NO_BLOCK	0x80
 /**
  * @function send_recv
  * @brief 进程间通信

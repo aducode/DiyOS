@@ -48,6 +48,9 @@ typedef unsigned char 		u8;  //8bit长度
 typedef char* 			va_list;
 typedef void* 			system_call;//系统调用
 
+typedef unsigned char		BOOL;	//布尔类型
+#define TRUE			1
+#define	FALSE			0
 
 /**
  * 内部全部为整形的结构体
@@ -98,6 +101,7 @@ enum msgtype {
 	//sys task
 	GET_TICKS, 			/*获取当前系统ticket*/
 	GET_PID,			/*获取当前进程PID*/
+	PSLEEP,				/*睡眠*/
 	//FS
 	OPEN,				/*打开文件*/
 	CLOSE,				/*关闭文件句柄*/
@@ -167,6 +171,9 @@ enum msgtype {
 #define OLDNAME_LEN	u.m3.m3i1
 #define NEWNAME		u.m3.m3p2
 #define NEWNAME_LEN	u.m3.m3i2
+
+/** for psleep **/
+#define TIMEOUT		u.m3.m3l1
 
 //about process
 //#define MAX_PROCESS_COUNT     32      //最多32个进程
