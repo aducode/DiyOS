@@ -10,6 +10,7 @@
 #include "klib.h"
 #include "assert.h"
 #include "floppy.h"
+#include "concurrent.h"
 
 /**
  * @struct floppy_struct
@@ -48,6 +49,7 @@ static unsigned char reply_buffer[MAX_REPLIES];
  */
 static void floppy_handler(int irq_no);
 static void reset_interrupt_handler(int irq_no);
+static void recalibrate_interrupt_handler(int irq_no);
 
 /**
  * @function reset_floppy
@@ -56,6 +58,13 @@ static void reset_interrupt_handler(int irq_no);
  */
 static void reset_floppy(int dev);
 
+/**
+ * @function recalibrate_floppy
+ * @brief 磁头归零
+ * @param dev
+ * @return void
+ */
+static void recalibrate_floppy(int dev);
 /**
  * @function fdc_output_byte
  * @brief 向FDC（软盘控制器)写入byte
@@ -102,6 +111,7 @@ void floppy_open(int device)
 	//应该是mount 的时候调用至此
 	if(floppy_mount_count == 0){
 		reset_floppy(device);
+		recalibrate_floppy(device);
 		//说明是第一次mount
 		//int i;
 		//setp 1 enable interrupt
@@ -266,4 +276,34 @@ void reset_floppy(int dev)
 	//保证CMD VERSION返回1byte，并且值为0x90
 	//也就是运行在软盘控制芯片82077AA
 	assert(bytes==1 && ST0 == 0x90);
+}
+
+void recalibrate_interrupt_handler(int riq_no)
+{
+	fdc_output_byte(CMD_SENSEI_INTERRUPT);
+	if(fdc_result()!=2 || (ST0 & 0xE0) == 0x60) {
+		reset = 1;
+	} else {
+		recalibrate = 0;
+	}
+	
+}
+
+void recalibrate_floppy(int dev)
+{
+	if(reset){
+		return;
+	}
+	printk("recalibrate floppy:%d\n", dev);
+	recalibrate = 0;
+	irq_handler_table[FLOPPY_IRQ] = recalibrate_interrupt_handler;
+	//CMD RECALIBRATE
+	fdc_output_byte(CMD_RECALIBRATE);
+	fdc_output_byte(dev);
+	if(reset){
+		//fdc_output出错了，需要重置
+		reset_floppy(dev);
+	} else{
+		sleep(3000);
+	}
 }
