@@ -40,10 +40,18 @@ static int reset = 0; //1表示需要进行复位操作
 
 //DATA_FIFO输出
 static unsigned char reply_buffer[MAX_REPLIES];
+//The correct value of st0 after a reset should be 0xC0 | drive number (drive number = 0 to 3). After a Recalibrate/Seek it should be 0x20 | drive number.
+//st0
+//The top 2 bits (value = 0xC0) are set after a reset procedure, with polling on. Either bit being set at any other time is an error indication. Bit 5 (value = 0x20) is set after every Recalibrate, Seek, or an implied seek. The other bits are not useful.
 #define ST0	reply_buffer[0]
+//st1
+//The st1 register provides more detail about errors during read/write operations.
+//Bit 7 (value = 0x80) is set if the floppy had too few sectors on it to complete a read/write. This is often caused by not subtracting 1 when setting the DMA byte count. Bit 4 (value = 0x10) is set if your driver is too slow to get bytes in or out of the FIFO port in time. Bit 1 (value = 2) is set if the media is write protected. The rest of the bits are for various types of data errors; indicating bad media, or a bad drive.
 #define ST1	reply_buffer[1]
+//st2
+//The st2 register provides more (useless) detail about errors during read/write operations.
+//The bits all indicate various types of data errors for either bad media, or a bad drive.
 #define ST2	reply_buffer[2]
-#define ST3	reply_buffer[3]
 /**
  * 处理中断
  */
@@ -282,6 +290,7 @@ void recalibrate_interrupt_handler(int riq_no)
 {
 	fdc_output_byte(CMD_SENSEI_INTERRUPT);
 	if(fdc_result()!=2 || (ST0 & 0xE0) == 0x60) {
+		printk("0x%x\n", ST0 & 0xE0);
 		reset = 1;
 	} else {
 		recalibrate = 0;
