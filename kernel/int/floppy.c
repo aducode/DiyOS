@@ -39,7 +39,11 @@ static struct fdc_status_struct {
 	int recalibrate;	//需要recalibrate, 1表示需要重新校正磁头位置
 	int seek;		//当前需要seek，1表示需要seek
 	int curr_dev;	//当前的软驱号
-} fdc_status = {0, 0, 0, 0};  //fdc的状态
+	//软盘CHS
+	int curr_head;	//当前磁头
+	int curr_cylinder;	//当前柱面
+	int curr_sector;	//当前扇区
+} fdc_status = {0, 0, 0, 0, 0, 0, 0};  //fdc的状态
 
 
 //DATA_FIFO输出
@@ -62,7 +66,7 @@ static unsigned char reply_buffer[MAX_REPLIES];
 static void floppy_handler(int irq_no);
 static void reset_interrupt_handler(int irq_no);
 static void recalibrate_interrupt_handler(int irq_no);
-
+static void seek_interrupt_handler(int irq_no);
 /**
  * @function reset_floppy
  * @brief 重置软盘驱动并设置参数
@@ -77,6 +81,15 @@ static void reset_floppy(int dev);
  * @return void
  */
 static void recalibrate_floppy(int dev);
+
+/**
+ * @function seek_floppy
+ * @brief 寻道
+ * @param dev
+ * @param head 磁头
+ * @param cylinder
+ */
+static void seek_floppy(int dev, int head, int cylinder);
 /**
  * @function fdc_output_byte
  * @brief 向FDC（软盘控制器)写入byte
@@ -178,7 +191,23 @@ void floppy_close(int device)
  */
 void floppy_rdwt(struct message *msg)
 {
-	printk("floppy_rdwt\n");
+	int dev = msg->DEVICE;
+	assert(dev>=0 && dev <=3);//0～3
+	u64 pos = msg->POSITION;	//起始位置
+	//pos必须是扇区开始处
+	assert((pos & 0x1FF) == 0);
+	int bytes = msg->CNT;		//字节数
+	if(msg->type == DEV_READ){
+		//read
+		//TODO 需要position到软盘CHS的映射
+		//seek_floppy(dev, 
+			
+	}  else if(msg->type == DEV_WRITE){
+		//write
+	} else {
+		//UNKNOWN
+		assert(0);
+	}
 }
 
 /**
@@ -318,6 +347,41 @@ void recalibrate_floppy(int dev)
 		//fdc_output出错了，需要重置
 		reset_floppy(dev);
 	} else{
+		sleep(3000);
+	}
+}
+
+void seek_interrupt_handler(int irq_no)
+{
+	fdc_output_byte(CMD_SENSEI_INTERRUPT);
+	if(fdc_result()!=2 || ST0 & (0x20 | fdc_status.curr_dev) != (0x20 | fdc_status.curr_dev)){
+		fdc_status.reset = 1;
+	} else {
+		fdc_status.seek = 0;
+	}
+}
+
+void seek_floppy(int dev, int head, int cylinder)
+{
+	if(fdc_status.reset){
+		return;
+	}
+	fdc_status.seek = 0;
+	fdc_status.curr_dev = dev;
+	fdc_status.curr_head = head;
+	fdc_status.curr_cylinder = cylinder;
+	
+	_disable_irq(FLOPPY_IRQ);
+	irq_handler_table[FLOPPY_IRQ] = seek_interrupt_handler;
+	_enable_irq(FLOPPY_IRQ);
+	
+	//CMD SEEK
+	fdc_output_byte(CMD_SEEK);
+	fdc_output_byte(fdc_status.curr_head << 2| fdc_status.curr_dev);
+	fdc_output_byte(fdc_status.curr_cylinder);
+	if(fdc_status.reset){
+		reset_floppy(dev);	
+	} else {
 		sleep(3000);
 	}
 }
