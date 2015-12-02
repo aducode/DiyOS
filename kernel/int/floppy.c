@@ -34,9 +34,13 @@ static struct floppy_struct {
  **/
 static int floppy_mount_count;
 
-static int recalibrate = 0; //1表示需要重新校正磁头位置
+static struct fdc_status_struct {
+	int reset;		//当前需要reset，1表示需要进行复位操作
+	int recalibrate;	//需要recalibrate, 1表示需要重新校正磁头位置
+	int seek;		//当前需要seek，1表示需要seek
+	int curr_dev;	//当前的软驱号
+} fdc_status = {0, 0, 0, 0};  //fdc的状态
 
-static int reset = 0; //1表示需要进行复位操作
 
 //DATA_FIFO输出
 static unsigned char reply_buffer[MAX_REPLIES];
@@ -200,7 +204,7 @@ void fdc_output_byte(char byte)
 	int counter; 		//计数器
 	unsigned char status; //主状态寄存器的值
 	
-	if(reset){
+	if(fdc_status.reset){
 		//如果需要重置，那么直接返回
 		return;
 	}
@@ -213,14 +217,14 @@ void fdc_output_byte(char byte)
 			return;
 		}
 	}
-	reset = 1; //出错，需要重置
+	fdc_status.reset = 1; //出错，需要重置
 	printk("Unable send byte to FDC\n");
 }
 
 int fdc_result()
 {
 	int i = 0, counter, status;
-	if(reset) {
+	if(fdc_status.reset) {
 		return -1;
 		//如果需要重置，那么立刻返回
 	}
@@ -239,7 +243,7 @@ int fdc_result()
 		}
 	}
 	//循环10000次，则超时
-	reset = 1;
+	fdc_status.reset = 1;
 	printk("Get status timeout\n");
 	return -1;
 }
@@ -248,23 +252,22 @@ void reset_interrupt_handler(int irq_no)
 {
 	//检查中断状态
 	fdc_output_byte(CMD_SENSEI_INTERRUPT);
-	fdc_result(); 
-	//不需要结果
-	//重新设置参数
-	fdc_output_byte(CMD_SPECIFY);
-	fdc_output_byte(FD_144.specl);
-	fdc_output_byte(2<<1|0); //磁头加载时间2*4ms， DMA
-/*	
-	_disable_irq(FLOPPY_IRQ);
-	irq_handler_table[FLOPPY_IRQ] = floppy_handler;
-	_enable_irq(FLOPPY_IRQ);
-*/
+	if(fdc_result()!=2 || ST0 != 0xC0){
+		fdc_status.reset = 1;//说明reset失败
+	} else {
+		//不需要结果
+		//重新设置参数
+		fdc_output_byte(CMD_SPECIFY);
+		fdc_output_byte(FD_144.specl);
+		fdc_output_byte(2<<1|0); //磁头加载时间2*4ms， DMA
+	}
 }
 
 void reset_floppy(int dev)
 {
-	reset = 0;
-	recalibrate = 1;
+	fdc_status.reset = 0;
+	fdc_status.recalibrate = 1;
+	fdc_status.curr_dev = dev;
 	int i;
 	//关中断
 	_disable_irq(FLOPPY_IRQ);
@@ -289,27 +292,29 @@ void reset_floppy(int dev)
 void recalibrate_interrupt_handler(int riq_no)
 {
 	fdc_output_byte(CMD_SENSEI_INTERRUPT);
-	if(fdc_result()!=2 || (ST0 & 0xE0) == 0x60) {
-		printk("0x%x\n", ST0 & 0xE0);
-		reset = 1;
+	if(fdc_result()!=2 || ST0 & (0x20 | fdc_status.curr_dev) != (0x20 | fdc_status.curr_dev)) {
+		printk("0x%x\n", ST0);
+		// Bit 5 (value = 0x20) is set after every Recalibrate, Seek, or an implied seek
+		fdc_status.reset = 1;
 	} else {
-		recalibrate = 0;
+		fdc_status.recalibrate = 0;
 	}
-	
 }
 
 void recalibrate_floppy(int dev)
 {
-	if(reset){
+	if(fdc_status.reset){
 		return;
 	}
-	printk("recalibrate floppy:%d\n", dev);
-	recalibrate = 0;
+	fdc_status.curr_dev = dev;
+	fdc_status.recalibrate = 0;
+	_disable_irq(FLOPPY_IRQ);	
 	irq_handler_table[FLOPPY_IRQ] = recalibrate_interrupt_handler;
+	_enable_irq(FLOPPY_IRQ);
 	//CMD RECALIBRATE
 	fdc_output_byte(CMD_RECALIBRATE);
 	fdc_output_byte(dev);
-	if(reset){
+	if(fdc_status.reset){
 		//fdc_output出错了，需要重置
 		reset_floppy(dev);
 	} else{
