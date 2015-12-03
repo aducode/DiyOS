@@ -60,6 +60,15 @@ static unsigned char reply_buffer[MAX_REPLIES];
 //The st2 register provides more (useless) detail about errors during read/write operations.
 //The bits all indicate various types of data errors for either bad media, or a bad drive.
 #define ST2	reply_buffer[2]
+
+//根据物理上的磁头/磁道/扇区获得相对扇区号
+#define SECTOR(head, cylinder, sector) ((head) * 18 + 2 * (cylinder) * 18 + (sector) -1)
+//相对扇区号对每条磁道扇区数(18)取模加1就得到扇区
+#define S(sector) ((sector) % 18 + 1)
+//
+#define H(sector) (((sector) / 18) % 2 == 1 ? 1:0)
+//
+#define C(sector) ((sector)/18 / 2)
 /**
  * 处理中断
  */
