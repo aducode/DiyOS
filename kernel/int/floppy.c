@@ -76,6 +76,7 @@ static void floppy_handler(int irq_no);
 static void reset_interrupt_handler(int irq_no);
 static void recalibrate_interrupt_handler(int irq_no);
 static void seek_interrupt_handler(int irq_no);
+static void rdwt_interrupt_handler(int irq_no);
 /**
  * @function reset_floppy
  * @brief 重置软盘驱动并设置参数
@@ -108,9 +109,10 @@ static void seek_floppy(int dev, int head, int cylinder);
  * @param head
  * @param cylinder
  * @param sector
+ * @param sector_count读/写的扇区数
  * @return
  */
-static void rdwt_floppy(int type, int dev, int head, int cylinder, int sector);
+static void rdwt_floppy(int type, int dev, int head, int cylinder, int sector, int sector_count);
 /**
  * @function fdc_output_byte
  * @brief 向FDC（软盘控制器)写入byte
@@ -220,16 +222,9 @@ void do_floppy_rdwt(struct message *msg)
 	int bytes = msg->CNT;		//字节数
 	//每个扇区512字节
 	int sector_nr = pos / 512;	//这里得到扇区号
-	if(msg->type == DEV_READ){
-		//read
-		seek_floppy(dev, H(sector_nr), C(sector_nr));
-			
-	}  else if(msg->type == DEV_WRITE){
-		//write
-	} else {
-		//UNKNOWN
-		assert(0);
-	}
+	//read
+	seek_floppy(dev, H(sector_nr), C(sector_nr));
+	rdwt_floppy(msg->type, dev, H(sector_nr), C(sector_nr), S(sector_nr),bytes/512+(bytes%512==0)?0:1);
 }
 
 /**
@@ -393,10 +388,6 @@ void seek_floppy(int dev, int head, int cylinder)
 	if(fdc_status.curr_head == head && fdc_status.curr_cylinder == cylinder){
 		return;
 	}
-	fdc_status.curr_dev = dev;
-	fdc_status.curr_head = head;
-	fdc_status.curr_cylinder = cylinder;
-	
 	_disable_irq(FLOPPY_IRQ);
 	irq_handler_table[FLOPPY_IRQ] = seek_interrupt_handler;
 	_enable_irq(FLOPPY_IRQ);
@@ -408,6 +399,49 @@ void seek_floppy(int dev, int head, int cylinder)
 	if(fdc_status.reset){
 		reset_floppy(dev);	
 	} else {
+		fdc_status.curr_dev = dev;
+		fdc_status.curr_head = head;
+		fdc_status.curr_cylinder = cylinder;
 		sleep(3000);
 	}
+}
+
+void rdwt_interrupt_handler(int irq_no)
+{
+	printk("rdwt interrupt!\n");
+}
+
+void rdwt_floppy(int type,  int dev, int head, int cylinder, int sector, int sector_count)
+{
+	if(fdc_status.reset == 1 || fdc_status.recalibrate == 1|| fdc_status.seek == 1){
+		return;
+	}
+	if(type!=DEV_READ && type!=DEV_WRITE){
+		return;
+	}
+
+	_disable_irq(FLOPPY_IRQ);
+	irq_handler_table[FLOPPY_IRQ] = rdwt_interrupt_handler;
+	_enable_irq(FLOPPY_IRQ);
+	
+	fdc_output_byte((type==DEV_READ)?(CMD_READ):(CMD_WRITE));
+	fdc_output_byte(head<<2|dev);
+	fdc_output_byte(cylinder);
+	fdc_output_byte(head);
+	fdc_output_byte(sector);
+	fdc_output_byte(2);	//all floppy drives use 512bytes per sector
+	fdc_output_byte(sector_count);
+	fdc_output_byte(FD_144.gap);
+	fdc_output_byte(0xFF);
+	if(fdc_status.reset){
+		//说明有错误
+		reset_floppy(dev);
+	} else {
+		fdc_status.curr_dev =dev;
+		fdc_status.curr_head = head;
+		fdc_status.curr_cylinder = cylinder;
+		fdc_status.curr_sector = sector;	
+		sleep(10000);
+	}	
+		
 }
