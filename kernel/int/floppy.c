@@ -99,6 +99,18 @@ static void recalibrate_floppy(int dev);
  * @param cylinder
  */
 static void seek_floppy(int dev, int head, int cylinder);
+
+/**
+ * @function rdwt_floppy
+ * @brief 读写
+ * @param type
+ * @param dev
+ * @param head
+ * @param cylinder
+ * @param sector
+ * @return
+ */
+static void rdwt_floppy(int type, int dev, int head, int cylinder, int sector);
 /**
  * @function fdc_output_byte
  * @brief 向FDC（软盘控制器)写入byte
@@ -120,7 +132,7 @@ static int fdc_result();
  * @function init_floppy
  * @brief 初始化软盘，开启软盘中断
  */
-void init_floppy()
+void do_init_floppy()
 {
 	//初始化floppy_mount_count
 	floppy_mount_count = 0;
@@ -138,7 +150,7 @@ void init_floppy()
  * @param device 设备号
  * @return
  */
-void floppy_open(int device)
+void do_floppy_open(int device)
 {
 	//之前考虑的mount /dev/floppy /test 时，是应用层open函数调用至此
 	//参考linux，mount应该是一个系统调用与open同级别，所以打开中断与关闭中断应该在mount / unmount 中 而不应该在open close中
@@ -172,7 +184,7 @@ void floppy_open(int device)
  * @param device 设备号
  * @return
  */
-void floppy_close(int device)
+void do_floppy_close(int device)
 {
 	// unmount /dev/floppy 的fd时调用
 	//由于一个分区（比如这里的floppy）可以挂在到多个目录
@@ -198,7 +210,7 @@ void floppy_close(int device)
  * @param msg 消息
  * @return
  */
-void floppy_rdwt(struct message *msg)
+void do_floppy_rdwt(struct message *msg)
 {
 	int dev = msg->DEVICE;
 	assert(dev>=0 && dev <=3);//0～3
@@ -206,10 +218,11 @@ void floppy_rdwt(struct message *msg)
 	//pos必须是扇区开始处
 	assert((pos & 0x1FF) == 0);
 	int bytes = msg->CNT;		//字节数
+	//每个扇区512字节
+	int sector_nr = pos / 512;	//这里得到扇区号
 	if(msg->type == DEV_READ){
 		//read
-		//TODO 需要position到软盘CHS的映射
-		//seek_floppy(dev, 
+		seek_floppy(dev, H(sector_nr), C(sector_nr));
 			
 	}  else if(msg->type == DEV_WRITE){
 		//write
@@ -224,7 +237,7 @@ void floppy_rdwt(struct message *msg)
  * @brief 控制设备
  * @param msg 消息
  */
-void floppy_ioctl(struct message *msg)
+void do_floppy_ioctl(struct message *msg)
 {
 	
 }
@@ -372,10 +385,14 @@ void seek_interrupt_handler(int irq_no)
 
 void seek_floppy(int dev, int head, int cylinder)
 {
+	printk("seek..%d,%d\n", head, cylinder);
 	if(fdc_status.reset){
 		return;
 	}
 	fdc_status.seek = 0;
+	if(fdc_status.curr_head == head && fdc_status.curr_cylinder == cylinder){
+		return;
+	}
 	fdc_status.curr_dev = dev;
 	fdc_status.curr_head = head;
 	fdc_status.curr_cylinder = cylinder;

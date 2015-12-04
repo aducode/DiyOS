@@ -11,7 +11,7 @@
  * @brief 初始化floppy 中断
  * @return
  */
-extern void init_floppy();
+extern void do_init_floppy();
 
 /**
  * @function floppy_open
@@ -19,7 +19,7 @@ extern void init_floppy();
  * @param device 设备号
  * @return
  */
-extern void floppy_open(int device);
+extern void do_floppy_open(int device);
 
 /**
  * @function floppy_close
@@ -27,7 +27,7 @@ extern void floppy_open(int device);
  * @param device 设备号
  * @return
  */
-extern void floppy_close(int device);
+extern void do_floppy_close(int device);
 
 /**
  * @function floppy_rdwt
@@ -35,14 +35,14 @@ extern void floppy_close(int device);
  * @param msg 消息
  * @return
  */
-extern void floppy_rdwt(struct message *msg);
+extern void do_floppy_rdwt(struct message *msg);
 
 /**
  * @function floppy_ioctl
  * @brief 控制设备
  * @param msg 消息
  */
-extern void floppy_ioctl(struct message *msg);
+extern void do_floppy_ioctl(struct message *msg);
 
 /**
  * 参考资料:

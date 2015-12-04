@@ -9,7 +9,7 @@
 void task_floppy()
 {
 	struct message msg;//用于进程间通信
-	init_floppy();
+	do_init_floppy();
 	while(1)
 	{
 		//floppy driver main loop
@@ -17,18 +17,18 @@ void task_floppy()
 		int src = msg.source;
 		switch(msg.type){
 			case DEV_OPEN:
-				floppy_open(msg.DEVICE);
+				do_floppy_open(msg.DEVICE);
 				msg.type=SYSCALL_RET;
 				break;
 			case DEV_CLOSE:
-				floppy_close(msg.DEVICE);
+				do_floppy_close(msg.DEVICE);
 				break;
 			case DEV_READ:
 			case DEV_WRITE:
-				floppy_rdwt(&msg);
+				do_floppy_rdwt(&msg);
 				break;
 			case DEV_IOCTL:
-				floppy_ioctl(&msg);
+				do_floppy_ioctl(&msg);
 				break;
 			default:
 				dump_msg("FLOPPY driver::unknown msg", &msg);
