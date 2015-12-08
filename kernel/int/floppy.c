@@ -26,8 +26,9 @@ static struct floppy_struct {
 	unsigned int stretch;	//对磁道是否需要特殊处理
 	unsigned char gap;	//数据区域长度(字节数)
 	unsigned char rate;	//数据传输速率
-	unsigned char specl;	//参数(高4位步进速率， 低4位磁头卸载时间)
-} FD_144 = {2880, 18, 2, 80, 0, 0x1B, 0x00, 0xCF}; //我们只支持1.44MB软盘
+	unsigned char spec1;	//参数(高4位步进速率， 低4位磁头卸载时间)
+	unsigned char spec2;	//6表示DMA
+} FD_144 = {2880, 18, 2, 80, 0, 0x1B, 0x00, 0xCF, 6}; //我们只支持1.44MB软盘
 
 /**
  * mount计数
@@ -160,6 +161,8 @@ void do_floppy_open(int device)
 	if(floppy_mount_count == 0){
 		reset_floppy(device);
 		recalibrate_floppy(device);
+		//不需要重置/重定位
+		assert(fdc_status.reset == 0 && fdc_status.recalibrate==0);
 		//说明是第一次mount
 		//int i;
 		//setp 1 enable interrupt
@@ -304,8 +307,8 @@ void reset_interrupt_handler(int irq_no)
 		//不需要结果
 		//重新设置参数
 		fdc_output_byte(CMD_SPECIFY);
-		fdc_output_byte(FD_144.specl);
-		fdc_output_byte(2<<1|0); //磁头加载时间2*4ms， DMA
+		fdc_output_byte(FD_144.spec1);
+		fdc_output_byte(FD_144.spec2); //磁头加载时间6ms， DMA
 	}
 }
 
@@ -339,7 +342,6 @@ void recalibrate_interrupt_handler(int riq_no)
 {
 	fdc_output_byte(CMD_SENSEI_INTERRUPT);
 	if(fdc_result()!=2 || ST0 & (0x20 | fdc_status.curr_dev) != (0x20 | fdc_status.curr_dev)) {
-		printk("0x%x\n", ST0);
 		// Bit 5 (value = 0x20) is set after every Recalibrate, Seek, or an implied seek
 		fdc_status.reset = 1;
 	} else {
@@ -380,7 +382,6 @@ void seek_interrupt_handler(int irq_no)
 
 void seek_floppy(int dev, int head, int cylinder)
 {
-	printk("seek..%d,%d\n", head, cylinder);
 	if(fdc_status.reset){
 		return;
 	}
