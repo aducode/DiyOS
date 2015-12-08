@@ -78,6 +78,16 @@ static void reset_interrupt_handler(int irq_no);
 static void recalibrate_interrupt_handler(int irq_no);
 static void seek_interrupt_handler(int irq_no);
 static void rdwt_interrupt_handler(int irq_no);
+
+/**
+ * @function switch_floppy_motor
+ * @brief 开/关 软驱马达
+ * @param dev
+ * @param sw ON/OFF
+ * @return
+ */
+static void switch_floppy_motor(int dev, int sw);
+
 /**
  * @function reset_floppy
  * @brief 重置软盘驱动并设置参数
@@ -327,6 +337,8 @@ void reset_floppy(int dev)
 	for(i=0;i<100;i++){
 		__asm__("nop");
 	}
+	//在读写之前需要向DOR port输出BUILD_DOR(dev, ON, 1, ON);
+	//否则会出现motor not on的错误
 	_out_byte(DIGITAL_OUTPUT_REGISTER, BUILD_DOR(dev, OFF, 1, ON));	//再启动
 	//开中断
 	_enable_irq(FLOPPY_IRQ);
@@ -366,7 +378,7 @@ void recalibrate_floppy(int dev)
 		//fdc_output出错了，需要重置
 		reset_floppy(dev);
 	} else{
-		sleep(3000);
+		sleep(300);
 	}
 }
 
@@ -403,7 +415,7 @@ void seek_floppy(int dev, int head, int cylinder)
 		fdc_status.curr_dev = dev;
 		fdc_status.curr_head = head;
 		fdc_status.curr_cylinder = cylinder;
-		sleep(3000);
+		sleep(300);
 	}
 }
 
@@ -414,13 +426,18 @@ void rdwt_interrupt_handler(int irq_no)
 
 void rdwt_floppy(int type,  int dev, int head, int cylinder, int sector, int sector_count)
 {
-	if(fdc_status.reset == 1 || fdc_status.recalibrate == 1|| fdc_status.seek == 1){
+	if(fdc_status.reset == 1){
+		reset_floppy(dev);
+		return;
+	}
+	if(fdc_status.recalibrate == 1){
+		recalibrate_floppy(dev);
 		return;
 	}
 	if(type!=DEV_READ && type!=DEV_WRITE){
 		return;
 	}
-
+	switch_floppy_motor(dev, ON);
 	_disable_irq(FLOPPY_IRQ);
 	irq_handler_table[FLOPPY_IRQ] = rdwt_interrupt_handler;
 	_enable_irq(FLOPPY_IRQ);
@@ -442,7 +459,21 @@ void rdwt_floppy(int type,  int dev, int head, int cylinder, int sector, int sec
 		fdc_status.curr_head = head;
 		fdc_status.curr_cylinder = cylinder;
 		fdc_status.curr_sector = sector;	
-		sleep(10000);
+		sleep(1000);
 	}	
 		
+}
+
+void switch_floppy_motor(int dev, int sw)
+{
+	int i;
+	if(fdc_status.reset){
+		return;
+	}
+	_disable_irq(FLOPPY_IRQ);
+	_out_byte(DIGITAL_OUTPUT_REGISTER, BUILD_DOR(dev, ON, 1, sw));
+        for(i=0;i<100;i++){
+                __asm__("nop");
+        }
+	_enable_irq(FLOPPY_IRQ);
 }
