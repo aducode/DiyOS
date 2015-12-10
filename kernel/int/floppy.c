@@ -461,7 +461,6 @@ void rdwt_floppy(int type,  int dev, int head, int cylinder, int sector, int sec
 		fdc_status.curr_sector = sector;	
 		sleep(1000);
 	}	
-		
 }
 
 void switch_floppy_motor(int dev, int sw)
