@@ -11,6 +11,9 @@
 #include "assert.h"
 #include "floppy.h"
 #include "concurrent.h"
+#include "system.h"
+
+extern char temp_floppy_area[1024];
 
 /**
  * @struct floppy_struct
@@ -80,6 +83,15 @@ static void seek_interrupt_handler(int irq_no);
 static void rdwt_interrupt_handler(int irq_no);
 
 /**
+ * @function setup_DMA
+ * @brief 设置DMA
+ *        参考linux kernel 0.11
+ * @param type READ/WRITE
+ * @param buf
+ */
+static void setup_DMA(int type, void * buf);
+
+/**
  * @function switch_floppy_motor
  * @brief 开/关 软驱马达
  * @param dev
@@ -121,9 +133,10 @@ static void seek_floppy(int dev, int head, int cylinder);
  * @param cylinder
  * @param sector
  * @param sector_count读/写的扇区数
+ * @param buf
  * @return
  */
-static void rdwt_floppy(int type, int dev, int head, int cylinder, int sector, int sector_count);
+static void rdwt_floppy(int type, int dev, int head, int cylinder, int sector, int sector_count, void * buf);
 /**
  * @function fdc_output_byte
  * @brief 向FDC（软盘控制器)写入byte
@@ -237,7 +250,7 @@ void do_floppy_rdwt(struct message *msg)
 	int sector_nr = pos / 512;	//这里得到扇区号
 	//read
 	seek_floppy(dev, H(sector_nr), C(sector_nr));
-	rdwt_floppy(msg->type, dev, H(sector_nr), C(sector_nr), S(sector_nr),bytes/512+(bytes%512==0)?0:1);
+	rdwt_floppy(msg->type, dev, H(sector_nr), C(sector_nr), S(sector_nr),bytes/512+(bytes%512==0)?0:1, (void*)va2la(msg->PID,msg->BUF));
 }
 
 /**
@@ -329,19 +342,21 @@ void reset_floppy(int dev)
 	fdc_status.curr_dev = dev;
 	int i;
 	//关中断
-	_disable_irq(FLOPPY_IRQ);
+	//_disable_irq(FLOPPY_IRQ);
+	cli();
 	irq_handler_table[FLOPPY_IRQ] = reset_interrupt_handler;//floppy_handler;
 	//重启
 	//在对软盘进行操作之前，必须先“选中”对应磁盘，并开启马达
 	_out_byte(DIGITAL_OUTPUT_REGISTER, BUILD_DOR(dev, OFF, 1, OFF));
 	for(i=0;i<100;i++){
-		__asm__("nop");
+		nop();
 	}
 	//在读写之前需要向DOR port输出BUILD_DOR(dev, ON, 1, ON);
 	//否则会出现motor not on的错误
 	_out_byte(DIGITAL_OUTPUT_REGISTER, BUILD_DOR(dev, OFF, 1, ON));	//再启动
 	//开中断
-	_enable_irq(FLOPPY_IRQ);
+	//_enable_irq(FLOPPY_IRQ);
+	sti();
 	//VERSION CMD
 	fdc_output_byte(CMD_VERSION);
 	int bytes = fdc_result();
@@ -368,9 +383,11 @@ void recalibrate_floppy(int dev)
 	}
 	fdc_status.curr_dev = dev;
 	fdc_status.recalibrate = 0;
-	_disable_irq(FLOPPY_IRQ);	
+	//_disable_irq(FLOPPY_IRQ);
+	//cli();
 	irq_handler_table[FLOPPY_IRQ] = recalibrate_interrupt_handler;
-	_enable_irq(FLOPPY_IRQ);
+	//_enable_irq(FLOPPY_IRQ);
+	//sti();
 	//CMD RECALIBRATE
 	fdc_output_byte(CMD_RECALIBRATE);
 	fdc_output_byte(dev);
@@ -401,9 +418,11 @@ void seek_floppy(int dev, int head, int cylinder)
 	if(fdc_status.curr_head == head && fdc_status.curr_cylinder == cylinder){
 		return;
 	}
-	_disable_irq(FLOPPY_IRQ);
+	//_disable_irq(FLOPPY_IRQ);
+	//cli();
 	irq_handler_table[FLOPPY_IRQ] = seek_interrupt_handler;
-	_enable_irq(FLOPPY_IRQ);
+	//_enable_irq(FLOPPY_IRQ);
+	//sti();
 	
 	//CMD SEEK
 	fdc_output_byte(CMD_SEEK);
@@ -424,7 +443,7 @@ void rdwt_interrupt_handler(int irq_no)
 	printk("rdwt interrupt!\n");
 }
 
-void rdwt_floppy(int type,  int dev, int head, int cylinder, int sector, int sector_count)
+void rdwt_floppy(int type,  int dev, int head, int cylinder, int sector, int sector_count, void * buf)
 {
 	if(fdc_status.reset == 1){
 		reset_floppy(dev);
@@ -437,10 +456,13 @@ void rdwt_floppy(int type,  int dev, int head, int cylinder, int sector, int sec
 	if(type!=DEV_READ && type!=DEV_WRITE){
 		return;
 	}
+	setup_DMA(type, buf);
 	switch_floppy_motor(dev, ON);
-	_disable_irq(FLOPPY_IRQ);
+	//_disable_irq(FLOPPY_IRQ);
+	//cli();
 	irq_handler_table[FLOPPY_IRQ] = rdwt_interrupt_handler;
-	_enable_irq(FLOPPY_IRQ);
+	//_enable_irq(FLOPPY_IRQ);
+	//sti();
 	
 	fdc_output_byte((type==DEV_READ)?(CMD_READ):(CMD_WRITE));
 	fdc_output_byte(head<<2|dev);
@@ -469,10 +491,51 @@ void switch_floppy_motor(int dev, int sw)
 	if(fdc_status.reset){
 		return;
 	}
-	_disable_irq(FLOPPY_IRQ);
+	//_disable_irq(FLOPPY_IRQ);
+	cli();
 	_out_byte(DIGITAL_OUTPUT_REGISTER, BUILD_DOR(dev, ON, 1, sw));
         for(i=0;i<100;i++){
-                __asm__("nop");
+		nop();
         }
-	_enable_irq(FLOPPY_IRQ);
+	//_enable_irq(FLOPPY_IRQ);
+	sti();
+}
+
+
+/**
+ *  Copy from linux kernel 0.11
+ */
+void setup_DMA(int type, void * buf)
+{
+	long addr = (long)buf;
+	cli();
+	if(addr > 0x100000){
+		//DMA只能在0x100000以内寻址
+		addr = (long)temp_floppy_area;
+		if(type == DEV_WRITE){
+			memcpy(temp_floppy_area, buf, 1024);
+		}	
+	}
+	//mask DMA 2
+	_out_byte(10, 4|2);
+	/* output command byte. I don't know why, but everyone (minix, */
+	/* sanches & canton) output this twice, first to 12 then to 11 */
+        __asm__("outb %%al,$12\n\tjmp 1f\n1:\tjmp 1f\n1:\t"
+        "outb %%al,$11\n\tjmp 1f\n1:\tjmp 1f\n1:"::
+        "a" ((char) ((type == DEV_READ)?DMA_READ:DMA_WRITE)));
+	//0~7bits of addr
+	_out_byte(4, addr);
+	//8~15 bits of addr
+	addr >>= 8;
+	_out_byte(4, addr);
+	//16~19 bits of addr
+	addr >>= 8;
+	_out_byte(0x81, addr);
+	//low 8 bits of count - 1 (1024 - 1 = 0x3FF) 
+	_out_byte(5, 0xFF);
+	//high 8 bits of count - 1
+	_out_byte(5, 0x03);
+	//active DMA 2
+	_out_byte(10, 0|2);
+	sti();
 }

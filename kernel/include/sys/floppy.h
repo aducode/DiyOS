@@ -147,4 +147,8 @@ extern void do_floppy_ioctl(struct message *msg);
 #define			DMA_WRITE			0x4A		//DMA写盘，DMA方式					
 
 #define 		MAX_REPLIES			7		//FDC返回最大字节数
+
+#define DMA_READ	0x46
+#define	DMA_WRITE	0x4A
+
 #endif

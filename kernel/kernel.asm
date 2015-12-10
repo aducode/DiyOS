@@ -4,6 +4,9 @@
 [section .bss]	;栈空间 4KB
 StackeSpace:	resb	4*1024
 StackTop:	;栈顶
+;供floppy DMA使用，因为DMA只能寻址0x100000以内，如果超过，则用于做缓冲
+temp_floppy_area:resb 1024
+global temp_floppy_area
 
 
 ;[section .s32] 当设置这个section时，ld使用-Ttext选项指定的entry point不准确
