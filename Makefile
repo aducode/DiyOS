@@ -64,6 +64,7 @@ disk:
 	$(BXIMAGE) $(HDFLAG) $(DISK)
 #设置分区表，需要手工输入
 	$(FDISK) -C 162 -H 16 -u=cylinders $(DISK)	
+#clean并不删除硬盘镜象
 clean:
 	make clean -C boot
 	make clean -C kernel

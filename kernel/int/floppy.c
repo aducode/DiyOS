@@ -482,7 +482,13 @@ void rdwt_floppy(int type,  int dev, int head, int cylinder, int sector, int sec
 		fdc_status.curr_cylinder = cylinder;
 		fdc_status.curr_sector = sector;	
 		sleep(1000);
-	}	
+	}
+	//读写的函数都能正确的运行，同时上面也设置了读写中断处理函数
+	//可是rdwt_interrupt_handler函数不会被调用
+	//还不知道是因为什么，由于软盘设备比较古老，用起来也没有像硬盘设备那么便捷，资料也不是很多，还需要好好研究
+	//
+	//能够挂载软盘，是便于进行后面拆分操作系统内核和应用做准备，毕竟floppy镜像可以在linux中挂载，向里面拷贝一些程序也比较简单，同时接入操作系统的抽象文件系统(Abstract File System),也能体现分层次的好处啦～
+	//方案2也有，那就是在写个程序，能向我们的硬盘里面直接写入数据，但是这中做法总觉得不太完美，毕竟要做的是个操作系统，可不想让它以来太多其他的程序。
 }
 
 void switch_floppy_motor(int dev, int sw)
