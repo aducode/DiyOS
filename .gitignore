@@ -8,3 +8,4 @@
 *.a
 app/target/*
 *.tar
+.idea/*
