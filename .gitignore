@@ -9,3 +9,4 @@
 app/target/*
 *.tar
 .idea/*
+CMakeLists.txt
