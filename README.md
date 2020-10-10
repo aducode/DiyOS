@@ -1,4 +1,17 @@
 #自己动手自作一个操作系统
+### Usage
+```bash
+cd DiyOS
+chmod +x build_env.sh start_env.sh stop_env.sh
+# step 1. build env
+./build_env.sh
+# step2. start env
+./start_env.sh
+# step3. open chrome and visit http://127.0.0.1:6080
+# step4. open terminal
+cd /root/workspace/DiyOS
+make
+```
 ###说明
 * 参考《Orange's一个操作系统的实现》、《30天自制操作系统》
 
