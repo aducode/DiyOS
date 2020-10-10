@@ -8,11 +8,11 @@ KERNEL_ENTRY_OFFSET=0x0400
 CC=gcc
 #使用clang编译的时候，不定参数会出现问题
 #CC=clang
-CFLAGS=-I include/ -I include/sys/ -I include/common/ -c -fno-builtin
+CFLAGS=-I include/ -I include/sys/ -I include/common/ -c -fno-builtin  -fno-stack-protector -m32
 ASM=nasm
 ASMFLAGS=-I include/ -I include/sys/ -f elf
 LD=ld
-LDFLAGS=-s -Ttext $(KERNEL_ENTRY_POINT)
+LDFLAGS=-m elf_i386 -s -Ttext $(KERNEL_ENTRY_POINT)
 AR=ar
 ARFLAGS=rcs
 AROUTFILE=../app/diycrt.a
