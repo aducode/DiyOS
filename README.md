@@ -1,5 +1,6 @@
-#自己动手自作一个操作系统
+# 自己动手自作一个操作系统
 ### Usage
+基于Docker搭建开发环境
 ```bash
 cd DiyOS
 chmod +x build_env.sh start_env.sh stop_env.sh
