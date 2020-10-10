@@ -17,4 +17,4 @@ if [ -z "$DOCKER" ] ;then
   exit 1
 fi
 
-$DOCKER run -it --rm -v ${BASE}:/root/workspace/DiyOS --workdir /root/workspace/DiyOS --name diyos_dev diyos_dev:latest
+$DOCKER run -it --rm --privileged=true -v ${BASE}:/root/workspace/DiyOS --workdir /root/workspace/DiyOS --name diyos_dev diyos_dev:latest
