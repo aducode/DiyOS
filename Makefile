@@ -10,7 +10,7 @@ LOGS = *.txt *.log
 
 BXIMAGE=bximage
 FDISK=fdisk
-#FDFLAG=-mode=create -fd=1.44M -q
+FDFLAG=-mode=create -fd=1.44M -q
 HDFLAG=-mode=create -hd=80M -q
 
 
@@ -41,9 +41,7 @@ kernel:
 	make -C kernel/
 
 img:
-	@/bin/echo "make $(FLOPPY)"
-	@/bin/echo -e "fd\n1.44\n$(FLOPPY)" | $(BXIMAGE) > /dev/null
-#       $(BXIMAGE) $(FDFLAG) $(FLOPPY)
+	$(BXIMAGE) $(FDFLAG) $(FLOPPY)
 #	$(BXIMAGE) $(HDFLAG) $(DISK)
 #	fdisk $(DISK)
 #********************************************************#

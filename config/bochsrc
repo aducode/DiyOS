@@ -1,7 +1,7 @@
-#display_library:sdl
+# display_library:x11
 megs:32
 romimage:file=/usr/local/share/bochs/BIOS-bochs-latest
-vgaromimage:file=/usr/share/vgabios/vgabios.bin
+#vgaromimage:file=/usr/share/vgabios/vgabios.bin
 floppya:1_44=a.img, status=inserted
 #hd
 ata0:enabled=1,ioaddr1=0x1f0,ioaddr2=0x3f0,irq=14

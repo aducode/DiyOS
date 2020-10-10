@@ -16,6 +16,5 @@ if [ -z "$DOCKER" ] ;then
   echo "docker is required ..."
   exit 1
 fi
-$DOCKER run -d -p 6080:80 --entrypoint=/startup.sh  --privileged=true -v ${BASE}:/root/workspace/DiyOS --workdir /root/workspace/DiyOS --name diyos_dev diyos_dev:latest
-echo "diyos dev container startup!!!"
-echo "http://127.0.0.1:6080"
+$DOCKER stop diyos_dev
+$DOCKER rm diyos_dev
