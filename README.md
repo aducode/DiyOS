@@ -1,5 +1,19 @@
-#自己动手自作一个操作系统
-###说明
+# 自己动手自作一个操作系统
+### Usage
+基于Docker搭建开发环境
+```bash
+cd DiyOS
+chmod +x build_env.sh start_env.sh stop_env.sh
+# step 1. build env
+./build_env.sh
+# step2. start env
+./start_env.sh
+# step3. open chrome and visit http://127.0.0.1:6080
+# step4. open terminal
+cd /root/workspace/DiyOS
+make
+```
+### 说明
 * 参考《Orange's一个操作系统的实现》、《30天自制操作系统》
 
 * 这个操作系统目前只能通过软盘引导，同时为了方便编程，使用fat12格式化的软盘（fat文件系统头部信息已经写入boot.asm中），使用mount -o loop,rw a.img /xxx可以挂在，并且将其他程序写入软盘；相对的，linux 加载0扇区bootsec后，接着用bootsec加载1-4扇区的setup程序，setup继续引导剩余的全部扇区到内存，但是这样写入组织好的多个文件到软盘操作起来不是很方便，所以这里借用fat12格式的文件系统。
@@ -9,7 +23,7 @@
 * 运行环境：bochs release 2.6.7
 * bochs调试断点：1.0x7c00 boot.bin入口地址；2.0x90100 loader.bin入口地址；3.0x400 kernel.bin入口地址
 
-###kernel架构图
+### kernel架构图
 
 ![img](http://aducode.github.io/images/2015-09-02/kernel.png)
 
@@ -17,7 +31,7 @@
 
 ![img](http://aducode.github.io/images/2015-09-02/fs.png)
 
-###目前进度:
+### 目前进度:
 
 1. boot loader完成;
 2. 微内核架构kernel，主要处理进程调度;
@@ -35,7 +49,7 @@
 14. abstract file system layer分离，修改过后的代码经过单元测试;
 15. 非阻塞的receive接收广播方式，添加sleep函数，进程可以让出cpu时间片；
 
-###近期计划：
+### 近期计划：
 0. ~~【afs分支】抽象出文件系统层，方便挂载异构文件系统，使逻辑更清晰（逻辑目前还有错误，需要修改，通过测试用例）~~;
 1. 软盘驱动，首先需要了解x86架构下的软盘驱动指令;
 2. 解析fat12文件系统，以便mount;
@@ -50,7 +64,7 @@
 11. 添加鼠标驱动，支持图形化处理;
 12. GUI图形操作界面，窗口管理器;
 
-###问题：
+### 问题：
 
 * 操作系统调试很困难，打log的方式有时候都不可取，因为打log会操作文件系统，产生系统中断，会影响现场,目前做法是，printk系统调用，尽可能少的输出调试信息;
 * 微内核架构，所有操作都是异步的方式，编码调试非常困难,printf log追踪都不行，IO操作会改变进程执行顺序;
