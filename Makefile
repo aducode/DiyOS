@@ -14,7 +14,7 @@ FDFLAG=-mode=create -fd=1.44M -q
 HDFLAG=-mode=create -hd=80M -q
 
 
-run:clean img boot kernel
+run:cleanall img disk boot kernel
 	dd if=$(BOOT) of=$(FLOPPY) bs=512 count=1 conv=notrunc
 	-mkdir -p tmp/mnt/floppy
 	mount -o loop,rw $(FLOPPY) tmp/mnt/floppy/
@@ -42,8 +42,7 @@ kernel:
 
 img:
 	$(BXIMAGE) $(FDFLAG) $(FLOPPY)
-#	$(BXIMAGE) $(HDFLAG) $(DISK)
-#	fdisk $(DISK)
+
 #********************************************************#
 # disk命令说明：					 #
 #	- 用于创建一块硬盘，并开始分区操作		 #
@@ -62,9 +61,8 @@ img:
 #********************************************************#
 disk:
 	$(BXIMAGE) $(HDFLAG) $(DISK)
-#设置分区表，需要手工输入
-	$(FDISK) -C 162 -H 16 -u=cylinders $(DISK)	
-#clean并不删除硬盘镜象
+	/usr/bin/echo -e "n\np\n\n\n\np\nt\n1\nw\n" | $(FDISK) $(DISK)
+
 clean:
 	make clean -C boot
 	make clean -C kernel
