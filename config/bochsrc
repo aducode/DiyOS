@@ -1,4 +1,4 @@
-#display_library:sdl
+#display_library:x11
 #how much memory the emulated machine will have
 #32MB
 megs:32
@@ -6,7 +6,7 @@ megs:32
 #cpu:count=1,ips=6000000,reset_on_triple_fault=1,ignore_bad_msrs=1
 
 romimage:file=/usr/local/share/bochs/BIOS-bochs-latest
-vgaromimage:file=/usr/share/vgabios/vgabios.bin
+#vgaromimage:file=/usr/share/bochs/vgabios-cirrus.bin-1.13.0
 floppya:1_44=a.img, status=inserted
 #hd
 ata0:enabled=1,ioaddr1=0x1f0,ioaddr2=0x3f0,irq=14

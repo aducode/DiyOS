@@ -6,5 +6,8 @@
 *.o
 *.bin.asm
 *.a
+*.lock
 app/target/*
 *.tar
+.idea/*
+CMakeLists.txt

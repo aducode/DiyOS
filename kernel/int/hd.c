@@ -306,7 +306,7 @@ void hd_identify(int drive)
         hd_cmd_out(&cmd);
         interrupt_wait();
         _port_read(REG_DATA, hdbuf, SECTOR_SIZE);
-        //print_identify_info((u16*)hdbuf);
+        print_identify_info((u16*)hdbuf);
 }
 
 
